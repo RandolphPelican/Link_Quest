@@ -1,0 +1,19 @@
+{
+  "id": 1,
+  "name": "The Debug Dungeon",
+  "tilemap": "32x32",
+  "background": "#1a1a2e",
+  "enemies": [
+    { "type": "goblin",    "x": 200, "y": 200, "count": 3 },
+    { "type": "ai_bug",    "x": 500, "y": 400, "count": 2 }
+  ],
+  "boss": { "type": "lazy_coder", "x": 650, "y": 300 },
+  "items": [
+    { "key": "potion_sm", "x": 150, "y": 350 },
+    { "key": "leather",   "x": 300, "y": 150 }
+  ],
+  "puzzles": [
+    { "type": "lever", "id": "gate_a", "x": 100, "y": 100, "unlocks": "exit_a" }
+  ],
+  "exit": { "id": "exit_a", "x": 750, "y": 550, "locked": true }
+}

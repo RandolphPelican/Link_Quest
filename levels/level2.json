@@ -1,0 +1,20 @@
+{
+  "id": 2,
+  "name": "The Hallucination Halls",
+  "tilemap": "32x32",
+  "background": "#2e1a2e",
+  "enemies": [
+    { "type": "goblin",       "x": 100, "y": 300, "count": 4 },
+    { "type": "ai_bug",       "x": 400, "y": 200, "count": 3 },
+    { "type": "chatbot_clone","x": 600, "y": 400, "count": 1 }
+  ],
+  "boss": null,
+  "items": [
+    { "key": "potion_md", "x": 200, "y": 500 },
+    { "key": "chain",     "x": 500, "y": 100 }
+  ],
+  "puzzles": [
+    { "type": "color_tile", "id": "seq_b", "sequence": ["red","blue","green"], "unlocks": "exit_b" }
+  ],
+  "exit": { "id": "exit_b", "x": 750, "y": 300, "locked": true }
+}

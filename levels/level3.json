@@ -1,0 +1,21 @@
+{
+  "id": 3,
+  "name": "The Final Compile",
+  "tilemap": "32x32",
+  "background": "#0a0a1a",
+  "enemies": [
+    { "type": "goblin",       "x": 150, "y": 200, "count": 5 },
+    { "type": "ai_bug",       "x": 350, "y": 450, "count": 4 },
+    { "type": "chatbot_clone","x": 250, "y": 350, "count": 2 }
+  ],
+  "boss": { "type": "gossip_gpt", "x": 650, "y": 300 },
+  "items": [
+    { "key": "potion_lg", "x": 100, "y": 500 },
+    { "key": "potion_md", "x": 400, "y": 150 }
+  ],
+  "puzzles": [
+    { "type": "timed_switch", "id": "seq_c", "time_limit": 15, "unlocks": "exit_c" }
+  ],
+  "exit": { "id": "exit_c", "x": 750, "y": 550, "locked": true },
+  "cutscene": "gossip_gpt_transform"
+}
