@@ -370,15 +370,13 @@ class RoomManager {
   }
 
   checkDoors(player, onTransition) {
-    // DEBUG
-    Object.entries(this.doorZones).forEach(([s,d]) => { console.log(s, d.locked, d.zone.x, d.zone.y, player.sprite.x, player.sprite.y); });
     if (!player || !player.sprite) return;
     Object.entries(this.doorZones).forEach(([side, door]) => {
       if (door.locked) return;
       const dx   = door.zone.x - player.sprite.x;
       const dy   = door.zone.y - player.sprite.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 80) onTransition(door.leadsTo, side);
+      if (dist < 120) onTransition(door.leadsTo, side);
     });
   }
 
