@@ -132,7 +132,7 @@
         },
         "right": {
           "leadsTo": 2,
-          "locked": true
+          "locked": false
         },
         "top": null,
         "bottom": null

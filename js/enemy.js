@@ -55,6 +55,7 @@ class Enemy {
     this.sprite = scene.add.rectangle(x, y, s.size, s.size, s.color);
     scene.physics.add.existing(this.sprite);
     this.sprite.body.setCollideWorldBounds(true);
+    this.sprite.body.setBoundsRectangle(new Phaser.Geom.Rectangle(30, 30, 740, 510));
 
     this.hpBarBg = scene.add.rectangle(x, y - s.size/2 - 6, 30, 4, 0x333333);
     this.hpBar   = scene.add.rectangle(x, y - s.size/2 - 6, 30, 4, s.color);
