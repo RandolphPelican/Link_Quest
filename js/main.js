@@ -151,9 +151,6 @@ class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
     this.player = null; this.enemies = []; this.items = [];
-    (this.roomData.items || []).forEach(it => {
-      this.items.push(new Item(this, it.x, it.y, it.key));
-    });
     this.boss = null; this.roomManager = null;
     this.levelData = null; this.roomData = null;
     this.transitioning = false; this.bossSpawned = false;
