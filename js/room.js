@@ -370,6 +370,8 @@ class RoomManager {
   }
 
   checkDoors(player, onTransition) {
+    // DEBUG
+    Object.entries(this.doorZones).forEach(([s,d]) => { console.log(s, d.locked, d.zone.x, d.zone.y, player.sprite.x, player.sprite.y); });
     if (!player || !player.sprite) return;
     Object.entries(this.doorZones).forEach(([side, door]) => {
       if (door.locked) return;
