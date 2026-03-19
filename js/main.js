@@ -273,7 +273,7 @@ class GameScene extends Phaser.Scene {
     }
 
     this.roomManager.updateChestPrompts(this.player);
-    this.roomManager.checkDoors(this.player, (roomId, side) => this._transitionToRoom(roomId, side));
+    this.roomManager.checkDoors([this.player], (roomId, side) => this._transitionToRoom(roomId, side));
 
     updateHPBar(this.player.hp, this.player.maxHp);
     updateMPBar(this.player.mp, this.player.maxMp);

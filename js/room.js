@@ -369,14 +369,23 @@ class RoomManager {
     });
   }
 
-  checkDoors(player, onTransition) {
-    if (!player || !player.sprite) return;
+  checkDoors(players, onTransition) {
+    // players = array of all active players
+    // Door fires only when ALL players cross the boundary
+    if (!players || players.length === 0) return;
+    const active = players.filter(p => p && p.sprite && p.alive);
+    if (active.length === 0) return;
+
+    const bounds = {
+      right:  active.every(p => p.sprite.x > 740),
+      left:   active.every(p => p.sprite.x < 60),
+      top:    active.every(p => p.sprite.y < 60),
+      bottom: active.every(p => p.sprite.y > 540)
+    };
+
     Object.entries(this.doorZones).forEach(([side, door]) => {
       if (door.locked) return;
-      const dx   = door.zone.x - player.sprite.x;
-      const dy   = door.zone.y - player.sprite.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 120) onTransition(door.leadsTo, side);
+      if (bounds[side]) onTransition(door.leadsTo, side);
     });
   }
 
