@@ -151,6 +151,9 @@ class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
     this.player = null; this.enemies = []; this.items = [];
+    (this.roomData.items || []).forEach(it => {
+      this.items.push(new Item(this, it.x, it.y, it.key));
+    });
     this.boss = null; this.roomManager = null;
     this.levelData = null; this.roomData = null;
     this.transitioning = false; this.bossSpawned = false;
@@ -194,6 +197,9 @@ class GameScene extends Phaser.Scene {
     }
 
     this.items = [];
+    (this.roomData.items || []).forEach(it => {
+      this.items.push(new Item(this, it.x, it.y, it.key));
+    });
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
@@ -292,7 +298,10 @@ class GameScene extends Phaser.Scene {
       const opp = { left:'right', right:'left', top:'bottom', bottom:'top' };
       GameState.lastDoor    = opp[fromSide] || 'right';
       GameState.currentRoom = roomId;
-      this.enemies = []; this.items = []; this.boss = null;
+      this.enemies = []; this.items = [];
+    (this.roomData.items || []).forEach(it => {
+      this.items.push(new Item(this, it.x, it.y, it.key));
+    }); this.boss = null;
       this.scene.restart();
     });
   }
