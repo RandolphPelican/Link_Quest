@@ -3,7 +3,8 @@
 // ============================================================
 
 class Enemy {
-  constructor(scene, x, y, type) {
+  constructor(scene, x, y, type, pattern) {
+    pattern = pattern || 'rusher';
     this.scene          = scene;
     this.type           = type;
     this.alive          = true;
@@ -47,6 +48,9 @@ class Enemy {
     this.aggroRange   = s.aggroRange;
     this.color        = s.color;
     this.size         = s.size;
+    this.pattern      = pattern;
+    this.retreating   = false;
+    this.retreatTimer = 0;
 
     this.sprite = scene.add.rectangle(x, y, s.size, s.size, s.color);
     scene.physics.add.existing(this.sprite);
@@ -85,10 +89,7 @@ class Enemy {
 
     switch (this.state) {
       case 'chase':
-        this.sprite.body.setVelocity(
-          (dx / dist) * this.speed,
-          (dy / dist) * this.speed
-        );
+        this._moveByPattern(dx, dy, dist, player);
         break;
       case 'attack':
         this.sprite.body.setVelocity(0, 0);
@@ -102,6 +103,50 @@ class Enemy {
     if (this.attackCooldown > 0) this.attackCooldown--;
     this._syncUI();
   }
+  _moveByPattern(dx, dy, dist, player) {
+    if (!this.sprite || !this.sprite.body) return;
+
+    if (this.pattern === 'rusher') {
+      // Straight charge at player
+      this.sprite.body.setVelocity(
+        (dx / dist) * this.speed,
+        (dy / dist) * this.speed
+      );
+
+    } else if (this.pattern === 'runner') {
+      // Run away from player when close, wander otherwise
+      if (dist < 180) {
+        this.sprite.body.setVelocity(
+          -(dx / dist) * this.speed * 1.2,
+          -(dy / dist) * this.speed * 1.2
+        );
+      } else {
+        this._wander();
+      }
+
+    } else if (this.pattern === 'stick_and_move') {
+      // Charge in, attack, retreat, repeat
+      if (this.retreating) {
+        this.retreatTimer--;
+        this.sprite.body.setVelocity(
+          -(dx / dist) * this.speed * 1.1,
+          -(dy / dist) * this.speed * 1.1
+        );
+        if (this.retreatTimer <= 0) this.retreating = false;
+      } else {
+        this.sprite.body.setVelocity(
+          (dx / dist) * this.speed * 1.2,
+          (dy / dist) * this.speed * 1.2
+        );
+        // Start retreat after attacking
+        if (dist < this.attackRange + 10 && this.attackCooldown <= 0) {
+          this.retreating   = true;
+          this.retreatTimer = 60;
+        }
+      }
+    }
+  }
+
   _wander() {
     if (!this.sprite || !this.sprite.body) return;
     this.wanderTimer--;
@@ -155,10 +200,10 @@ class Enemy {
     const scores = { goblin: 50, ai_bug: 40, chatbot_clone: 150 };
     if (typeof updateScore === 'function') updateScore(scores[this.type] || 50);
     if (this.type === 'goblin_chief') {
-      if (this.scene.items) {
+      if (Array.isArray(this.scene.items)) {
         this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, 'small_key'));
       }
-    } else if (Math.random() < this.dropChance && this.scene.items) {
+    } else if (Math.random() < this.dropChance && Array.isArray(this.scene.items)) {
       const drops = ['chicken_nuggets', 'chicken_nuggets', 'mac_and_cheese', 'potion_sm'];
       const key   = drops[Math.floor(Math.random() * drops.length)];
       this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, key));

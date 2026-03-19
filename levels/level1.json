@@ -116,7 +116,15 @@
           "message": "The dungeon awakens. Find your strength before it finds you."
         }
       ],
-      "enemies": [],
+      "enemies": [
+        {
+          "type": "goblin",
+          "x": 600,
+          "y": 150,
+          "count": 1,
+          "pattern": "runner"
+        }
+      ],
       "doors": {
         "left": {
           "leadsTo": null,
@@ -124,7 +132,7 @@
         },
         "right": {
           "leadsTo": 2,
-          "locked": false
+          "locked": true
         },
         "top": null,
         "bottom": null
@@ -281,13 +289,15 @@
           "type": "goblin",
           "x": 500,
           "y": 200,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 500,
           "y": 400,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         }
       ],
       "doors": {
@@ -569,37 +579,43 @@
           "type": "goblin",
           "x": 180,
           "y": 150,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 620,
           "y": 150,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 180,
           "y": 450,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 620,
           "y": 450,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 400,
           "y": 150,
-          "count": 1
+          "count": 1,
+          "pattern": "rusher"
         },
         {
           "type": "goblin_chief",
           "x": 620,
           "y": 300,
-          "count": 1
+          "count": 1,
+          "pattern": "stick_and_move"
         }
       ],
       "doors": {

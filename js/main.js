@@ -200,6 +200,9 @@ class GameScene extends Phaser.Scene {
     this.roomManager = new RoomManager(this);
     this.roomManager.load(this.roomData);
 
+    // Set physics bounds BEFORE spawning player
+    this.physics.world.setBounds(30, 30, 740, 540);
+
     const spawn = getSpawnPosition(GameState.lastDoor);
     this.player = new Player(this, spawn.x, spawn.y, GameState.selectedChar);
     if (!this.player.sprite.body) {
@@ -218,7 +221,7 @@ class GameScene extends Phaser.Scene {
         const ddx = ex - spawn.x, ddy = ey - spawn.y;
         const dd = Math.sqrt(ddx*ddx + ddy*ddy);
         if (dd < 160 && dd > 0) { ex += (ddx/dd)*(160-dd+20); ey += (ddy/dd)*(160-dd+20); }
-        this.enemies.push(new Enemy(this, ex, ey, group.type));
+        this.enemies.push(new Enemy(this, ex, ey, group.type, group.pattern || 'rusher'));
       }
     });
 
@@ -262,8 +265,6 @@ class GameScene extends Phaser.Scene {
     }
 
     showToast('Room ' + this.roomData.id + ': ' + this.roomData.name);
-    // Constrain physics world to visible play area only
-    this.physics.world.setBounds(30, 30, 740, 540);
     this.cameras.main.fadeIn(300, 0, 0, 0);
   }
 
@@ -289,7 +290,10 @@ class GameScene extends Phaser.Scene {
     const wasAlive = this.enemies.filter(e => e.alive).length;
     this.enemies.forEach(e => e.update(this.player));
     const nowAlive = this.enemies.filter(e => e.alive).length;
-    if (nowAlive < wasAlive) this._checkRoomClear();
+    if (nowAlive < wasAlive) {
+      this.enemies = this.enemies.filter(e => e.alive);
+      this._checkRoomClear();
+    }
 
     if (this.boss && this.boss.alive) {
       this.boss.update(this.player);
