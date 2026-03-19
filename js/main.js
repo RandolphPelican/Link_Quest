@@ -197,10 +197,6 @@ class GameScene extends Phaser.Scene {
     }
 
     this.items = [];
-    (this.roomData.items || []).forEach(it => {
-      this.items.push(new Item(this, it.x, it.y, it.key));
-    });
-
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -299,10 +295,6 @@ class GameScene extends Phaser.Scene {
       GameState.lastDoor    = opp[fromSide] || 'right';
       GameState.currentRoom = roomId;
       this.enemies = []; this.items = [];
-    (this.roomData.items || []).forEach(it => {
-      this.items.push(new Item(this, it.x, it.y, it.key));
-    }); this.boss = null;
-      this.scene.restart();
     });
   }
 
