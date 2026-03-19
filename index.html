@@ -4,22 +4,162 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Link Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div id="game-container"></div>
 
-  <!-- Phaser 3 via CDN -->
+  <!-- ── LOADING SCREEN ─────────────────────────────────────── -->
+  <div id="loading-screen">
+    <div id="loading-content">
+      <h1 id="game-title">⚔️ LINK QUEST</h1>
+      <p id="loading-sub">A Family Built RPG</p>
+      <div id="loading-bar-wrap">
+        <div id="loading-bar"></div>
+      </div>
+      <p id="loading-tip">Loading assets...</p>
+    </div>
+  </div>
+
+  <!-- ── CHARACTER SELECT SCREEN ────────────────────────────── -->
+  <div id="char-select-screen" class="hidden">
+    <h2>Choose Your Character</h2>
+    <div id="char-grid">
+      <div class="char-card" data-char="lincoln">
+        <div class="char-avatar" style="background:#3498db"></div>
+        <p class="char-name">Lincoln</p>
+        <p class="char-desc">Sword | Balanced</p>
+      </div>
+      <div class="char-card" data-char="journey">
+        <div class="char-avatar" style="background:#9b59b6"></div>
+        <p class="char-name">Journey</p>
+        <p class="char-desc">Staff | Mage</p>
+      </div>
+      <div class="char-card" data-char="bear">
+        <div class="char-avatar" style="background:#27ae60"></div>
+        <p class="char-name">Bear</p>
+        <p class="char-desc">Bow | Ranged</p>
+      </div>
+      <div class="char-card" data-char="dad">
+        <div class="char-avatar" style="background:#e67e22"></div>
+        <p class="char-name">Dad</p>
+        <p class="char-desc">Club | Tank 💨</p>
+      </div>
+    </div>
+    <button id="start-btn" disabled>Select a Character</button>
+  </div>
+
+  <!-- ── GAME WRAPPER ────────────────────────────────────────── -->
+  <div id="game-wrapper" class="hidden">
+
+    <!-- HUD TOP BAR -->
+    <div id="hud-top">
+
+      <!-- Player HP -->
+      <div id="hud-left">
+        <span id="hud-char-name">Lincoln</span>
+        <div class="bar-wrap">
+          <label>HP</label>
+          <div class="bar-bg">
+            <div id="hp-bar" class="bar-fill hp"></div>
+          </div>
+          <span id="hp-text">100/100</span>
+        </div>
+        <div class="bar-wrap">
+          <label>MP</label>
+          <div class="bar-bg">
+            <div id="mp-bar" class="bar-fill mp"></div>
+          </div>
+          <span id="mp-text">50/50</span>
+        </div>
+      </div>
+
+      <!-- Level / Score -->
+      <div id="hud-center">
+        <span id="hud-level">LEVEL 1</span>
+        <span id="hud-level-name">The Debug Dungeon</span>
+        <span id="hud-score">Score: 0</span>
+      </div>
+
+      <!-- Minimap placeholder -->
+      <div id="hud-right">
+        <canvas id="minimap" width="80" height="80"></canvas>
+      </div>
+
+    </div>
+
+    <!-- PHASER CANVAS MOUNTS HERE -->
+    <div id="game-container"></div>
+
+    <!-- HUD BOTTOM BAR -->
+    <div id="hud-bottom">
+
+      <!-- Item hotbar -->
+      <div id="hotbar">
+        <div class="hotbar-slot active" id="slot-1">
+          <span class="slot-key">1</span>
+          <span class="slot-item">⚔️</span>
+        </div>
+        <div class="hotbar-slot" id="slot-2">
+          <span class="slot-key">2</span>
+          <span class="slot-item">🧪</span>
+        </div>
+        <div class="hotbar-slot" id="slot-3">
+          <span class="slot-key">3</span>
+          <span class="slot-item">🛡️</span>
+        </div>
+        <div class="hotbar-slot" id="slot-4">
+          <span class="slot-key">4</span>
+          <span class="slot-item">✨</span>
+        </div>
+      </div>
+
+      <!-- Controls reminder -->
+      <div id="controls-hint">
+        WASD: Move &nbsp;|&nbsp; SPACE: Attack &nbsp;|&nbsp; E: Spell &nbsp;|&nbsp; F: Pickup
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ── BOSS HP BAR (shown only during boss fight) ────────── -->
+  <div id="boss-hud" class="hidden">
+    <span id="boss-name">LAZY CODER</span>
+    <div id="boss-bar-wrap">
+      <div id="boss-hp-bar"></div>
+    </div>
+  </div>
+
+  <!-- ── GAME OVER SCREEN ────────────────────────────────────── -->
+  <div id="gameover-screen" class="hidden">
+    <h2>💀 GAME OVER</h2>
+    <p id="gameover-score">Score: 0</p>
+    <button id="retry-btn">Try Again</button>
+  </div>
+
+  <!-- ── CUTSCENE OVERLAY ────────────────────────────────────── -->
+  <div id="cutscene-overlay" class="hidden">
+    <div id="cutscene-box">
+      <p id="cutscene-text"></p>
+      <button id="cutscene-next">▶ Next</button>
+    </div>
+  </div>
+
+  <!-- ── NOTIFICATION TOAST ─────────────────────────────────── -->
+  <div id="toast"></div>
+
+  <!-- ── SCRIPTS ─────────────────────────────────────────────── -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-  <!-- Socket.io via CDN (multiplayer, comment out if not needed yet) -->
   <!-- <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script> -->
 
-  <!-- Game modules -->
   <script src="js/item.js"></script>
   <script src="js/player.js"></script>
   <script src="js/enemy.js"></script>
   <script src="js/boss.js"></script>
   <script src="js/network.js"></script>
   <script src="js/main.js"></script>
+
 </body>
 </html>
