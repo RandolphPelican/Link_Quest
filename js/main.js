@@ -10,6 +10,8 @@ const GameState = {
   score:         0,
   paused:        false,
   inventory: { keys: 0, armor: 'cloth' },
+  playerHP: null,
+  playerMP: null,
   roomState:     {},
   cutscenesSeen: []
 };
@@ -203,6 +205,9 @@ class GameScene extends Phaser.Scene {
     if (!this.player.sprite.body) {
       this.physics.add.existing(this.player.sprite);
     }
+    // Restore HP and MP from GameState
+    if (GameState.playerHP !== null) this.player.hp = GameState.playerHP;
+    if (GameState.playerMP !== null) this.player.mp = GameState.playerMP;
     this.roomManager.addColliders(this.player.sprite);
 
     this.enemies = [];
@@ -310,6 +315,9 @@ class GameScene extends Phaser.Scene {
 
     updateHPBar(this.player.hp, this.player.maxHp);
     updateMPBar(this.player.mp, this.player.maxMp);
+    // Save HP and MP every frame
+    GameState.playerHP = this.player.hp;
+    GameState.playerMP = this.player.mp;
 
     if (this.player.hp <= 0 && !GameState.paused) this._onPlayerDeath();
 

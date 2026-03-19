@@ -20,6 +20,11 @@ class Enemy {
         attackRange: 36, aggroRange: 140,
         color: 0x00ff88, label: 'Goblin', size: 22
       },
+      goblin_chief: {
+        maxHp: 80, speed: 38, attackPower: 10,
+        attackRange: 40, aggroRange: 160,
+        color: 0xcc2200, label: 'Goblin Chief', size: 30
+      },
       ai_bug: {
         maxHp: 30, speed: 55, attackPower: 5,
         attackRange: 40, aggroRange: 160,
@@ -149,7 +154,11 @@ class Enemy {
     if (this.hpBar) this.hpBar.width = 0;
     const scores = { goblin: 50, ai_bug: 40, chatbot_clone: 150 };
     if (typeof updateScore === 'function') updateScore(scores[this.type] || 50);
-    if (Math.random() < this.dropChance && this.scene.items) {
+    if (this.type === 'goblin_chief') {
+      if (this.scene.items) {
+        this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, 'small_key'));
+      }
+    } else if (Math.random() < this.dropChance && this.scene.items) {
       const drops = ['chicken_nuggets', 'chicken_nuggets', 'mac_and_cheese', 'potion_sm'];
       const key   = drops[Math.floor(Math.random() * drops.length)];
       this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, key));

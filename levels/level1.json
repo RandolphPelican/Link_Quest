@@ -106,7 +106,7 @@
           "x": 625,
           "y": 300,
           "locked": true,
-          "contains": "small_key"
+          "contains": "potion_sm"
         }
       ],
       "signs": [
@@ -128,7 +128,14 @@
         },
         "top": null,
         "bottom": null
-      }
+      },
+      "items": [
+        {
+          "key": "small_key",
+          "x": 580,
+          "y": 430
+        }
+      ]
     },
     {
       "id": 2,
@@ -246,6 +253,13 @@
           "y": 300,
           "locked": false,
           "contains": "mac_and_cheese"
+        },
+        {
+          "type": "gold",
+          "x": 680,
+          "y": 120,
+          "locked": true,
+          "contains": "mana_vial"
         }
       ],
       "signs": [
@@ -258,11 +272,24 @@
       "items": [
         {
           "key": "small_key",
-          "x": 390,
-          "y": 195
+          "x": 80,
+          "y": 100
         }
       ],
-      "enemies": [],
+      "enemies": [
+        {
+          "type": "goblin",
+          "x": 500,
+          "y": 200,
+          "count": 1
+        },
+        {
+          "type": "goblin",
+          "x": 500,
+          "y": 400,
+          "count": 1
+        }
+      ],
       "doors": {
         "left": {
           "leadsTo": 1,
@@ -270,7 +297,7 @@
         },
         "right": {
           "leadsTo": 3,
-          "locked": false
+          "locked": true
         },
         "top": null,
         "bottom": null
@@ -387,28 +414,41 @@
       ],
       "chests": [
         {
-          "type": "gold",
-          "x": 120,
-          "y": 300,
-          "locked": true,
-          "contains": "leather"
-        },
-        {
           "type": "brown",
           "x": 680,
           "y": 300,
           "locked": false,
           "contains": "chicken_nuggets"
+        },
+        {
+          "type": "gold",
+          "x": 120,
+          "y": 300,
+          "locked": true,
+          "contains": "potion_md"
         }
       ],
       "signs": [
         {
           "x": 400,
           "y": 100,
-          "message": "A lone goblin patrols the next room. Watch its movement before you strike."
+          "message": "A red goblin guards the next room. He carries something important."
         }
       ],
-      "enemies": [],
+      "enemies": [
+        {
+          "type": "goblin",
+          "x": 500,
+          "y": 150,
+          "count": 2
+        },
+        {
+          "type": "goblin",
+          "x": 500,
+          "y": 400,
+          "count": 2
+        }
+      ],
       "doors": {
         "left": {
           "leadsTo": 2,
@@ -416,11 +456,18 @@
         },
         "right": {
           "leadsTo": 4,
-          "locked": false
+          "locked": true
         },
         "top": null,
         "bottom": null
-      }
+      },
+      "items": [
+        {
+          "key": "small_key",
+          "x": 80,
+          "y": 500
+        }
+      ]
     },
     {
       "id": 4,
@@ -509,10 +556,10 @@
       ],
       "chests": [
         {
-          "type": "brown",
+          "type": "gold",
           "x": 680,
           "y": 130,
-          "locked": false,
+          "locked": true,
           "contains": "potion_sm"
         }
       ],
@@ -520,7 +567,37 @@
       "enemies": [
         {
           "type": "goblin",
-          "x": 550,
+          "x": 180,
+          "y": 150,
+          "count": 1
+        },
+        {
+          "type": "goblin",
+          "x": 620,
+          "y": 150,
+          "count": 1
+        },
+        {
+          "type": "goblin",
+          "x": 180,
+          "y": 450,
+          "count": 1
+        },
+        {
+          "type": "goblin",
+          "x": 620,
+          "y": 450,
+          "count": 1
+        },
+        {
+          "type": "goblin",
+          "x": 400,
+          "y": 150,
+          "count": 1
+        },
+        {
+          "type": "goblin_chief",
+          "x": 620,
           "y": 300,
           "count": 1
         }
