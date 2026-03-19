@@ -65,6 +65,7 @@ class Player {
   update(cursors, wasd) {
     if (!this.alive) return;
 
+    if (!this.sprite || !this.sprite.body) return;
     const body = this.sprite.body;
     body.setVelocity(0);
 
