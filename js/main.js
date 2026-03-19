@@ -262,6 +262,8 @@ class GameScene extends Phaser.Scene {
     }
 
     showToast('Room ' + this.roomData.id + ': ' + this.roomData.name);
+    // Constrain physics world to visible play area only
+    this.physics.world.setBounds(30, 30, 740, 540);
     this.cameras.main.fadeIn(300, 0, 0, 0);
   }
 

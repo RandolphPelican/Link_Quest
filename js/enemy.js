@@ -17,22 +17,22 @@ class Enemy {
     const typeStats = {
       goblin: {
         maxHp: 40, speed: 45, attackPower: 6,
-        attackRange: 36, aggroRange: 140,
+        attackRange: 36, aggroRange: 320,
         color: 0x00ff88, label: 'Goblin', size: 22
       },
       goblin_chief: {
         maxHp: 80, speed: 38, attackPower: 10,
-        attackRange: 40, aggroRange: 160,
+        attackRange: 40, aggroRange: 350,
         color: 0xcc2200, label: 'Goblin Chief', size: 30
       },
       ai_bug: {
         maxHp: 30, speed: 55, attackPower: 5,
-        attackRange: 40, aggroRange: 160,
+        attackRange: 40, aggroRange: 340,
         color: 0xff4444, label: 'AI Bug', size: 18
       },
       chatbot_clone: {
         maxHp: 80, speed: 35, attackPower: 10,
-        attackRange: 50, aggroRange: 180,
+        attackRange: 50, aggroRange: 360,
         color: 0x44aaff, label: 'Chatbot Clone', size: 28
       }
     };
