@@ -261,10 +261,10 @@ class RoomManager {
   // ── DOORS ──────────────────────────────────────────────────
   _spawnDoors(doorsData) {
     const doorDefs = {
-      left:   { x: 14,  y: 300, w: 28, h: 68 },
-      right:  { x: 786, y: 300, w: 28, h: 68 },
-      top:    { x: 400, y: 14,  w: 68, h: 28 },
-      bottom: { x: 400, y: 586, w: 68, h: 28 }
+      left:   { x: 50,  y: 300, w: 28, h: 68 },
+      right:  { x: 750, y: 300, w: 28, h: 68 },
+      top:    { x: 400, y: 50,  w: 68, h: 28 },
+      bottom: { x: 400, y: 550, w: 68, h: 28 }
     };
 
     Object.entries(doorsData).forEach(([side, doorData]) => {
@@ -376,7 +376,7 @@ class RoomManager {
       const dx   = door.zone.x - player.sprite.x;
       const dy   = door.zone.y - player.sprite.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 38) onTransition(door.leadsTo, side);
+      if (dist < 80) onTransition(door.leadsTo, side);
     });
   }
 
