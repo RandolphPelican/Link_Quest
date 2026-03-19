@@ -78,7 +78,6 @@ const Cutscene = {
     const el = document.getElementById('cutscene-text');
     el.textContent = '';
     const line = this.lines[this.index];
-    // Typewriter effect
     let i = 0;
     const interval = setInterval(() => {
       el.textContent += line[i++];
@@ -108,7 +107,7 @@ function runLoadingScreen(onDone) {
     'Loading assets...',
     'Spawning goblins...',
     'Charging fireballs...',
-    'Polishing Dad\'s club...',
+    "Polishing Dad's club...",
     'Hiding GossipGPT...',
     'Almost ready...'
   ];
@@ -175,7 +174,7 @@ class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
 
   preload() {
-    // Placeholder — swap in real asset loads here when sprites are ready
+    // Swap in real asset loads here when sprites are ready
     // this.load.image('lincoln', 'assets/sprites/lincoln.png');
     // this.load.image('goblin',  'assets/sprites/enemies/goblin.png');
     // this.load.audio('hit',     'assets/sounds/hit.wav');
@@ -199,23 +198,20 @@ class GameScene extends Phaser.Scene {
   }
 
   async create() {
-    // Load level JSON
     this.levelData = await loadLevel(GameState.currentLevel);
     if (!this.levelData) return;
 
     setLevelDisplay(this.levelData.id, this.levelData.name);
 
-    // ── Background ──────────────────────────────────────────
+    // Background
     const bgColor = parseInt(this.levelData.background.replace('#',''), 16);
     this.add.rectangle(400, 300, 800, 600, bgColor);
-
-    // Draw tile grid
     this.drawGrid();
 
-    // ── Spawn player ────────────────────────────────────────
+    // Spawn player
     this.player = new Player(this, 400, 300, GameState.selectedChar);
 
-    // ── Spawn enemies from JSON ──────────────────────────────
+    // Spawn enemies from JSON
     this.levelData.enemies.forEach(group => {
       for (let i = 0; i < group.count; i++) {
         const offsetX = (i % 3) * 40;
@@ -226,20 +222,20 @@ class GameScene extends Phaser.Scene {
       }
     });
 
-    // ── Spawn items from JSON ────────────────────────────────
+    // Spawn items from JSON
     this.levelData.items.forEach(it => {
       this.items.push(new Item(this, it.x, it.y, it.key));
     });
 
-    // ── Spawn boss if level has one ──────────────────────────
+    // Spawn boss
     if (this.levelData.boss) {
       const b = this.levelData.boss;
       this.boss = new Boss(this, b.x, b.y, b.type);
       this.bossSpawned = true;
-      showBossHUD(b.type.replace('_', ' '));
+      showBossHUD(b.type.replace(/_/g, ' '));
     }
 
-    // ── Draw exit door ───────────────────────────────────────
+    // Exit door
     if (this.levelData.exit) {
       this.exitDoor = this.add.rectangle(
         this.levelData.exit.x,
@@ -247,7 +243,7 @@ class GameScene extends Phaser.Scene {
         28, 28, 0x00e5ff, 0.3
       );
       this.exitDoor.setStrokeStyle(2, 0x00e5ff);
-      this.exitLabel = this.add.text(
+      this.add.text(
         this.levelData.exit.x - 12,
         this.levelData.exit.y + 16,
         'EXIT', { fontSize: '8px', fill: '#00e5ff' }
@@ -255,7 +251,7 @@ class GameScene extends Phaser.Scene {
       this.physics.add.existing(this.exitDoor, true);
     }
 
-    // ── Input ────────────────────────────────────────────────
+    // Input
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd    = this.input.keyboard.addKeys({
       up:     Phaser.Input.Keyboard.KeyCodes.W,
@@ -297,10 +293,9 @@ class GameScene extends Phaser.Scene {
   update() {
     if (GameState.paused || !this.player) return;
 
-    // Update player
     this.player.update(this.cursors, this.wasd);
 
-    // Update enemies — remove dead ones
+    // Update enemies
     this.enemies = this.enemies.filter(e => e.alive);
     this.enemies.forEach(e => e.update(this.player));
 
@@ -316,7 +311,7 @@ class GameScene extends Phaser.Scene {
       this.time.delayedCall(1000, () => this.onBossDefeated());
     }
 
-    // Check item pickups (F key)
+    // Item pickups (F key)
     if (Phaser.Input.Keyboard.JustDown(this.wasd.pickup)) {
       this.items.forEach(item => {
         if (!item.collected) {
@@ -332,7 +327,7 @@ class GameScene extends Phaser.Scene {
     }
 
     // Check exit overlap
-    if (this.exitDoor && !this.levelData.exit.locked) {
+    if (this.exitDoor && this.levelData.exit && !this.levelData.exit.locked) {
       const dx = this.exitDoor.x - this.player.sprite.x;
       const dy = this.exitDoor.y - this.player.sprite.y;
       if (Math.sqrt(dx*dx + dy*dy) < 30) {
@@ -340,24 +335,24 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-    // Sync HUD bars
+    // Sync HUD
     updateHPBar(this.player.hp, this.player.maxHp);
     updateMPBar(this.player.mp, this.player.maxMp);
 
-    // Check player death
+    // Player death
     if (this.player.hp <= 0) {
       this.onPlayerDeath();
     }
 
-    // Draw minimap
+    // Minimap
     this.drawMinimap();
   }
 
   drawMinimap() {
-    const canvas  = document.getElementById('minimap');
-    const ctx     = canvas.getContext('2d');
-    const scaleX  = canvas.width  / 800;
-    const scaleY  = canvas.height / 600;
+    const canvas = document.getElementById('minimap');
+    const ctx    = canvas.getContext('2d');
+    const scaleX = canvas.width  / 800;
+    const scaleY = canvas.height / 600;
 
     ctx.fillStyle = '#050510';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -375,8 +370,8 @@ class GameScene extends Phaser.Scene {
     }
 
     // Player
-    ctx.fillStyle = '#00e5ff';
     if (this.player) {
+      ctx.fillStyle = '#00e5ff';
       ctx.fillRect(
         this.player.sprite.x * scaleX - 2,
         this.player.sprite.y * scaleY - 2, 4, 4
@@ -423,10 +418,10 @@ class GameScene extends Phaser.Scene {
     GameState.currentLevel++;
     showToast(`ENTERING LEVEL ${GameState.currentLevel}...`);
     this.time.delayedCall(800, () => {
-      this.enemies = [];
-      this.items   = [];
-      this.boss    = null;
-      this.bossSpawned  = false;
+      this.enemies    = [];
+      this.items      = [];
+      this.boss       = null;
+      this.bossSpawned = false;
       this.scene.restart();
     });
   }
@@ -462,7 +457,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   window.phaserGame.scene.getScene('GameScene').scene.restart();
 });
 
-// ── PHASER CONFIG ─────────────────────────────────────────────
+// ── PHASER CONFIG & START ─────────────────────────────────────
 function startGame() {
   document.getElementById('game-wrapper').classList.remove('hidden');
 
@@ -482,7 +477,7 @@ function startGame() {
   window.phaserGame = new Phaser.Game(config);
 }
 
-// ── BOOT SEQUENCE ─────────────────────────────────────────────
+// ── BOOT ──────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   runLoadingScreen(() => initCharSelect());
 });
