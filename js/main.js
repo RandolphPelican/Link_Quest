@@ -292,6 +292,8 @@ class GameScene extends Phaser.Scene {
       GameState.lastDoor    = opp[fromSide] || 'right';
       GameState.currentRoom = roomId;
       this.enemies = []; this.items = [];
+      this.boss = null;
+      this.scene.restart();
     });
   }
 
