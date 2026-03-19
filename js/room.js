@@ -224,13 +224,23 @@ class RoomManager {
       stroke: '#000', strokeThickness: 2
     }).setAlpha(0).setDepth(12);
 
+    const alreadyOpened = typeof isChestOpened === 'function' &&
+      isChestOpened(GameState.currentLevel, GameState.currentRoom, this.chests.length);
+
     const chestObj = {
       type: data.type, x: data.x, y: data.y,
       contains: data.contains,
       locked: data.locked || false,
-      opened: false,
+      opened: alreadyOpened,
       body, lid, latch, lockIcon, prompt
     };
+
+    if (alreadyOpened) {
+      lid.y -= 15;
+      lid.setAngle(-50);
+      if (prompt) prompt.setAlpha(0);
+      if (lockIcon) lockIcon.setAlpha(0);
+    }
 
     this.chests.push(chestObj);
     this.roomObjects.push(body, lid, latch, prompt);
