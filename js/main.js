@@ -171,6 +171,9 @@ class GameScene extends Phaser.Scene {
 
     const spawn = getSpawnPosition(GameState.lastDoor);
     this.player = new Player(this, spawn.x, spawn.y, GameState.selectedChar);
+    if (!this.player.sprite.body) {
+      this.physics.add.existing(this.player.sprite);
+    }
     this.roomManager.addColliders(this.player.sprite);
 
     this.enemies = [];
@@ -288,7 +291,7 @@ class GameScene extends Phaser.Scene {
     this.transitioning = true;
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      const opp = { left:'right', right:'left', top:'bottom', bottom:'top' };
+      const opp = { right:'right', left:'left', top:'top', bottom:'bottom' };
       GameState.lastDoor    = opp[fromSide] || 'right';
       GameState.currentRoom = roomId;
       this.enemies = []; this.items = [];
