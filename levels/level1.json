@@ -1,19 +1,60 @@
 {
   "id": 1,
   "name": "The Debug Dungeon",
-  "tilemap": "32x32",
-  "background": "#1a1a2e",
-  "enemies": [
-    { "type": "goblin",    "x": 200, "y": 200, "count": 3 },
-    { "type": "ai_bug",    "x": 500, "y": 400, "count": 2 }
-  ],
-  "boss": { "type": "lazy_coder", "x": 650, "y": 300 },
-  "items": [
-    { "key": "potion_sm", "x": 150, "y": 350 },
-    { "key": "leather",   "x": 300, "y": 150 }
-  ],
-  "puzzles": [
-    { "type": "lever", "id": "gate_a", "x": 100, "y": 100, "unlocks": "exit_a" }
-  ],
-  "exit": { "id": "exit_a", "x": 750, "y": 550, "locked": true }
+  "rooms": [
+    {
+      "id": 1,
+      "name": "The Entrance Hall",
+      "background": "#0d1117",
+      "obstacles": [
+        { "type": "pillar", "x": 280, "y": 210, "w": 40, "h": 40 },
+        { "type": "pillar", "x": 520, "y": 210, "w": 40, "h": 40 },
+        { "type": "pillar", "x": 280, "y": 390, "w": 40, "h": 40 },
+        { "type": "pillar", "x": 520, "y": 390, "w": 40, "h": 40 }
+      ],
+      "decorations": [
+        { "type": "bush",   "x": 90,  "y": 90  },
+        { "type": "bush",   "x": 710, "y": 90  },
+        { "type": "bush",   "x": 90,  "y": 510 },
+        { "type": "bush",   "x": 710, "y": 510 },
+        { "type": "torch",  "x": 40,  "y": 155 },
+        { "type": "torch",  "x": 40,  "y": 445 },
+        { "type": "torch",  "x": 760, "y": 155 },
+        { "type": "torch",  "x": 760, "y": 445 },
+        { "type": "cobweb", "x": 52,  "y": 45  },
+        { "type": "cobweb", "x": 710, "y": 45  },
+        { "type": "bones",  "x": 680, "y": 510 }
+      ],
+      "chests": [
+        {
+          "type": "brown",
+          "x": 175,
+          "y": 300,
+          "locked": false,
+          "contains": "chicken_nuggets"
+        },
+        {
+          "type": "gold",
+          "x": 625,
+          "y": 300,
+          "locked": true,
+          "contains": "small_key"
+        }
+      ],
+      "signs": [
+        {
+          "x": 400,
+          "y": 490,
+          "message": "The dungeon awakens. Find your strength before it finds you."
+        }
+      ],
+      "enemies": [],
+      "doors": {
+        "left":   { "leadsTo": null, "locked": false },
+        "right":  { "leadsTo": 2,   "locked": false },
+        "top":    null,
+        "bottom": null
+      }
+    }
+  ]
 }
