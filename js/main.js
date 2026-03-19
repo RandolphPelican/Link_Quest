@@ -124,10 +124,13 @@ function initCharSelect() {
   });
 }
 
+const LevelCache = {};
 async function loadLevel(num) {
+  if (LevelCache[num]) return LevelCache[num];
   try {
     const res = await fetch('levels/level' + num + '.json');
-    return await res.json();
+    LevelCache[num] = await res.json();
+    return LevelCache[num];
   } catch(e) { console.error('Level load failed:', e); return null; }
 }
 
@@ -156,10 +159,10 @@ class GameScene extends Phaser.Scene {
     this.transitioning = false; this.bossSpawned = false;
   }
 
-  async create() {
+  create() {
     this.transitioning = false;
-    this.levelData = await loadLevel(GameState.currentLevel);
-    if (!this.levelData) { console.error('No level data'); return; }
+    this.levelData = LevelCache[GameState.currentLevel];
+    if (!this.levelData) { console.error('No level data cached'); return; }
 
     this.roomData = this.levelData.rooms.find(r => r.id === GameState.currentRoom);
     if (!this.roomData) { console.error('Room not found:', GameState.currentRoom); return; }
@@ -370,6 +373,9 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 
 function startGame() {
   document.getElementById('game-wrapper').classList.remove('hidden');
+  loadLevel(1).then(() => {
+  loadLevel(2).then(() => {
+  loadLevel(3).then(() => {
   const config = {
     type: Phaser.AUTO, width: 800, height: 600,
     parent: 'game-container', backgroundColor: '#0a0a0f',
@@ -377,6 +383,7 @@ function startGame() {
     scene: [BootScene, GameScene]
   };
   window.phaserGame = new Phaser.Game(config);
+  }); }); }); 
 }
 
 window.addEventListener('load', () => { runLoadingScreen(() => initCharSelect()); });
