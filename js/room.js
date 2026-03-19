@@ -307,8 +307,17 @@ class RoomManager {
   }
 
   _tryOpenChest(player) {
-    this.chests.forEach(chest => {
+    this.chests.forEach((chest, index) => {
       if (chest.opened) return;
+      // Restore opened state from GameState
+      if (typeof isChestOpened === 'function' &&
+          isChestOpened(GameState.currentLevel, GameState.currentRoom, index)) {
+        chest.opened = true;
+        chest.lid.setAngle(-50);
+        chest.lid.y -= 15;
+        if (chest.prompt) chest.prompt.setAlpha(0);
+        return;
+      }
       const dx   = chest.x - player.sprite.x;
       const dy   = chest.y - player.sprite.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -333,8 +342,12 @@ class RoomManager {
     });
   }
 
-  _openChest(chest, player) {
+  _openChest(chest, player, index) {
     chest.opened = true;
+    if (typeof markChestOpened === 'function') {
+      const idx = this.chests.indexOf(chest);
+      markChestOpened(GameState.currentLevel, GameState.currentRoom, idx);
+    }
 
     // Animate lid flipping open
     this.scene.tweens.add({

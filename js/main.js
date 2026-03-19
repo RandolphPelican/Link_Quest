@@ -9,8 +9,34 @@ const GameState = {
   lastDoor:      null,
   score:         0,
   paused:        false,
-  inventory: { keys: 0, armor: 'cloth' }
+  inventory: { keys: 0, armor: 'cloth' },
+  roomState:     {},
+  cutscenesSeen: []
 };
+
+function getRoomState(level, room) {
+  const key = level + '_' + room;
+  if (!GameState.roomState[key]) {
+    GameState.roomState[key] = { openedChests: [], clearedEnemies: false };
+  }
+  return GameState.roomState[key];
+}
+
+function markChestOpened(level, room, index) {
+  getRoomState(level, room).openedChests.push(index);
+}
+
+function isChestOpened(level, room, index) {
+  return getRoomState(level, room).openedChests.includes(index);
+}
+
+function markCutsceneSeen(id) {
+  if (!GameState.cutscenesSeen.includes(id)) GameState.cutscenesSeen.push(id);
+}
+
+function isCutsceneSeen(id) {
+  return GameState.cutscenesSeen.includes(id);
+}
 
 function showToast(msg, duration = 2200) {
   const t = document.getElementById('toast');
@@ -215,8 +241,9 @@ class GameScene extends Phaser.Scene {
       this._lockExitDoors();
     }
 
-    if (GameState.currentLevel === 1 && GameState.currentRoom === 1) {
+    if (GameState.currentLevel === 1 && GameState.currentRoom === 1 && !isCutsceneSeen('intro')) {
       this.time.delayedCall(600, () => {
+        markCutsceneSeen('intro');
         Cutscene.play([
           'Welcome to the Debug Dungeon.',
           'This is your safe room. No enemies here.',
@@ -367,6 +394,7 @@ document.getElementById('retry-btn').addEventListener('click', () => {
   GameState.score = 0; GameState.currentLevel = 1; GameState.currentRoom = 1;
   GameState.lastDoor = null; GameState.paused = false;
   GameState.inventory = { keys: 0, armor: 'cloth' };
+  GameState.roomState = {}; GameState.cutscenesSeen = [];
   updateScore(0);
   window.phaserGame.scene.getScene('GameScene').scene.restart();
 });
