@@ -231,7 +231,6 @@ function checkRoomClear() {
     roomCleared = true;
     roomMgr.openAllDoors();
     showToast('Room cleared! Door open!');
-    console.log('DOORS OPENED');
   }
 }
 
@@ -263,7 +262,6 @@ function gameUpdate(dt) {
   });
   if (anyDied) {
     enemies = enemies.filter(e => e.alive);
-    console.log("enemies remaining:", enemies.length);
     checkRoomClear();
   }
 
