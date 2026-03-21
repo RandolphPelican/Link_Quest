@@ -313,13 +313,12 @@ class RoomManager {
     if (!player) return;
     Object.entries(this.doors).forEach(([side, door]) => {
       if (door.locked) return;
-      const bounds = {
-        right:  player.x > 740,
-        left:   player.x < 60,
-        top:    player.y < 60,
-        bottom: player.y > 540
-      };
-      if (bounds[side]) onTransition(door.leadsTo, side);
+      let triggered = false;
+      if (side === 'right'  && player.x > 740 && player.y > 268 && player.y < 332) triggered = true;
+      if (side === 'left'   && player.x < 60  && player.y > 268 && player.y < 332) triggered = true;
+      if (side === 'top'    && player.y < 60  && player.x > 368 && player.x < 432) triggered = true;
+      if (side === 'bottom' && player.y > 540 && player.x > 368 && player.x < 432) triggered = true;
+      if (triggered) onTransition(door.leadsTo, side);
     });
   }
 

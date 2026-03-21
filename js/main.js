@@ -230,7 +230,8 @@ function checkRoomClear() {
   if (aliveCount === 0 && !bossAlive) {
     roomCleared = true;
     roomMgr.openAllDoors();
-    showToast('Room cleared!');
+    showToast('Room cleared! Door open!');
+    console.log('DOORS OPENED');
   }
 }
 
@@ -262,6 +263,7 @@ function gameUpdate(dt) {
   });
   if (anyDied) {
     enemies = enemies.filter(e => e.alive);
+    console.log("enemies remaining:", enemies.length);
     checkRoomClear();
   }
 
