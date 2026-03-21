@@ -332,7 +332,7 @@ class GameScene extends Phaser.Scene {
     if (!this.roomData) { console.error('Room not found:', GameState.currentRoom); return; }
 
     // Physics bounds — full playable area
-    this.physics.world.setBounds(32, 44, 736, 512);
+    this.physics.world.setBounds(32, 44, 736, 510);
 
     // Load room
     this.roomManager = new RoomManager(this);
@@ -585,10 +585,14 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 function startGame() {
   const config = {
     type:            Phaser.AUTO,
-    width:           window.innerWidth,
-    height:          window.innerHeight,
+    width:           800,
+    height:          600,
     parent:          'game-container',
     backgroundColor: '#0a0a0f',
+    scale: {
+      mode:       Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     physics: {
       default: 'arcade',
       arcade:  { gravity: { y: 0 }, debug: false }
