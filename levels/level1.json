@@ -116,15 +116,7 @@
           "message": "The dungeon awakens. Find your strength before it finds you."
         }
       ],
-      "enemies": [
-        {
-          "type": "goblin",
-          "x": 600,
-          "y": 150,
-          "count": 1,
-          "pattern": "runner"
-        }
-      ],
+      "enemies": [],
       "doors": {
         "left": {
           "leadsTo": null,
