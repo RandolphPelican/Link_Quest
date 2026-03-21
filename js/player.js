@@ -43,7 +43,6 @@ class Player {
     this.sprite = scene.add.rectangle(x, y, 28, 28, colors[characterKey] || 0xffffff);
     scene.physics.add.existing(this.sprite);
     this.sprite.body.setCollideWorldBounds(true);
-    this.sprite.body.setBoundsRectangle(new Phaser.Geom.Rectangle(30, 30, 740, 510));
     this.sprite.body.setSize(24, 24);
 
     // Direction indicator (small triangle facing direction)

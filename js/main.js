@@ -292,7 +292,7 @@ class GameScene extends Phaser.Scene {
     const nowAlive = this.enemies.filter(e => e.alive).length;
     if (nowAlive < wasAlive) {
       this.enemies = this.enemies.filter(e => e.alive);
-      this._checkRoomClear();
+      this.time.delayedCall(100, () => this._checkRoomClear());
     }
 
     if (this.boss && this.boss.alive) {
