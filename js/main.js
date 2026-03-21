@@ -274,6 +274,12 @@ function gameUpdate(dt) {
     boss = null;
   }
 
+  // Update items
+  items.forEach(item => item.update());
+
+  // Update items
+  items.forEach(item => item.update());
+
   // F key interact
   if (Input.pressed('f')) {
     roomMgr.tryInteract(player);
