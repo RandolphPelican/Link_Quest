@@ -1,353 +1,203 @@
 // ============================================================
-// player.js — Player mechanics: movement, combat, spells, armor
+// player.js — Player class, pure engine, no Phaser
 // ============================================================
 
-class Player {
-  constructor(scene, x, y, characterKey) {
-    this.scene        = scene;
-    this.characterKey = characterKey;
-    this.speed        = 180;
-    this.maxHp        = 100;
-    this.hp           = 100;
-    this.maxMp        = 50;
-    this.mp           = 50;
-    this.attackPower  = 20;
-    this.attackRange  = 60;
-    this.armor        = 'leather';
-    this.alive        = true;
-    this.attackCooldown = 0;
-    this.spellCooldown  = 0;
-    this.invincible     = false;
+class Player extends PhysicsObject {
+  constructor(x, y, characterKey) {
+    super(x, y, 28, 28);
+    this.characterKey    = characterKey;
+    this.alive           = true;
+    this.facing          = 'down';
+    this.attackCooldown  = 0;
+    this.spellCooldown   = 0;
+    this.invincible      = false;
     this.invincibleTimer = 0;
-    this.facing       = 'down'; // up | down | left | right
+    this.projectiles     = [];
+    this.damageNumbers   = [];
+    this.flashTimer      = 0;
+    this.flashColor      = null;
 
-    // Character stat overrides
     const stats = {
-      lincoln: { maxHp: 110, attackPower: 22, speed: 180 },
-      dad:     { maxHp: 140, attackPower: 18, speed: 140 },
-      journey: { maxHp:  80, attackPower: 15, speed: 170 },
-      bear:    { maxHp:  90, attackPower: 20, speed: 200 }
+      lincoln: { maxHp: 110, maxMp: 40,  attackPower: 22, speed: 180 },
+      dad:     { maxHp: 140, maxMp: 30,  attackPower: 18, speed: 140 },
+      journey: { maxHp:  80, maxMp: 80,  attackPower: 15, speed: 170 },
+      bear:    { maxHp:  90, maxMp: 60,  attackPower: 20, speed: 200 }
     };
-    if (stats[characterKey]) Object.assign(this, stats[characterKey]);
-    this.hp = this.maxHp;
+    const s = stats[characterKey] || stats.lincoln;
+    this.maxHp       = s.maxHp;
+    this.hp          = s.maxHp;
+    this.maxMp       = s.maxMp;
+    this.mp          = s.maxMp;
+    this.attackPower = s.attackPower;
+    this.speed       = s.speed;
+    this.armor       = 'cloth';
 
-    // Colors per character
     const colors = {
-      lincoln: 0x3498db,
-      dad:     0xe67e22,
-      journey: 0x9b59b6,
-      bear:    0x27ae60
+      lincoln: 0x3498db, dad: 0xe67e22,
+      journey: 0x9b59b6, bear: 0x27ae60
     };
-
-    // Main sprite (rectangle placeholder)
-    this.sprite = scene.add.rectangle(x, y, 28, 28, colors[characterKey] || 0xffffff);
-    scene.physics.add.existing(this.sprite);
-    this.sprite.body.setCollideWorldBounds(true);
-    this.sprite.body.setSize(24, 24);
-
-    // Direction indicator (small triangle facing direction)
-    this.dirDot = scene.add.rectangle(x, y + 16, 8, 4, 0xffffff, 0.7);
-
-    // Name label
-    this.label = scene.add.text(x - 20, y - 26, characterKey, {
-      fontSize: '9px', fill: '#fff',
-      stroke: '#000', strokeThickness: 2
-    }).setDepth(10);
-
-    // Attack hitbox (invisible until swung)
-    this.attackBox = scene.add.rectangle(x, y, 44, 44, 0xf1c40f, 0);
-    scene.physics.add.existing(this.attackBox, true);
-
-    // Spell projectiles list
-    this.projectiles = [];
+    this.color = colors[characterKey] || 0xffffff;
   }
 
-  update(cursors, wasd) {
+  update() {
     if (!this.alive) return;
+    this.vx = 0; this.vy = 0;
 
-    if (!this.sprite || !this.sprite.body) return;
-    const body = this.sprite.body;
-    body.setVelocity(0);
+    if (Input.down('a') || Input.down('arrowleft'))  { this.vx = -this.speed; this.facing = 'left';  }
+    if (Input.down('d') || Input.down('arrowright')) { this.vx =  this.speed; this.facing = 'right'; }
+    if (Input.down('w') || Input.down('arrowup'))    { this.vy = -this.speed; this.facing = 'up';    }
+    if (Input.down('s') || Input.down('arrowdown'))  { this.vy =  this.speed; this.facing = 'down';  }
 
-    // ── Movement ──────────────────────────────────────────────
-    let moving = false;
-    if (cursors.left.isDown  || wasd.left.isDown)  { body.setVelocityX(-this.speed); this.facing = 'left';  moving = true; }
-    if (cursors.right.isDown || wasd.right.isDown) { body.setVelocityX( this.speed); this.facing = 'right'; moving = true; }
-    if (cursors.up.isDown    || wasd.up.isDown)    { body.setVelocityY(-this.speed); this.facing = 'up';    moving = true; }
-    if (cursors.down.isDown  || wasd.down.isDown)  { body.setVelocityY( this.speed); this.facing = 'down';  moving = true; }
+    if (this.vx !== 0 && this.vy !== 0) { this.vx *= 0.707; this.vy *= 0.707; }
 
-    // Normalize diagonal speed
-    if (body.velocity.x !== 0 && body.velocity.y !== 0) {
-      body.velocity.x *= 0.707;
-      body.velocity.y *= 0.707;
-    }
+    super.update();
+    if (roomMgr) roomMgr.resolveCollisions(this);
 
-    // Pulse color when moving
-    if (moving) {
-      this.sprite.fillAlpha = 0.85 + Math.sin(Date.now() * 0.01) * 0.15;
-    } else {
-      this.sprite.fillAlpha = 1;
-    }
+    if (Input.pressed(' ') && this.attackCooldown <= 0) this.attack();
+    if (Input.pressed('e') && this.spellCooldown  <= 0) this.castSpell();
 
-    // Sync all child objects to sprite position
-    this._syncPositions();
-
-    // ── Attack ────────────────────────────────────────────────
-    if (Phaser.Input.Keyboard.JustDown(wasd.attack) && this.attackCooldown <= 0) {
-      this.attack();
-    }
-
-    // ── Spell ─────────────────────────────────────────────────
-    if (Phaser.Input.Keyboard.JustDown(wasd.spell) && this.spellCooldown <= 0) {
-      this.castSpell();
-    }
-
-    // ── Cooldown ticks ────────────────────────────────────────
     if (this.attackCooldown > 0) this.attackCooldown--;
     if (this.spellCooldown  > 0) this.spellCooldown--;
+    if (this.flashTimer     > 0) this.flashTimer--;
+    if (this.invincible) { this.invincibleTimer--; if (this.invincibleTimer <= 0) this.invincible = false; }
 
-    // ── Invincibility frames ──────────────────────────────────
-    if (this.invincible) {
-      this.invincibleTimer--;
-      this.sprite.fillAlpha = this.invincibleTimer % 6 < 3 ? 0.3 : 1;
-      if (this.invincibleTimer <= 0) {
-        this.invincible = false;
-        this.sprite.fillAlpha = 1;
-      }
-    }
-
-    // ── Update projectiles ────────────────────────────────────
-    this.projectiles = this.projectiles.filter(p => p.active);
+    this.projectiles     = this.projectiles.filter(p => p.active);
     this.projectiles.forEach(p => p.update());
-  }
-
-  _syncPositions() {
-    const x = this.sprite.x;
-    const y = this.sprite.y;
-
-    // Direction dot follows facing
-    const offsets = {
-      down:  [0,  16], up:   [0, -16],
-      left:  [-16, 0], right: [16,  0]
-    };
-    const [ox, oy] = offsets[this.facing] || [0, 16];
-    this.dirDot.setPosition(x + ox, y + oy);
-
-    this.label.setPosition(x - 20, y - 28);
-    this.attackBox.setPosition(x + ox * 1.2, y + oy * 1.2);
+    this.damageNumbers   = this.damageNumbers.filter(d => d.life > 0);
+    this.damageNumbers.forEach(d => { d.y -= 0.5; d.life--; });
   }
 
   attack() {
     this.attackCooldown = 28;
-
-    // Flash attack box
-    this.attackBox.fillAlpha = 0.5;
-    this.scene.time.delayedCall(120, () => { this.attackBox.fillAlpha = 0; });
-
-    // Screen shake micro
-    this.scene.cameras.main.shake(60, 0.003);
-
-    // Check all enemies for hit
-    const targets = [
-      ...(this.scene.enemies || []),
-      ...(this.scene.boss && this.scene.boss.alive ? [this.scene.boss] : [])
-    ];
-
-    targets.forEach(target => {
-      if (!target.alive) return;
-      const dx = target.sprite.x - this.attackBox.x;
-      const dy = target.sprite.y - this.attackBox.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < this.attackRange + 10) {
-        target.takeDamage(this.attackPower);
-        this._spawnDamageNumber(target.sprite.x, target.sprite.y, this.attackPower);
+    this.flashTimer     = 4;
+    this.flashColor     = 0xffff00;
+    const offsets = { down:[0,30], up:[0,-30], left:[-30,0], right:[30,0] };
+    const [ox, oy] = offsets[this.facing] || [0, 30];
+    const ax = this.x + ox, ay = this.y + oy;
+    const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
+    targets.forEach(t => {
+      if (!t.alive) return;
+      const dx = t.x - ax, dy = t.y - ay;
+      if (Math.sqrt(dx*dx+dy*dy) < 55) {
+        t.takeDamage(this.attackPower);
+        this._spawnDmg(t.x, t.y - 10, this.attackPower, 0xff4757);
       }
     });
   }
 
   castSpell() {
-    const spellMap = {
-      lincoln: null,
-      dad:     { type: 'aoe',        mp: 15, damage: 20, range: 90,  color: 0xaaff00 },
-      journey: { type: 'projectile', mp: 10, damage: 30, range: 250, color: 0xff6600 },
-      bear:    { type: 'projectile', mp: 10, damage: 18, range: 220, color: 0x00aaff, slow: true }
+    const spells = {
+      dad:     { type:'aoe',        mp:15, damage:20, range:90,  color:0xaaff00 },
+      journey: { type:'projectile', mp:10, damage:30, range:250, color:0xff6600 },
+      bear:    { type:'projectile', mp:10, damage:18, range:220, color:0x00aaff, slow:true }
     };
-
-    const spell = spellMap[this.characterKey];
-    if (!spell) { showToast('Lincoln has no spell!'); return; }
+    const spell = spells[this.characterKey];
+    if (!spell) { showToast('No spell!'); return; }
     if (this.mp < spell.mp) { showToast('Not enough MP!'); return; }
-
     this.mp -= spell.mp;
     this.spellCooldown = 60;
 
     if (spell.type === 'aoe') {
-      // Dad's Fart AoE — hits all nearby enemies
-      this._castAoE(spell);
-    } else if (spell.type === 'projectile') {
-      // Journey fireball / Bear ice arrow
-      this._castProjectile(spell);
+      const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
+      targets.forEach(t => {
+        if (!t.alive) return;
+        const dx = t.x - this.x, dy = t.y - this.y;
+        if (Math.sqrt(dx*dx+dy*dy) < spell.range) {
+          t.takeDamage(spell.damage);
+          this._spawnDmg(t.x, t.y - 10, spell.damage, 0xaaff00);
+        }
+      });
+      showToast('FART AoE!');
+    } else {
+      const dirs = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+      const [vx, vy] = dirs[this.facing] || [0, 1];
+      this.projectiles.push(new Projectile(
+        this.x + vx*20, this.y + vy*20,
+        vx*320, vy*320,
+        spell.damage, spell.color, spell.range, spell.slow || false
+      ));
     }
-  }
-
-  _castAoE(spell) {
-    // Visual ring
-    const ring = this.scene.add.circle(this.sprite.x, this.sprite.y, spell.range, spell.color, 0.25);
-    this.scene.time.delayedCall(400, () => ring.destroy());
-
-    const targets = [
-      ...(this.scene.enemies || []),
-      ...(this.scene.boss && this.scene.boss.alive ? [this.scene.boss] : [])
-    ];
-
-    targets.forEach(target => {
-      if (!target.alive) return;
-      const dx = target.sprite.x - this.sprite.x;
-      const dy = target.sprite.y - this.sprite.y;
-      if (Math.sqrt(dx*dx + dy*dy) < spell.range) {
-        target.takeDamage(spell.damage);
-        this._spawnDamageNumber(target.sprite.x, target.sprite.y, spell.damage, '#aaff00');
-      }
-    });
-
-    showToast('💨 FART AoE!');
-  }
-
-  _castProjectile(spell) {
-    const dirVectors = {
-      up:    [0, -1], down:  [0,  1],
-      left:  [-1, 0], right: [1,  0]
-    };
-    const [vx, vy] = dirVectors[this.facing] || [0, 1];
-
-    const proj = new Projectile(
-      this.scene,
-      this.sprite.x + vx * 20,
-      this.sprite.y + vy * 20,
-      vx * 320, vy * 320,
-      spell.damage, spell.color, spell.range,
-      spell.slow || false
-    );
-    this.projectiles.push(proj);
-  }
-
-  _spawnDamageNumber(x, y, amount, color = '#ff4757') {
-    const txt = this.scene.add.text(x, y - 10, `-${amount}`, {
-      fontSize: '13px', fill: color,
-      stroke: '#000', strokeThickness: 2
-    }).setDepth(20);
-    this.scene.tweens.add({
-      targets: txt,
-      y: y - 40,
-      alpha: 0,
-      duration: 700,
-      onComplete: () => txt.destroy()
-    });
   }
 
   takeDamage(amount) {
     if (this.invincible || !this.alive) return;
-
-    const armorMod = { cloth: 1.0, leather: 0.8, chain: 0.6 };
+    const armorMod = { cloth:1.0, leather:0.8, metal:0.6 };
     const dmg = Math.max(1, Math.floor(amount * (armorMod[this.armor] || 1.0)));
     this.hp = Math.max(0, this.hp - dmg);
-
-    // Flash red
-    this.sprite.fillColor = 0xff0000;
-    this.scene.time.delayedCall(150, () => {
-      const colors = { lincoln:0x3498db, dad:0xe67e22, journey:0x9b59b6, bear:0x27ae60 };
-      this.sprite.fillColor = colors[this.characterKey] || 0xffffff;
-    });
-
-    // Invincibility frames after hit
-    this.invincible = true;
-    this.invincibleTimer = 45;
-
-    this._spawnDamageNumber(this.sprite.x, this.sprite.y, dmg);
-
-    if (this.hp <= 0) this.onDeath();
+    this.invincible = true; this.invincibleTimer = 45;
+    this.flashTimer = 8;    this.flashColor = 0xff0000;
+    this._spawnDmg(this.x, this.y - 15, dmg, 0xff4757);
+    if (this.hp <= 0) this.alive = false;
   }
 
   heal(amount) {
     this.hp = Math.min(this.maxHp, this.hp + amount);
-    // Green float text
-    const txt = this.scene.add.text(this.sprite.x, this.sprite.y - 10, `+${amount}`, {
-      fontSize: '13px', fill: '#2ecc71',
-      stroke: '#000', strokeThickness: 2
-    }).setDepth(20);
-    this.scene.tweens.add({
-      targets: txt, y: this.sprite.y - 40, alpha: 0,
-      duration: 700, onComplete: () => txt.destroy()
-    });
+    this._spawnDmg(this.x, this.y - 15, amount, 0x2ecc71);
   }
 
-  onDeath() {
-    this.alive = false;
-    this.sprite.fillColor = 0x555555;
-    this.sprite.body.setVelocity(0);
-    this.label.setText('💀');
+  _spawnDmg(x, y, amount, color) {
+    this.damageNumbers.push({ x, y, amount, color, life: 45 });
+  }
+
+  render() {
+    if (!this.alive) { drawRect(this.x, this.y, this.w, this.h, 0x555555); return; }
+    if (this.invincible && Math.floor(Date.now()/80) % 2 === 0) return;
+
+    const color = this.flashTimer > 0 ? this.flashColor : this.color;
+    drawRect(this.x, this.y, this.w, this.h, color);
+    drawRectOutline(this.x, this.y, this.w, this.h, 0xffffff, 1);
+
+    const offsets = { down:[0,16], up:[0,-16], left:[-16,0], right:[16,0] };
+    const [ox, oy] = offsets[this.facing] || [0, 16];
+    drawRect(this.x+ox, this.y+oy, 6, 6, 0xffffff, 0.7);
+
+    drawTextOutlined(this.characterKey, this.x, this.y-22, 7, 0xffffff, 0x000000, 'center');
+
+    this.damageNumbers.forEach(d => {
+      ctx.globalAlpha = d.life / 45;
+      drawTextOutlined(
+        (d.color === 0x2ecc71 ? '+' : '-') + d.amount,
+        d.x, d.y, 12, d.color, 0x000000, 'center'
+      );
+      ctx.globalAlpha = 1;
+    });
   }
 }
 
-// ============================================================
-// Projectile — used by Journey & Bear spells
-// ============================================================
+// ── PROJECTILE ────────────────────────────────────────────────
 class Projectile {
-  constructor(scene, x, y, vx, vy, damage, color, maxRange, slow) {
-    this.scene    = scene;
-    this.damage   = damage;
-    this.maxRange = maxRange;
-    this.slow     = slow;
-    this.active   = true;
-    this.startX   = x;
-    this.startY   = y;
-
-    this.sprite = scene.add.circle(x, y, 7, color);
-    scene.physics.add.existing(this.sprite);
-    this.sprite.body.setVelocity(vx, vy);
-    this.sprite.body.setCollideWorldBounds(true);
-    this.sprite.body.onWorldBounds = true;
-    scene.physics.world.on('worldbounds', (body) => {
-      if (body === this.sprite.body) this.destroy();
-    });
+  constructor(x, y, vx, vy, damage, color, maxRange, slow) {
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+    this.damage=damage; this.color=color;
+    this.maxRange=maxRange; this.slow=slow;
+    this.active=true; this.startX=x; this.startY=y;
   }
 
   update() {
     if (!this.active) return;
-
-    // Check range
-    const dx = this.sprite.x - this.startX;
-    const dy = this.sprite.y - this.startY;
-    if (Math.sqrt(dx*dx + dy*dy) > this.maxRange) {
-      this.destroy();
-      return;
-    }
-
-    // Check hits
-    const targets = [
-      ...(this.scene.enemies || []),
-      ...(this.scene.boss && this.scene.boss.alive ? [this.scene.boss] : [])
-    ];
-
-    targets.forEach(target => {
-      if (!target.alive || !this.active) return;
-      const tdx = target.sprite.x - this.sprite.x;
-      const tdy = target.sprite.y - this.sprite.y;
-      if (Math.sqrt(tdx*tdx + tdy*tdy) < 22) {
-        target.takeDamage(this.damage);
-        if (this.slow && target.speed) {
-          target.speed = Math.max(20, target.speed * 0.5);
-          this.scene.time.delayedCall(2000, () => { target.speed *= 2; });
+    this.x += this.vx/60;
+    this.y += this.vy/60;
+    const dx=this.x-this.startX, dy=this.y-this.startY;
+    if (Math.sqrt(dx*dx+dy*dy) > this.maxRange) { this.active=false; return; }
+    if (this.x<30||this.x>770||this.y<30||this.y>570) { this.active=false; return; }
+    const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
+    targets.forEach(t => {
+      if (!t.alive||!this.active) return;
+      const dx=t.x-this.x, dy=t.y-this.y;
+      if (Math.sqrt(dx*dx+dy*dy) < 22) {
+        t.takeDamage(this.damage);
+        if (this.slow && t.speed) {
+          t.speed = Math.max(20, t.speed*0.5);
+          setTimeout(()=>{ if(t.speed) t.speed*=2; }, 2000);
         }
-        this.destroy();
+        this.active=false;
       }
     });
   }
 
-  destroy() {
-    this.active = false;
-    // Small burst effect
-    const burst = this.scene.add.circle(this.sprite.x, this.sprite.y, 14, this.sprite.fillColor, 0.5);
-    this.scene.time.delayedCall(150, () => burst.destroy());
-    this.sprite.destroy();
+  render() {
+    if (!this.active) return;
+    drawCircle(this.x, this.y, 7, this.color, 0.9);
+    drawCircle(this.x, this.y, 12, this.color, 0.2);
   }
 }

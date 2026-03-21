@@ -1,98 +1,72 @@
 // ============================================================
-// enemy.js — Enemy behavior, AI, drops, debuffs
+// enemy.js — Enemy class, pure engine, no Phaser
 // ============================================================
 
-class Enemy {
-  constructor(scene, x, y, type, pattern) {
-    pattern = pattern || 'rusher';
-    this.scene          = scene;
-    this.type           = type;
-    this.alive          = true;
-    this.attackCooldown = 0;
-    this.state          = 'idle';
-    this.stunTimer      = 0;
-    this.dropChance     = 0.35;
-    this.wanderTimer    = 0;
-    this.wanderTarget   = { x, y };
-
+class Enemy extends PhysicsObject {
+  constructor(x, y, type, pattern) {
     const typeStats = {
-      goblin: {
-        maxHp: 40, speed: 45, attackPower: 6,
-        attackRange: 36, aggroRange: 320,
-        color: 0x00ff88, label: 'Goblin', size: 22
-      },
-      goblin_chief: {
-        maxHp: 80, speed: 38, attackPower: 10,
-        attackRange: 40, aggroRange: 350,
-        color: 0xcc2200, label: 'Goblin Chief', size: 30
-      },
-      ai_bug: {
-        maxHp: 30, speed: 55, attackPower: 5,
-        attackRange: 40, aggroRange: 340,
-        color: 0xff4444, label: 'AI Bug', size: 18
-      },
-      chatbot_clone: {
-        maxHp: 80, speed: 35, attackPower: 10,
-        attackRange: 50, aggroRange: 360,
-        color: 0x44aaff, label: 'Chatbot Clone', size: 28
-      }
+      goblin:        { maxHp:40,  speed:45, attackPower:6,  attackRange:36, aggroRange:320, color:0x00ff88, label:'Goblin',       size:22 },
+      goblin_chief:  { maxHp:80,  speed:38, attackPower:10, attackRange:40, aggroRange:350, color:0xcc2200, label:'Goblin Chief', size:30 },
+      ai_bug:        { maxHp:30,  speed:55, attackPower:5,  attackRange:40, aggroRange:340, color:0xff4444, label:'AI Bug',       size:18 },
+      chatbot_clone: { maxHp:80,  speed:35, attackPower:10, attackRange:50, aggroRange:360, color:0x44aaff, label:'Chatbot Clone',size:28 }
     };
+    const s = typeStats[type] || typeStats.goblin;
+    super(x, y, s.size, s.size);
 
-    const s         = typeStats[type] || typeStats.goblin;
-    this.maxHp      = s.maxHp;
-    this.hp         = s.maxHp;
-    this.speed      = s.speed;
-    this.baseSpeed  = s.speed;
+    this.type         = type;
+    this.alive        = true;
+    this.maxHp        = s.maxHp;
+    this.hp           = s.maxHp;
+    this.speed        = s.speed;
+    this.baseSpeed    = s.speed;
     this.attackPower  = s.attackPower;
     this.attackRange  = s.attackRange;
     this.aggroRange   = s.aggroRange;
     this.color        = s.color;
+    this.label        = s.label;
     this.size         = s.size;
-    this.pattern      = pattern;
+    this.pattern      = pattern || 'rusher';
+    this.state        = 'idle';
+    this.attackCooldown = 0;
+    this.stunTimer    = 0;
+    this.wanderTimer  = 0;
+    this.wanderX      = x;
+    this.wanderY      = y;
     this.retreating   = false;
     this.retreatTimer = 0;
-
-    this.sprite = scene.add.rectangle(x, y, s.size, s.size, s.color);
-    scene.physics.add.existing(this.sprite);
-    this.sprite.body.setCollideWorldBounds(true);
-
-    this.hpBarBg = scene.add.rectangle(x, y - s.size/2 - 6, 30, 4, 0x333333);
-    this.hpBar   = scene.add.rectangle(x, y - s.size/2 - 6, 30, 4, s.color);
-    this.label   = scene.add.text(x - 20, y - s.size/2 - 16, s.label, {
-      fontSize: '8px', fill: '#0f0',
-      stroke: '#000', strokeThickness: 2
-    }).setDepth(10);
+    this.flashTimer   = 0;
+    this.damageNumbers = [];
+    this.dropChance   = 0.35;
   }
 
   update(player) {
     if (!this.alive) return;
-    if (!this.sprite || !this.sprite.body) return;
-    if (!player || !player.sprite) return;
+    if (!player || !player.alive) return;
 
-    if (this.state === 'stunned') {
+    if (this.stunTimer > 0) {
       this.stunTimer--;
-      if (this.stunTimer <= 0) this.state = 'idle';
-      this.sprite.body.setVelocity(0, 0);
-      this._syncUI();
+      this.vx = 0; this.vy = 0;
+      super.update();
+      this._updateDmgNums();
       return;
     }
 
-    const dx   = player.sprite.x - this.sprite.x;
-    const dy   = player.sprite.y - this.sprite.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dx   = player.x - this.x;
+    const dy   = player.y - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
 
-    if (player.alive && dist < this.aggroRange) {
+    if (dist < this.aggroRange) {
       this.state = dist < this.attackRange ? 'attack' : 'chase';
     } else {
       this.state = 'idle';
     }
 
-    switch (this.state) {
+    switch(this.state) {
       case 'chase':
         this._moveByPattern(dx, dy, dist, player);
         break;
       case 'attack':
-        this.sprite.body.setVelocity(0, 0);
+        this.vx = 0; this.vy = 0;
         if (this.attackCooldown <= 0) this._attackPlayer(player);
         break;
       case 'idle':
@@ -101,44 +75,32 @@ class Enemy {
     }
 
     if (this.attackCooldown > 0) this.attackCooldown--;
-    this._syncUI();
+    if (this.flashTimer     > 0) this.flashTimer--;
+
+    super.update();
+    if (roomMgr) roomMgr.resolveCollisions(this);
+    this._updateDmgNums();
   }
+
   _moveByPattern(dx, dy, dist, player) {
-    if (!this.sprite || !this.sprite.body) return;
-
+    if (dist === 0) return;
     if (this.pattern === 'rusher') {
-      // Straight charge at player
-      this.sprite.body.setVelocity(
-        (dx / dist) * this.speed,
-        (dy / dist) * this.speed
-      );
-
+      this.vx = (dx/dist) * this.speed;
+      this.vy = (dy/dist) * this.speed;
     } else if (this.pattern === 'runner') {
-      // Run away from player when close, wander otherwise
       if (dist < 180) {
-        this.sprite.body.setVelocity(
-          -(dx / dist) * this.speed * 1.2,
-          -(dy / dist) * this.speed * 1.2
-        );
-      } else {
-        this._wander();
-      }
-
+        this.vx = -(dx/dist) * this.speed * 1.2;
+        this.vy = -(dy/dist) * this.speed * 1.2;
+      } else { this._wander(); }
     } else if (this.pattern === 'stick_and_move') {
-      // Charge in, attack, retreat, repeat
       if (this.retreating) {
         this.retreatTimer--;
-        this.sprite.body.setVelocity(
-          -(dx / dist) * this.speed * 1.1,
-          -(dy / dist) * this.speed * 1.1
-        );
+        this.vx = -(dx/dist) * this.speed * 1.1;
+        this.vy = -(dy/dist) * this.speed * 1.1;
         if (this.retreatTimer <= 0) this.retreating = false;
       } else {
-        this.sprite.body.setVelocity(
-          (dx / dist) * this.speed * 1.2,
-          (dy / dist) * this.speed * 1.2
-        );
-        // Start retreat after attacking
+        this.vx = (dx/dist) * this.speed * 1.2;
+        this.vy = (dy/dist) * this.speed * 1.2;
         if (dist < this.attackRange + 10 && this.attackCooldown <= 0) {
           this.retreating   = true;
           this.retreatTimer = 60;
@@ -148,82 +110,84 @@ class Enemy {
   }
 
   _wander() {
-    if (!this.sprite || !this.sprite.body) return;
     this.wanderTimer--;
     if (this.wanderTimer <= 0) {
-      this.wanderTimer = Phaser.Math.Between(80, 200);
-      this.wanderTarget = {
-        x: Phaser.Math.Clamp(this.sprite.x + Phaser.Math.Between(-70, 70), 50, 750),
-        y: Phaser.Math.Clamp(this.sprite.y + Phaser.Math.Between(-70, 70), 50, 550)
-      };
+      this.wanderTimer = 80 + Math.floor(Math.random()*120);
+      this.wanderX = Math.max(50, Math.min(750, this.x + (Math.random()-0.5)*140));
+      this.wanderY = Math.max(50, Math.min(550, this.y + (Math.random()-0.5)*140));
     }
-    const wx    = this.wanderTarget.x - this.sprite.x;
-    const wy    = this.wanderTarget.y - this.sprite.y;
-    const wdist = Math.sqrt(wx * wx + wy * wy);
-    if (wdist > 5) {
-      this.sprite.body.setVelocity(
-        (wx / wdist) * this.speed * 0.35,
-        (wy / wdist) * this.speed * 0.35
-      );
-    } else {
-      this.sprite.body.setVelocity(0, 0);
-    }
+    const wx = this.wanderX - this.x;
+    const wy = this.wanderY - this.y;
+    const wd = Math.sqrt(wx*wx+wy*wy);
+    if (wd > 5) {
+      this.vx = (wx/wd) * this.speed * 0.35;
+      this.vy = (wy/wd) * this.speed * 0.35;
+    } else { this.vx = 0; this.vy = 0; }
   }
 
   _attackPlayer(player) {
     this.attackCooldown = 100;
     player.takeDamage(this.attackPower);
-    this.sprite.fillColor = 0xffffff;
-    this.scene.time.delayedCall(100, () => {
-      if (this.alive) this.sprite.fillColor = this.color;
-    });
+    this.flashTimer = 4;
   }
 
   takeDamage(amount) {
     if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
-    this.sprite.fillColor = 0xffffff;
-    this.scene.time.delayedCall(100, () => {
-      if (this.alive) this.sprite.fillColor = this.color;
-    });
-    this.state     = 'stunned';
-    this.stunTimer = 10;
+    this.flashTimer = 6;
+    this.stunTimer  = 10;
+    this.state      = 'stunned';
+    this._spawnDmg(this.x, this.y - 14, amount, 0xff4757);
     if (this.hp <= 0) this.onDeath();
   }
 
   onDeath() {
     this.alive = false;
-    if (this.sprite && this.sprite.body) this.sprite.body.setVelocity(0, 0);
-    this.sprite.fillColor = 0x333333;
-    this.label.setText('dead').setStyle({ fill: '#555' });
-    if (this.hpBar) this.hpBar.width = 0;
-    const scores = { goblin: 50, ai_bug: 40, chatbot_clone: 150 };
-    if (typeof updateScore === 'function') updateScore(scores[this.type] || 50);
+    this.vx = 0; this.vy = 0;
+    const scores = { goblin:50, goblin_chief:150, ai_bug:40, chatbot_clone:150 };
+    if (typeof GameState !== 'undefined') GameState.score += (scores[this.type] || 50);
+
     if (this.type === 'goblin_chief') {
-      if (Array.isArray(this.scene.items)) {
-        this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, 'small_key'));
-      }
-    } else if (Math.random() < this.dropChance && Array.isArray(this.scene.items)) {
-      const drops = ['chicken_nuggets', 'chicken_nuggets', 'mac_and_cheese', 'potion_sm'];
-      const key   = drops[Math.floor(Math.random() * drops.length)];
-      this.scene.items.push(new Item(this.scene, this.sprite.x, this.sprite.y, key));
+      if (Array.isArray(items)) items.push(new Item(this.x, this.y, 'small_key'));
+    } else if (Math.random() < this.dropChance) {
+      const drops = ['chicken_nuggets','chicken_nuggets','mac_and_cheese','potion_sm'];
+      const key   = drops[Math.floor(Math.random()*drops.length)];
+      if (Array.isArray(items)) items.push(new Item(this.x, this.y, key));
     }
-    this.scene.tweens.add({
-      targets: [this.sprite, this.label, this.hpBar, this.hpBarBg],
-      alpha: 0, duration: 1000, delay: 500
-    });
   }
 
-  _syncUI() {
-    if (!this.sprite) return;
-    const x    = this.sprite.x;
-    const y    = this.sprite.y;
-    const half = this.size / 2;
-    if (this.hpBarBg) this.hpBarBg.setPosition(x, y - half - 6);
-    if (this.hpBar)   {
-      this.hpBar.setPosition(x, y - half - 6);
-      this.hpBar.width = (this.hp / this.maxHp) * 30;
-    }
-    if (this.label) this.label.setPosition(x - 20, y - half - 16);
+  _spawnDmg(x, y, amount, color) {
+    this.damageNumbers.push({ x, y, amount, color, life:45 });
+  }
+
+  _updateDmgNums() {
+    this.damageNumbers = this.damageNumbers.filter(d => d.life > 0);
+    this.damageNumbers.forEach(d => { d.y -= 0.5; d.life--; });
+  }
+
+  render() {
+    if (!this.alive) return;
+    const color = this.flashTimer > 0 ? 0xffffff : this.color;
+    drawRect(this.x, this.y, this.size, this.size, color);
+    drawRectOutline(this.x, this.y, this.size, this.size, 0x000000, 1);
+
+    // HP bar
+    const barW = 30;
+    drawRect(this.x, this.y - this.size/2 - 6, barW, 4, 0x333333);
+    drawRect(
+      this.x - barW/2 + (barW * this.hp/this.maxHp)/2,
+      this.y - this.size/2 - 6,
+      barW * this.hp/this.maxHp, 4, this.color
+    );
+
+    // Label
+    drawTextOutlined(this.label, this.x, this.y - this.size/2 - 14, 7, 0x00ff88, 0x000000, 'center');
+
+    // Damage numbers
+    this.damageNumbers.forEach(d => {
+      ctx.globalAlpha = d.life/45;
+      drawTextOutlined('-'+d.amount, d.x, d.y, 11, d.color, 0x000000, 'center');
+      ctx.globalAlpha = 1;
+    });
   }
 }
