@@ -1,5 +1,5 @@
 // ============================================================
-// main.js — Core game loop, room system, scene management
+// main.js — Link Quest core, UIScene HUD, clean room system
 // ============================================================
 
 const GameState = {
@@ -9,18 +9,28 @@ const GameState = {
   lastDoor:      null,
   score:         0,
   paused:        false,
-  inventory: { keys: 0, armor: 'cloth' },
-  playerHP: null,
-  playerMP: null,
+  inventory:     { keys: 0, armor: 'cloth' },
+  playerHP:      null,
+  playerMP:      null,
   roomState:     {},
   cutscenesSeen: []
 };
 
+const LevelCache = {};
+
+async function loadLevel(num) {
+  if (LevelCache[num]) return LevelCache[num];
+  try {
+    const res = await fetch('levels/level' + num + '.json');
+    LevelCache[num] = await res.json();
+    return LevelCache[num];
+  } catch(e) { console.error('Level load failed:', e); return null; }
+}
+
 function getRoomState(level, room) {
   const key = level + '_' + room;
-  if (!GameState.roomState[key]) {
-    GameState.roomState[key] = { openedChests: [], clearedEnemies: false };
-  }
+  if (!GameState.roomState[key])
+    GameState.roomState[key] = { openedChests: [], cleared: false };
   return GameState.roomState[key];
 }
 
@@ -40,7 +50,8 @@ function isCutsceneSeen(id) {
   return GameState.cutscenesSeen.includes(id);
 }
 
-function showToast(msg, duration = 2200) {
+function showToast(msg, duration) {
+  duration = duration || 2200;
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
@@ -48,43 +59,17 @@ function showToast(msg, duration = 2200) {
   t._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-function updateHPBar(current, max) {
-  const pct = Math.max(0, (current / max)) * 100;
-  const bar = document.getElementById('hp-bar');
-  bar.style.width = pct + '%';
-  bar.style.background = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--orange)' : 'var(--red)';
-  document.getElementById('hp-text').textContent = Math.ceil(current) + '/' + max;
+function getSpawnPosition(lastDoor) {
+  switch(lastDoor) {
+    case 'right':  return { x: 80,  y: 300 };
+    case 'left':   return { x: 720, y: 300 };
+    case 'top':    return { x: 400, y: 520 };
+    case 'bottom': return { x: 400, y: 80  };
+    default:       return { x: 80,  y: 300 };
+  }
 }
 
-function updateMPBar(current, max) {
-  const pct = Math.max(0, (current / max)) * 100;
-  document.getElementById('mp-bar').style.width = pct + '%';
-  document.getElementById('mp-text').textContent = Math.ceil(current) + '/' + max;
-}
-
-function updateBossBar(current, max) {
-  document.getElementById('boss-hp-bar').style.width = (Math.max(0, current/max)*100) + '%';
-}
-
-function showBossHUD(name) {
-  document.getElementById('boss-name').textContent = name.toUpperCase();
-  document.getElementById('boss-hud').classList.remove('hidden');
-}
-
-function hideBossHUD() {
-  document.getElementById('boss-hud').classList.add('hidden');
-}
-
-function updateScore(val) {
-  GameState.score += val;
-  document.getElementById('hud-score').textContent = 'Score: ' + GameState.score;
-}
-
-function setLevelDisplay(num, name) {
-  document.getElementById('hud-level').textContent = 'LEVEL ' + num;
-  document.getElementById('hud-level-name').textContent = name;
-}
-
+// ── CUTSCENE ─────────────────────────────────────────────────
 const Cutscene = {
   lines: [], index: 0, onDone: null,
   play(lines, onDone) {
@@ -111,13 +96,16 @@ const Cutscene = {
   }
 };
 
-document.getElementById('cutscene-next').addEventListener('click', () => Cutscene.next());
+document.getElementById('cutscene-next')
+  .addEventListener('click', () => Cutscene.next());
 
+// ── LOADING SCREEN ────────────────────────────────────────────
 function runLoadingScreen(onDone) {
   const bar  = document.getElementById('loading-bar');
   const tip  = document.getElementById('loading-tip');
-  const tips = ['Loading assets...','Spawning goblins...','Charging fireballs...',
-    "Polishing Dad's club...",'Hiding GossipGPT...','Almost ready...'];
+  const tips = ['Loading assets...','Spawning goblins...',
+    'Charging fireballs...',"Polishing Dad's club...",
+    'Hiding GossipGPT...','Almost ready...'];
   let pct = 0, tipIdx = 0;
   const iv = setInterval(() => {
     pct += Math.random() * 18 + 5;
@@ -128,6 +116,7 @@ function runLoadingScreen(onDone) {
   }, 300);
 }
 
+// ── CHAR SELECT ───────────────────────────────────────────────
 function initCharSelect() {
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('char-select-screen').classList.remove('hidden');
@@ -146,119 +135,274 @@ function initCharSelect() {
   btn.addEventListener('click', () => {
     if (!GameState.selectedChar) return;
     document.getElementById('char-select-screen').classList.add('hidden');
-    document.getElementById('hud-char-name').textContent =
-      GameState.selectedChar.charAt(0).toUpperCase() + GameState.selectedChar.slice(1);
+    document.getElementById('game-container').classList.remove('hidden');
     startGame();
   });
 }
 
-const LevelCache = {};
-async function loadLevel(num) {
-  if (LevelCache[num]) return LevelCache[num];
-  try {
-    const res = await fetch('levels/level' + num + '.json');
-    LevelCache[num] = await res.json();
-    return LevelCache[num];
-  } catch(e) { console.error('Level load failed:', e); return null; }
-}
+// ── UI SCENE — HUD inside Phaser ──────────────────────────────
+class UIScene extends Phaser.Scene {
+  constructor() { super({ key: 'UIScene' }); }
 
-function getSpawnPosition(lastDoor) {
-  switch(lastDoor) {
-    case 'left':   return { x: 720, y: 300 };
-    case 'right':  return { x: 80,  y: 300 };
-    case 'top':    return { x: 400, y: 540 };
-    case 'bottom': return { x: 400, y: 60  };
-    default:       return { x: 80,  y: 300 };
+  create() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // Background bar top
+    this.add.rectangle(W/2, 22, W, 44, 0x0a0a1a).setDepth(10);
+    this.add.rectangle(W/2, 22, W, 44, 0x1e1e3a, 0).setStrokeStyle(1, 0x1e1e3a).setDepth(10);
+
+    // Background bar bottom
+    this.add.rectangle(W/2, H - 22, W, 44, 0x0a0a1a).setDepth(10);
+    this.add.rectangle(W/2, H - 22, W, 44, 0x1e1e3a, 0).setStrokeStyle(1, 0x1e1e3a).setDepth(10);
+
+    // Char name
+    this.charName = this.add.text(10, 8, '', {
+      fontFamily: 'Press Start 2P', fontSize: '8px', color: '#ffd700'
+    }).setDepth(11);
+
+    // HP label and bar
+    this.add.text(10, 22, 'HP', {
+      fontFamily: 'Press Start 2P', fontSize: '7px', color: '#888'
+    }).setDepth(11);
+    this.hpBarBg = this.add.rectangle(80, 26, 160, 10, 0x1a1a2e).setOrigin(0, 0.5).setDepth(11);
+    this.hpBar   = this.add.rectangle(80, 26, 160, 10, 0x2ecc71).setOrigin(0, 0.5).setDepth(12);
+    this.hpText  = this.add.text(248, 20, '100/100', {
+      fontFamily: 'Press Start 2P', fontSize: '7px', color: '#aaa'
+    }).setDepth(11);
+
+    // MP label and bar
+    this.add.text(10, 36, 'MP', {
+      fontFamily: 'Press Start 2P', fontSize: '7px', color: '#888'
+    }).setDepth(11);
+    this.mpBarBg = this.add.rectangle(80, 38, 160, 10, 0x1a1a2e).setOrigin(0, 0.5).setDepth(11);
+    this.mpBar   = this.add.rectangle(80, 38, 160, 10, 0x9b59b6).setOrigin(0, 0.5).setDepth(12);
+    this.mpText  = this.add.text(248, 32, '50/50', {
+      fontFamily: 'Press Start 2P', fontSize: '7px', color: '#aaa'
+    }).setDepth(11);
+
+    // Level name center top
+    this.levelName = this.add.text(W/2, 22, '', {
+      fontFamily: 'Press Start 2P', fontSize: '8px', color: '#00e5ff'
+    }).setOrigin(0.5).setDepth(11);
+
+    // Score top right
+    this.scoreTxt = this.add.text(W - 10, 22, 'Score: 0', {
+      fontFamily: 'Press Start 2P', fontSize: '8px', color: '#ffd700'
+    }).setOrigin(1, 0.5).setDepth(11);
+
+    // Keys display bottom left
+    this.keysTxt = this.add.text(10, H - 22, '🗝️ x0', {
+      fontFamily: 'Press Start 2P', fontSize: '8px', color: '#ffd700'
+    }).setOrigin(0, 0.5).setDepth(11);
+
+    // Armor display bottom center
+    this.armorTxt = this.add.text(W/2, H - 22, '🧥 Cloth', {
+      fontFamily: 'Press Start 2P', fontSize: '8px', color: '#aaa'
+    }).setOrigin(0.5).setDepth(11);
+
+    // Controls hint bottom right
+    this.add.text(W - 10, H - 22, 'WASD:Move  SPACE:Attack  E:Spell  F:Use', {
+      fontFamily: 'Press Start 2P', fontSize: '6px', color: '#334466'
+    }).setOrigin(1, 0.5).setDepth(11);
+
+    // Boss bar (hidden until boss room)
+    this.bossBarBg  = this.add.rectangle(W/2, H - 60, 500, 14, 0x1a0a0a).setDepth(11);
+    this.bossBar    = this.add.rectangle(W/2 - 250, H - 60, 500, 14, 0xff4757).setOrigin(0, 0.5).setDepth(12);
+    this.bossName   = this.add.text(W/2, H - 75, '', {
+      fontFamily: 'Press Start 2P', fontSize: '9px', color: '#ff4757'
+    }).setOrigin(0.5).setDepth(11);
+    this.bossBarBg.setVisible(false);
+    this.bossBar.setVisible(false);
+    this.bossName.setVisible(false);
+
+    // Minimap bottom right area
+    this.minimapBg = this.add.rectangle(W - 55, H - 55, 90, 90, 0x050510).setDepth(11);
+    this.minimapBg.setStrokeStyle(1, 0x1e1e3a);
+    this.minimapDots = [];
+  }
+
+  updateHUD(player, enemies, boss, roomName, score) {
+    if (!player) return;
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // Char name
+    this.charName.setText(player.characterKey.toUpperCase());
+
+    // HP bar
+    const hpPct = Math.max(0, player.hp / player.maxHp);
+    this.hpBar.width = 160 * hpPct;
+    this.hpBar.fillColor = hpPct > 0.5 ? 0x2ecc71 : hpPct > 0.25 ? 0xf39c12 : 0xe74c3c;
+    this.hpText.setText(Math.ceil(player.hp) + '/' + player.maxHp);
+
+    // MP bar
+    const mpPct = Math.max(0, player.mp / player.maxMp);
+    this.mpBar.width = 160 * mpPct;
+    this.mpText.setText(Math.ceil(player.mp) + '/' + player.maxMp);
+
+    // Level name
+    this.levelName.setText(roomName || '');
+
+    // Score
+    this.scoreTxt.setText('Score: ' + score);
+
+    // Keys and armor
+    this.keysTxt.setText('🗝️ x' + GameState.inventory.keys);
+    this.armorTxt.setText('🛡️ ' + GameState.inventory.armor);
+
+    // Boss bar
+    if (boss && boss.alive) {
+      this.bossBarBg.setVisible(true);
+      this.bossBar.setVisible(true);
+      this.bossName.setVisible(true);
+      this.bossName.setText(boss.label_text || 'BOSS');
+      this.bossBar.width = 500 * Math.max(0, boss.hp / boss.maxHp);
+    } else {
+      this.bossBarBg.setVisible(false);
+      this.bossBar.setVisible(false);
+      this.bossName.setVisible(false);
+    }
+
+    // Minimap
+    this.minimapDots.forEach(d => d.destroy());
+    this.minimapDots = [];
+    const mx = W - 55, my = H - 55, mw = 80, mh = 80;
+    const sx = mw / 800, sy = mh / 600;
+
+    enemies.forEach(e => {
+      if (!e.alive) return;
+      const dot = this.add.rectangle(
+        mx - mw/2 + e.sprite.x * sx,
+        my - mh/2 + e.sprite.y * sy,
+        3, 3, 0x00ff88
+      ).setDepth(13);
+      this.minimapDots.push(dot);
+    });
+
+    if (boss && boss.alive) {
+      const dot = this.add.rectangle(
+        mx - mw/2 + boss.sprite.x * sx,
+        my - mh/2 + boss.sprite.y * sy,
+        5, 5, 0xff4757
+      ).setDepth(13);
+      this.minimapDots.push(dot);
+    }
+
+    const pdot = this.add.rectangle(
+      mx - mw/2 + player.sprite.x * sx,
+      my - mh/2 + player.sprite.y * sy,
+      4, 4, 0x00e5ff
+    ).setDepth(13);
+    this.minimapDots.push(pdot);
   }
 }
 
+// ── BOOT SCENE ────────────────────────────────────────────────
 class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
   preload() {}
   create() { this.scene.start('GameScene'); }
 }
 
+// ── GAME SCENE ────────────────────────────────────────────────
 class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
-    this.player = null; this.enemies = []; this.items = [];
-    this.boss = null; this.roomManager = null;
-    this.levelData = null; this.roomData = null;
-    this.transitioning = false; this.bossSpawned = false;
+    this.player        = null;
+    this.enemies       = [];
+    this.items         = [];
+    this.boss          = null;
+    this.roomManager   = null;
+    this.levelData     = null;
+    this.roomData      = null;
+    this.transitioning = false;
+    this.bossSpawned   = false;
+    this.roomCleared   = false;
   }
 
   create() {
     this.transitioning = false;
+    this.roomCleared   = false;
+
     this.levelData = LevelCache[GameState.currentLevel];
-    if (!this.levelData) { console.error('No level data cached'); return; }
+    if (!this.levelData) { console.error('No level data'); return; }
 
     this.roomData = this.levelData.rooms.find(r => r.id === GameState.currentRoom);
     if (!this.roomData) { console.error('Room not found:', GameState.currentRoom); return; }
 
-    setLevelDisplay(this.levelData.id, this.roomData.name);
+    // Physics bounds — full playable area
+    this.physics.world.setBounds(32, 44, 736, 512);
 
+    // Load room
     this.roomManager = new RoomManager(this);
     this.roomManager.load(this.roomData);
 
-    // Set physics bounds BEFORE spawning player
-    this.physics.world.setBounds(30, 30, 740, 540);
-
+    // Spawn player
     const spawn = getSpawnPosition(GameState.lastDoor);
     this.player = new Player(this, spawn.x, spawn.y, GameState.selectedChar);
-    if (!this.player.sprite.body) {
-      this.physics.add.existing(this.player.sprite);
-    }
-    // Restore HP and MP from GameState
     if (GameState.playerHP !== null) this.player.hp = GameState.playerHP;
     if (GameState.playerMP !== null) this.player.mp = GameState.playerMP;
     this.roomManager.addColliders(this.player.sprite);
 
+    // Spawn enemies
     this.enemies = [];
     (this.roomData.enemies || []).forEach(group => {
       for (let i = 0; i < (group.count || 1); i++) {
         const ox = (i % 3) * 55, oy = Math.floor(i/3) * 55;
         let ex = group.x + ox, ey = group.y + oy;
         const ddx = ex - spawn.x, ddy = ey - spawn.y;
-        const dd = Math.sqrt(ddx*ddx + ddy*ddy);
-        if (dd < 160 && dd > 0) { ex += (ddx/dd)*(160-dd+20); ey += (ddy/dd)*(160-dd+20); }
-        this.enemies.push(new Enemy(this, ex, ey, group.type, group.pattern || 'rusher'));
+        const dd  = Math.sqrt(ddx*ddx + ddy*ddy);
+        if (dd < 160 && dd > 0) {
+          ex += (ddx/dd) * (160 - dd + 20);
+          ey += (ddy/dd) * (160 - dd + 20);
+        }
+        this.enemies.push(
+          new Enemy(this, ex, ey, group.type, group.pattern || 'rusher')
+        );
       }
     });
 
+    // Spawn boss
     this.boss = null; this.bossSpawned = false;
     if (this.roomData.boss) {
       const b = this.roomData.boss;
       this.boss = new Boss(this, b.x, b.y, b.type);
       this.bossSpawned = true;
-      showBossHUD(b.type.replace(/_/g, ' '));
     }
 
+    // Floor items from room data
     this.items = [];
+    (this.roomData.items || []).forEach(it => {
+      this.items.push(new Item(this, it.x, it.y, it.key));
+    });
+
+    // Lock exit doors if room has enemies or boss
+    const hasThreats = (this.roomData.enemies && this.roomData.enemies.length > 0) || this.roomData.boss;
+    if (hasThreats) this._lockExits();
+
+    // Input
     this.cursors = this.input.keyboard.createCursorKeys();
-    this.wasd = this.input.keyboard.addKeys({
-      up: Phaser.Input.Keyboard.KeyCodes.W,
-      down: Phaser.Input.Keyboard.KeyCodes.S,
-      left: Phaser.Input.Keyboard.KeyCodes.A,
-      right: Phaser.Input.Keyboard.KeyCodes.D,
+    this.wasd    = this.input.keyboard.addKeys({
+      up:     Phaser.Input.Keyboard.KeyCodes.W,
+      down:   Phaser.Input.Keyboard.KeyCodes.S,
+      left:   Phaser.Input.Keyboard.KeyCodes.A,
+      right:  Phaser.Input.Keyboard.KeyCodes.D,
       attack: Phaser.Input.Keyboard.KeyCodes.SPACE,
-      spell: Phaser.Input.Keyboard.KeyCodes.E,
+      spell:  Phaser.Input.Keyboard.KeyCodes.E,
       pickup: Phaser.Input.Keyboard.KeyCodes.F
     });
 
-    if (this.roomData.enemies && this.roomData.enemies.length > 0 || this.roomData.boss) {
-      this._lockExitDoors();
-    }
-
+    // Opening cutscene
     if (GameState.currentLevel === 1 && GameState.currentRoom === 1 && !isCutsceneSeen('intro')) {
+      markCutsceneSeen('intro');
       this.time.delayedCall(600, () => {
-        markCutsceneSeen('intro');
         Cutscene.play([
           'Welcome to the Debug Dungeon.',
           'This is your safe room. No enemies here.',
-          'Use WASD to move around and explore.',
-          'Press F near chests, items, or signs.',
+          'WASD to move. F to open chests and read signs.',
           'SPACE attacks. E casts your spell.',
-          'Walk through the glowing door on the right to advance.',
+          'Walk through the glowing door on the right.',
           'Good luck.'
         ]);
       });
@@ -266,68 +410,104 @@ class GameScene extends Phaser.Scene {
 
     showToast('Room ' + this.roomData.id + ': ' + this.roomData.name);
     this.cameras.main.fadeIn(300, 0, 0, 0);
+
+    // Launch UI scene on top
+    if (!this.scene.isActive('UIScene')) {
+      this.scene.launch('UIScene');
+    }
   }
 
-  _lockExitDoors() {
-    ['right','bottom','top'].forEach(side => {
+  _lockExits() {
+    ['right', 'bottom', 'top'].forEach(side => {
       const door = this.roomManager.doorZones[side];
       if (door) door.locked = true;
     });
   }
 
   _checkRoomClear() {
-    const alive = this.enemies.filter(e => e.alive).length;
-    const bossAlive = this.boss && this.boss.alive;
-    if (alive === 0 && !bossAlive) {
-      ['right','bottom','top','left'].forEach(side => this.roomManager.unlockDoor(side));
+    if (this.roomCleared) return;
+    const aliveCount = this.enemies.filter(e => e.alive).length;
+    const bossAlive  = this.boss && this.boss.alive;
+    if (aliveCount === 0 && !bossAlive) {
+      this.roomCleared = true;
+      this._openAllDoors();
     }
+  }
+
+  _openAllDoors() {
+    Object.keys(this.roomManager.doorZones).forEach(side => {
+      const door = this.roomManager.doorZones[side];
+      if (!door) return;
+      door.locked = false;
+      door.doorRect.fillColor = 0x00ddff;
+      door.doorRect.fillAlpha = 0.55;
+      door.doorRect.setStrokeStyle(2, 0x00ffff);
+    });
+    showToast('Room cleared! Doors unlocked.');
   }
 
   update() {
     if (GameState.paused || !this.player || this.transitioning) return;
+
     this.player.update(this.cursors, this.wasd);
 
-    const wasAlive = this.enemies.filter(e => e.alive).length;
-    this.enemies.forEach(e => e.update(this.player));
-    const nowAlive = this.enemies.filter(e => e.alive).length;
-    if (nowAlive < wasAlive) {
+    // Update enemies — check for deaths
+    let anyDied = false;
+    this.enemies.forEach(e => {
+      const wasAlive = e.alive;
+      e.update(this.player);
+      if (wasAlive && !e.alive) anyDied = true;
+    });
+    if (anyDied) {
       this.enemies = this.enemies.filter(e => e.alive);
-      this.time.delayedCall(100, () => this._checkRoomClear());
+      this._checkRoomClear();
     }
 
+    // Boss update
     if (this.boss && this.boss.alive) {
       this.boss.update(this.player);
-      updateBossBar(this.boss.hp, this.boss.maxHp);
     } else if (this.boss && !this.boss.alive && this.bossSpawned) {
       this.bossSpawned = false;
-      hideBossHUD();
-      updateScore(500);
+      GameState.score += 500;
       this._checkRoomClear();
-      this.time.delayedCall(800, () => this._onBossDefeated());
+      this.time.delayedCall(1000, () => this._onBossDefeated());
     }
 
+    // F key — interact and pickup
     if (Phaser.Input.Keyboard.JustDown(this.wasd.pickup)) {
       this.roomManager.tryInteract(this.player);
       this.items.forEach(item => {
         if (item.collected) return;
         const dx = item.sprite.x - this.player.sprite.x;
         const dy = item.sprite.y - this.player.sprite.y;
-        if (Math.sqrt(dx*dx+dy*dy) < 42) { item.collect(this.player); updateScore(20); }
+        if (Math.sqrt(dx*dx + dy*dy) < 48) {
+          item.collect(this.player);
+          GameState.score += 20;
+        }
       });
     }
 
+    // Chest prompts
     this.roomManager.updateChestPrompts(this.player);
-    this.roomManager.checkDoors([this.player], (roomId, side) => this._transitionToRoom(roomId, side));
 
-    updateHPBar(this.player.hp, this.player.maxHp);
-    updateMPBar(this.player.mp, this.player.maxMp);
-    // Save HP and MP every frame
+    // Door transitions
+    this.roomManager.checkDoors([this.player], (roomId, side) => {
+      this._transitionToRoom(roomId, side);
+    });
+
+    // Persist HP and MP
     GameState.playerHP = this.player.hp;
     GameState.playerMP = this.player.mp;
 
+    // Player death
     if (this.player.hp <= 0 && !GameState.paused) this._onPlayerDeath();
 
-    this._drawMinimap();
+    // Update UIScene HUD
+    const ui = this.scene.get('UIScene');
+    if (ui) ui.updateHUD(
+      this.player, this.enemies, this.boss,
+      this.roomData.name, GameState.score
+    );
   }
 
   _transitionToRoom(roomId, fromSide) {
@@ -338,8 +518,7 @@ class GameScene extends Phaser.Scene {
       const opp = { right:'right', left:'left', top:'top', bottom:'bottom' };
       GameState.lastDoor    = opp[fromSide] || 'right';
       GameState.currentRoom = roomId;
-      this.enemies = []; this.items = [];
-      this.boss = null;
+      this.enemies = []; this.items = []; this.boss = null;
       this.scene.restart();
     });
   }
@@ -355,21 +534,20 @@ class GameScene extends Phaser.Scene {
         'You proved AI-assisted coding is a superpower.',
         'Dad was right. Game built. Mission complete.'
       ], () => this._goToNextLevel());
-    } else { this._checkRoomClear(); }
+    }
   }
 
   _goToNextLevel() {
     if (GameState.currentLevel >= 3) { this._endGame(); return; }
     GameState.currentLevel++;
     GameState.currentRoom = 1;
-    GameState.lastDoor = null;
-    showToast('ENTERING LEVEL ' + GameState.currentLevel + '...');
-    this.time.delayedCall(800, () => { this.scene.restart(); });
+    GameState.lastDoor    = null;
+    this.scene.restart();
   }
 
   _onPlayerDeath() {
     GameState.paused = true;
-    showToast('YOU DIED');
+    showToast('YOU DIED 💀');
     this.time.delayedCall(1200, () => {
       document.getElementById('gameover-screen').classList.remove('hidden');
       document.getElementById('gameover-score').textContent = 'Score: ' + GameState.score;
@@ -378,54 +556,55 @@ class GameScene extends Phaser.Scene {
 
   _endGame() {
     GameState.paused = true;
-    Cutscene.play(['LINK QUEST COMPLETE.', 'Final Score: ' + GameState.score,
-      'Built with love, chaos, and AI-assisted coding.', 'GG.']);
-  }
-
-  _drawMinimap() {
-    const canvas = document.getElementById('minimap');
-    const ctx = canvas.getContext('2d');
-    const sx = canvas.width/800, sy = canvas.height/600;
-    ctx.fillStyle = '#050510';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#00ff88';
-    this.enemies.forEach(e => {
-      if (e.alive) ctx.fillRect(e.sprite.x*sx-1, e.sprite.y*sy-1, 3, 3);
-    });
-    if (this.boss && this.boss.alive) {
-      ctx.fillStyle = '#ff4757';
-      ctx.fillRect(this.boss.sprite.x*sx-2, this.boss.sprite.y*sy-2, 5, 5);
-    }
-    if (this.player) {
-      ctx.fillStyle = '#00e5ff';
-      ctx.fillRect(this.player.sprite.x*sx-2, this.player.sprite.y*sy-2, 4, 4);
-    }
+    Cutscene.play([
+      'LINK QUEST COMPLETE.',
+      'Final Score: ' + GameState.score,
+      'Built with love, chaos, and AI-assisted coding.',
+      'GG.'
+    ]);
   }
 }
 
+// ── RETRY ─────────────────────────────────────────────────────
 document.getElementById('retry-btn').addEventListener('click', () => {
   document.getElementById('gameover-screen').classList.add('hidden');
-  GameState.score = 0; GameState.currentLevel = 1; GameState.currentRoom = 1;
-  GameState.lastDoor = null; GameState.paused = false;
-  GameState.inventory = { keys: 0, armor: 'cloth' };
-  GameState.roomState = {}; GameState.cutscenesSeen = [];
-  updateScore(0);
+  GameState.score        = 0;
+  GameState.currentLevel = 1;
+  GameState.currentRoom  = 1;
+  GameState.lastDoor     = null;
+  GameState.paused       = false;
+  GameState.playerHP     = null;
+  GameState.playerMP     = null;
+  GameState.inventory    = { keys: 0, armor: 'cloth' };
+  GameState.roomState    = {};
+  GameState.cutscenesSeen = [];
   window.phaserGame.scene.getScene('GameScene').scene.restart();
 });
 
+// ── START GAME ────────────────────────────────────────────────
 function startGame() {
-  document.getElementById('game-wrapper').classList.remove('hidden');
-  loadLevel(1).then(() => {
-  loadLevel(2).then(() => {
-  loadLevel(3).then(() => {
   const config = {
-    type: Phaser.AUTO, width: 800, height: 600,
-    parent: 'game-container', backgroundColor: '#0a0a0f',
-    physics: { default: 'arcade', arcade: { gravity: { y: 0 }, debug: false } },
-    scene: [BootScene, GameScene]
+    type:            Phaser.AUTO,
+    width:           window.innerWidth,
+    height:          window.innerHeight,
+    parent:          'game-container',
+    backgroundColor: '#0a0a0f',
+    physics: {
+      default: 'arcade',
+      arcade:  { gravity: { y: 0 }, debug: false }
+    },
+    scene: [BootScene, GameScene, UIScene]
   };
   window.phaserGame = new Phaser.Game(config);
-  }); }); }); 
 }
 
-window.addEventListener('load', () => { runLoadingScreen(() => initCharSelect()); });
+// ── BOOT ──────────────────────────────────────────────────────
+function runLoadingScreenAndStart() {
+  runLoadingScreen(() => {
+    // Preload all levels then init char select
+    Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)])
+      .then(() => initCharSelect());
+  });
+}
+
+window.addEventListener('load', runLoadingScreenAndStart);
