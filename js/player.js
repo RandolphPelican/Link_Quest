@@ -492,4 +492,3 @@ class Projectile {
     drawCircle(this.x, this.y, 12, this.color, 0.2);
   }
 }
-#..

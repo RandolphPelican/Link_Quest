@@ -312,4 +312,3 @@ class BossProjectile {
     drawCircle(this.x, this.y, 14, this.color, 0.2);
   }
 }
-#..

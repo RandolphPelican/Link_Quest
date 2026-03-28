@@ -699,4 +699,3 @@ function startGame() {
 window.addEventListener('load', () => {
   runLoadingScreen(() => initCharSelect());
 });
-#..
