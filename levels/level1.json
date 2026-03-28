@@ -38,26 +38,6 @@
       ],
       "decorations": [
         {
-          "type": "bush",
-          "x": 90,
-          "y": 90
-        },
-        {
-          "type": "bush",
-          "x": 710,
-          "y": 90
-        },
-        {
-          "type": "bush",
-          "x": 90,
-          "y": 510
-        },
-        {
-          "type": "bush",
-          "x": 710,
-          "y": 510
-        },
-        {
           "type": "torch",
           "x": 40,
           "y": 155
@@ -76,15 +56,20 @@
           "type": "torch",
           "x": 760,
           "y": 445
+        },
+        {
+          "type": "bush",
+          "x": 90,
+          "y": 90
+        },
+        {
+          "type": "bush",
+          "x": 710,
+          "y": 90
         },
         {
           "type": "cobweb",
           "x": 52,
-          "y": 45
-        },
-        {
-          "type": "cobweb",
-          "x": 710,
           "y": 45
         },
         {
@@ -96,107 +81,61 @@
       "chests": [
         {
           "type": "brown",
-          "x": 175,
+          "x": 400,
           "y": 300,
-          "locked": false,
-          "contains": "chicken_nuggets"
+          "contains": "chicken_nuggets",
+          "locked": false
+        },
+        {
+          "type": "brown",
+          "x": 600,
+          "y": 300,
+          "contains": "mana_vial",
+          "locked": false
         },
         {
           "type": "gold",
-          "x": 625,
-          "y": 300,
-          "locked": true,
-          "contains": "potion_sm"
+          "x": 400,
+          "y": 450,
+          "contains": "msg_lincoln",
+          "locked": false
         }
       ],
       "signs": [
         {
-          "x": 400,
-          "y": 490,
-          "message": "The dungeon awakens. Find your strength before it finds you."
+          "x": 200,
+          "y": 200,
+          "message": "WASD move | SPACE attack | E spell | F interact"
         }
       ],
       "enemies": [],
+      "switches": [],
       "doors": {
-        "left": {
-          "leadsTo": null,
-          "locked": false
-        },
         "right": {
           "leadsTo": 2,
           "locked": false
-        },
-        "top": null,
-        "bottom": null
-      },
-      "items": [
-        {
-          "key": "small_key",
-          "x": 580,
-          "y": 430
         }
-      ]
+      },
+      "items": []
     },
     {
       "id": 2,
-      "name": "The Stone Corridor",
-      "background": "#1a2535",
+      "name": "First Fight",
+      "background": "#182030",
       "obstacles": [
         {
-          "type": "pillar",
-          "x": 200,
-          "y": 160,
-          "w": 36,
-          "h": 36
+          "type": "crate",
+          "x": 300,
+          "y": 200,
+          "w": 40,
+          "h": 40
         },
         {
-          "type": "pillar",
-          "x": 200,
-          "y": 300,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 200,
-          "y": 440,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 600,
-          "y": 160,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 600,
-          "y": 300,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 600,
-          "y": 440,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "wall",
-          "x": 390,
-          "y": 130,
-          "w": 120,
-          "h": 22
-        },
-        {
-          "type": "wall",
-          "x": 390,
-          "y": 470,
-          "w": 120,
-          "h": 22
+          "type": "crate",
+          "x": 500,
+          "y": 400,
+          "w": 40,
+          "h": 40
         }
       ],
       "decorations": [
@@ -207,91 +146,53 @@
         },
         {
           "type": "torch",
+          "x": 760,
+          "y": 200
+        },
+        {
+          "type": "torch",
           "x": 40,
           "y": 400
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 200
-        },
-        {
-          "type": "torch",
-          "x": 760,
           "y": 400
-        },
-        {
-          "type": "torch",
-          "x": 390,
-          "y": 300
-        },
-        {
-          "type": "bones",
-          "x": 120,
-          "y": 520
-        },
-        {
-          "type": "bones",
-          "x": 310,
-          "y": 80
-        },
-        {
-          "type": "cobweb",
-          "x": 680,
-          "y": 530
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 48
         }
       ],
       "chests": [
         {
           "type": "brown",
-          "x": 390,
-          "y": 300,
-          "locked": false,
-          "contains": "mac_and_cheese"
-        },
-        {
-          "type": "gold",
-          "x": 680,
-          "y": 120,
-          "locked": true,
-          "contains": "mana_vial"
+          "x": 650,
+          "y": 150,
+          "contains": "chicken_nuggets",
+          "locked": false
         }
       ],
       "signs": [
         {
-          "x": 390,
-          "y": 490,
-          "message": "Things get darker ahead. Stock up while you can."
-        }
-      ],
-      "items": [
-        {
-          "key": "small_key",
-          "x": 80,
-          "y": 100
+          "x": 100,
+          "y": 450,
+          "message": "Defeat all enemies to open the door!"
         }
       ],
       "enemies": [
         {
           "type": "goblin",
-          "x": 500,
-          "y": 200,
+          "x": 400,
+          "y": 250,
           "count": 1,
           "pattern": "rusher"
         },
         {
           "type": "goblin",
           "x": 500,
-          "y": 400,
+          "y": 350,
           "count": 1,
           "pattern": "rusher"
         }
       ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 1,
@@ -300,157 +201,86 @@
         "right": {
           "leadsTo": 3,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 3,
-      "name": "The Forgotten Chamber",
-      "background": "#162030",
+      "name": "Bug Infestation",
+      "background": "#1a2228",
       "obstacles": [
         {
-          "type": "block",
-          "x": 160,
-          "y": 180,
-          "w": 80,
-          "h": 24
-        },
-        {
-          "type": "block",
-          "x": 160,
-          "y": 420,
-          "w": 80,
-          "h": 24
-        },
-        {
-          "type": "block",
-          "x": 640,
-          "y": 180,
-          "w": 80,
-          "h": 24
-        },
-        {
-          "type": "block",
-          "x": 640,
-          "y": 420,
-          "w": 80,
-          "h": 24
-        },
-        {
           "type": "pillar",
-          "x": 400,
-          "y": 200,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 400,
-          "y": 400,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 260,
+          "x": 250,
           "y": 300,
-          "w": 36,
-          "h": 36
+          "w": 40,
+          "h": 40
         },
         {
           "type": "pillar",
-          "x": 540,
+          "x": 550,
           "y": 300,
-          "w": 36,
-          "h": 36
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "wall",
+          "x": 400,
+          "y": 180,
+          "w": 120,
+          "h": 30
         }
       ],
       "decorations": [
         {
           "type": "torch",
           "x": 40,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 40,
-          "y": 450
-        },
-        {
-          "type": "torch",
-          "x": 760,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 760,
-          "y": 450
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 540
-        },
-        {
-          "type": "bones",
-          "x": 400,
-          "y": 510
-        },
-        {
-          "type": "bones",
-          "x": 150,
           "y": 300
+        },
+        {
+          "type": "torch",
+          "x": 760,
+          "y": 300
+        },
+        {
+          "type": "cobweb",
+          "x": 120,
+          "y": 60
+        },
+        {
+          "type": "cobweb",
+          "x": 680,
+          "y": 60
         }
       ],
       "chests": [
         {
           "type": "brown",
-          "x": 680,
-          "y": 300,
-          "locked": false,
-          "contains": "chicken_nuggets"
-        },
-        {
-          "type": "gold",
-          "x": 120,
-          "y": 300,
-          "locked": true,
-          "contains": "potion_md"
-        }
-      ],
-      "signs": [
-        {
           "x": 400,
-          "y": 100,
-          "message": "A red goblin guards the next room. He carries something important."
+          "y": 450,
+          "contains": "mac_and_cheese",
+          "locked": false
         }
       ],
+      "signs": [],
       "enemies": [
         {
           "type": "goblin",
-          "x": 500,
-          "y": 150,
-          "count": 2
+          "x": 350,
+          "y": 300,
+          "count": 2,
+          "pattern": "rusher"
         },
         {
-          "type": "goblin",
-          "x": 500,
-          "y": 400,
-          "count": 2
+          "type": "ai_bug",
+          "x": 550,
+          "y": 250,
+          "count": 2,
+          "pattern": "rusher"
         }
       ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 2,
@@ -459,62 +289,47 @@
         "right": {
           "leadsTo": 4,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      },
-      "items": [
-        {
-          "key": "small_key",
-          "x": 80,
-          "y": 500
         }
-      ]
+      },
+      "items": []
     },
     {
       "id": 4,
-      "name": "First Blood",
-      "background": "#1e1a12",
+      "name": "The Ambush",
+      "background": "#1a2030",
       "obstacles": [
         {
-          "type": "block",
-          "x": 300,
-          "y": 150,
-          "w": 100,
-          "h": 24
-        },
-        {
-          "type": "block",
-          "x": 500,
-          "y": 450,
-          "w": 100,
-          "h": 24
-        },
-        {
-          "type": "pillar",
-          "x": 180,
-          "y": 300,
-          "w": 40,
-          "h": 40
-        },
-        {
-          "type": "pillar",
-          "x": 620,
-          "y": 300,
-          "w": 40,
-          "h": 40
-        },
-        {
-          "type": "pillar",
-          "x": 400,
+          "type": "crate",
+          "x": 200,
           "y": 200,
           "w": 40,
           "h": 40
         },
         {
+          "type": "crate",
+          "x": 600,
+          "y": 200,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "crate",
+          "x": 200,
+          "y": 400,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "crate",
+          "x": 600,
+          "y": 400,
+          "w": 40,
+          "h": 40
+        },
+        {
           "type": "pillar",
           "x": 400,
-          "y": 400,
+          "y": 300,
           "w": 40,
           "h": 40
         }
@@ -523,93 +338,68 @@
         {
           "type": "torch",
           "x": 40,
-          "y": 180
+          "y": 150
+        },
+        {
+          "type": "torch",
+          "x": 760,
+          "y": 150
         },
         {
           "type": "torch",
           "x": 40,
-          "y": 420
+          "y": 450
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 180
-        },
-        {
-          "type": "torch",
-          "x": 760,
-          "y": 420
+          "y": 450
         },
         {
           "type": "bones",
-          "x": 300,
-          "y": 520
+          "x": 350,
+          "y": 500
         },
         {
           "type": "bones",
-          "x": 500,
-          "y": 80
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 540
+          "x": 450,
+          "y": 100
         }
       ],
       "chests": [
         {
           "type": "gold",
-          "x": 680,
-          "y": 130,
-          "locked": true,
-          "contains": "potion_sm"
+          "x": 400,
+          "y": 150,
+          "contains": "potion_md",
+          "locked": true
         }
       ],
       "signs": [],
       "enemies": [
         {
           "type": "goblin",
-          "x": 180,
-          "y": 150,
-          "count": 1,
+          "x": 300,
+          "y": 200,
+          "count": 2,
           "pattern": "rusher"
         },
         {
           "type": "goblin",
-          "x": 620,
-          "y": 150,
-          "count": 1,
+          "x": 500,
+          "y": 400,
+          "count": 2,
           "pattern": "rusher"
         },
         {
-          "type": "goblin",
-          "x": 180,
-          "y": 450,
-          "count": 1,
-          "pattern": "rusher"
-        },
-        {
-          "type": "goblin",
-          "x": 620,
-          "y": 450,
-          "count": 1,
-          "pattern": "rusher"
-        },
-        {
-          "type": "goblin",
-          "x": 400,
-          "y": 150,
-          "count": 1,
-          "pattern": "rusher"
-        },
-        {
-          "type": "goblin_chief",
-          "x": 620,
+          "type": "ai_bug",
+          "x": 600,
           "y": 300,
-          "count": 1,
-          "pattern": "stick_and_move"
+          "count": 2,
+          "pattern": "rusher"
         }
       ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 3,
@@ -618,15 +408,14 @@
         "right": {
           "leadsTo": 5,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 5,
-      "name": "The Switch Chamber",
-      "background": "#162030",
+      "name": "Goblin Chief's Chamber",
+      "background": "#201a18",
       "obstacles": [
         {
           "type": "pillar",
@@ -655,20 +444,6 @@
           "y": 400,
           "w": 40,
           "h": 40
-        },
-        {
-          "type": "block",
-          "x": 400,
-          "y": 150,
-          "w": 120,
-          "h": 22
-        },
-        {
-          "type": "block",
-          "x": 400,
-          "y": 450,
-          "w": 120,
-          "h": 22
         }
       ],
       "decorations": [
@@ -679,62 +454,70 @@
         },
         {
           "type": "torch",
+          "x": 760,
+          "y": 150
+        },
+        {
+          "type": "torch",
           "x": 40,
           "y": 450
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 760,
           "y": 450
         },
         {
-          "type": "cobweb",
-          "x": 52,
-          "y": 48
+          "type": "torch",
+          "x": 400,
+          "y": 60
         },
         {
           "type": "bones",
-          "x": 700,
-          "y": 520
+          "x": 300,
+          "y": 500
         }
       ],
       "chests": [
         {
           "type": "gold",
-          "x": 400,
+          "x": 650,
           "y": 300,
-          "locked": true,
           "contains": "leather",
-          "unlockedBySwitch": "both"
-        }
-      ],
-      "switches": [
-        {
-          "id": "sw1",
-          "x": 180,
-          "y": 300,
-          "triggersChest": "both"
-        },
-        {
-          "id": "sw2",
-          "x": 620,
-          "y": 300,
-          "triggersChest": "both"
+          "locked": true
         }
       ],
       "signs": [
         {
-          "x": 400,
-          "y": 520,
-          "message": "Two minds open what one cannot. Step on both switches."
+          "x": 100,
+          "y": 500,
+          "message": "The Goblin Chief guards the way forward..."
         }
       ],
-      "enemies": [],
+      "enemies": [
+        {
+          "type": "goblin",
+          "x": 350,
+          "y": 250,
+          "count": 2,
+          "pattern": "rusher"
+        },
+        {
+          "type": "goblin",
+          "x": 450,
+          "y": 400,
+          "count": 2,
+          "pattern": "rusher"
+        },
+        {
+          "type": "goblin_chief",
+          "x": 500,
+          "y": 300,
+          "count": 1,
+          "pattern": "stick_and_move"
+        }
+      ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 4,
@@ -743,28 +526,27 @@
         "right": {
           "leadsTo": 6,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 6,
-      "name": "The Patrol Room",
-      "background": "#1a1a12",
+      "name": "The Switch Chamber",
+      "background": "#182838",
       "obstacles": [
         {
-          "type": "block",
-          "x": 250,
+          "type": "wall",
+          "x": 300,
           "y": 200,
-          "w": 22,
+          "w": 30,
           "h": 120
         },
         {
-          "type": "block",
-          "x": 550,
+          "type": "wall",
+          "x": 500,
           "y": 400,
-          "w": 22,
+          "w": 30,
           "h": 120
         },
         {
@@ -773,81 +555,70 @@
           "y": 300,
           "w": 40,
           "h": 40
-        },
-        {
-          "type": "pillar",
-          "x": 150,
-          "y": 420,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 650,
-          "y": 180,
-          "w": 36,
-          "h": 36
         }
       ],
       "decorations": [
         {
           "type": "torch",
           "x": 40,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 40,
-          "y": 450
+          "y": 300
         },
         {
           "type": "torch",
           "x": 760,
+          "y": 300
+        },
+        {
+          "type": "crystal",
+          "x": 400,
           "y": 150
         },
         {
-          "type": "torch",
-          "x": 760,
+          "type": "crystal",
+          "x": 400,
           "y": 450
-        },
-        {
-          "type": "bones",
-          "x": 200,
-          "y": 520
-        },
-        {
-          "type": "bones",
-          "x": 600,
-          "y": 80
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 540
         }
       ],
       "chests": [
         {
           "type": "brown",
-          "x": 120,
-          "y": 150,
-          "locked": false,
-          "contains": "mac_and_cheese"
-        }
-      ],
-      "signs": [],
-      "enemies": [
-        {
-          "type": "goblin",
-          "x": 400,
-          "y": 180,
-          "count": 1
+          "x": 650,
+          "y": 450,
+          "contains": "mana_vial",
+          "locked": false
         },
         {
-          "type": "goblin",
-          "x": 400,
-          "y": 420,
-          "count": 1
+          "type": "gold",
+          "x": 350,
+          "y": 300,
+          "contains": "msg_journey",
+          "locked": false
+        }
+      ],
+      "signs": [
+        {
+          "x": 100,
+          "y": 150,
+          "message": "Step on ALL switches to open the door!"
+        }
+      ],
+      "enemies": [],
+      "switches": [
+        {
+          "x": 200,
+          "y": 200
+        },
+        {
+          "x": 600,
+          "y": 200
+        },
+        {
+          "x": 200,
+          "y": 450
+        },
+        {
+          "x": 600,
+          "y": 450
         }
       ],
       "doors": {
@@ -858,71 +629,28 @@
         "right": {
           "leadsTo": 7,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 7,
-      "name": "The Ambush Hall",
-      "background": "#1a1208",
+      "name": "The Patrol Room",
+      "background": "#1a2230",
       "obstacles": [
         {
-          "type": "block",
-          "x": 200,
+          "type": "wall",
+          "x": 250,
           "y": 300,
-          "w": 22,
-          "h": 160
+          "w": 30,
+          "h": 200
         },
         {
-          "type": "block",
-          "x": 600,
+          "type": "wall",
+          "x": 550,
           "y": 300,
-          "w": 22,
-          "h": 160
-        },
-        {
-          "type": "block",
-          "x": 400,
-          "y": 180,
-          "w": 160,
-          "h": 22
-        },
-        {
-          "type": "block",
-          "x": 400,
-          "y": 420,
-          "w": 160,
-          "h": 22
-        },
-        {
-          "type": "pillar",
-          "x": 120,
-          "y": 150,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 680,
-          "y": 150,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 120,
-          "y": 450,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 680,
-          "y": 450,
-          "w": 36,
-          "h": 36
+          "w": 30,
+          "h": 200
         }
       ],
       "decorations": [
@@ -933,71 +661,59 @@
         },
         {
           "type": "torch",
+          "x": 760,
+          "y": 200
+        },
+        {
+          "type": "torch",
           "x": 40,
           "y": 400
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 200
-        },
-        {
-          "type": "torch",
-          "x": 760,
           "y": 400
         },
         {
           "type": "cobweb",
-          "x": 52,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 48
-        },
-        {
-          "type": "bones",
-          "x": 400,
-          "y": 540
+          "x": 700,
+          "y": 60
         }
       ],
       "chests": [
         {
-          "type": "gold",
+          "type": "brown",
           "x": 400,
-          "y": 300,
-          "locked": true,
-          "contains": "trader_jos_pizza"
+          "y": 200,
+          "contains": "trader_jos_pizza",
+          "locked": false
         }
       ],
-      "signs": [
-        {
-          "x": 120,
-          "y": 520,
-          "message": "A key lies with the fallen. Search the room carefully."
-        }
-      ],
+      "signs": [],
       "enemies": [
         {
           "type": "goblin",
-          "x": 120,
-          "y": 300,
-          "count": 1
+          "x": 180,
+          "y": 250,
+          "count": 2,
+          "pattern": "rusher"
         },
         {
-          "type": "goblin",
-          "x": 680,
-          "y": 300,
-          "count": 1
-        },
-        {
-          "type": "goblin",
+          "type": "chatbot_clone",
           "x": 400,
-          "y": 300,
-          "count": 1
+          "y": 400,
+          "count": 1,
+          "pattern": "stick_and_move"
+        },
+        {
+          "type": "ai_bug",
+          "x": 600,
+          "y": 200,
+          "count": 2,
+          "pattern": "runner"
         }
       ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 6,
@@ -1006,144 +722,124 @@
         "right": {
           "leadsTo": 8,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 8,
-      "name": "The Key Vault",
-      "background": "#12101a",
+      "name": "The Corridor of Dread",
+      "background": "#1a1a28",
       "obstacles": [
         {
-          "type": "block",
-          "x": 160,
-          "y": 300,
-          "w": 22,
-          "h": 200
-        },
-        {
-          "type": "block",
-          "x": 640,
-          "y": 300,
-          "w": 22,
-          "h": 200
+          "type": "pillar",
+          "x": 250,
+          "y": 180,
+          "w": 40,
+          "h": 40
         },
         {
           "type": "pillar",
+          "x": 550,
+          "y": 180,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "pillar",
+          "x": 250,
+          "y": 420,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "pillar",
+          "x": 550,
+          "y": 420,
+          "w": 40,
+          "h": 40
+        },
+        {
+          "type": "crate",
           "x": 400,
           "y": 150,
           "w": 40,
           "h": 40
         },
         {
-          "type": "pillar",
+          "type": "crate",
           "x": 400,
           "y": 450,
           "w": 40,
           "h": 40
-        },
-        {
-          "type": "pillar",
-          "x": 280,
-          "y": 300,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 520,
-          "y": 300,
-          "w": 36,
-          "h": 36
         }
       ],
       "decorations": [
         {
           "type": "torch",
           "x": 40,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 40,
-          "y": 450
-        },
-        {
-          "type": "torch",
-          "x": 760,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 760,
-          "y": 450
-        },
-        {
-          "type": "torch",
-          "x": 400,
           "y": 300
         },
         {
-          "type": "cobweb",
-          "x": 52,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 540
+          "type": "torch",
+          "x": 760,
+          "y": 300
         },
         {
           "type": "bones",
           "x": 200,
-          "y": 100
+          "y": 500
         },
         {
           "type": "bones",
           "x": 600,
-          "y": 500
+          "y": 100
+        },
+        {
+          "type": "cobweb",
+          "x": 100,
+          "y": 60
+        },
+        {
+          "type": "cobweb",
+          "x": 700,
+          "y": 540
         }
       ],
       "chests": [
         {
-          "type": "silver",
+          "type": "gold",
           "x": 400,
           "y": 300,
-          "locked": true,
-          "contains": "boss_key",
-          "unlockedBySwitch": "all"
+          "contains": "potion_lg",
+          "locked": true
         }
       ],
-      "switches": [
+      "signs": [],
+      "enemies": [
         {
-          "id": "sw1",
-          "x": 200,
-          "y": 150,
-          "triggersChest": "all"
+          "type": "goblin",
+          "x": 300,
+          "y": 300,
+          "count": 3,
+          "pattern": "rusher"
         },
         {
-          "id": "sw2",
-          "x": 600,
-          "y": 150,
-          "triggersChest": "all"
+          "type": "chatbot_clone",
+          "x": 550,
+          "y": 250,
+          "count": 1,
+          "pattern": "stick_and_move"
         },
         {
-          "id": "sw3",
-          "x": 400,
-          "y": 520,
-          "triggersChest": "all"
+          "type": "ai_bug",
+          "x": 500,
+          "y": 400,
+          "count": 3,
+          "pattern": "runner"
         }
       ],
-      "signs": [
-        {
-          "x": 400,
-          "y": 100,
-          "message": "Three must stand as one. The boss key awaits the worthy."
-        }
-      ],
-      "enemies": [],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 7,
@@ -1152,64 +848,28 @@
         "right": {
           "leadsTo": 9,
           "locked": true
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": []
     },
     {
       "id": 9,
       "name": "The Gauntlet",
-      "background": "#1a0f0f",
+      "background": "#1a1420",
       "obstacles": [
         {
-          "type": "block",
+          "type": "wall",
           "x": 300,
-          "y": 150,
-          "w": 22,
-          "h": 140
-        },
-        {
-          "type": "block",
-          "x": 500,
-          "y": 450,
-          "w": 22,
-          "h": 140
-        },
-        {
-          "type": "block",
-          "x": 180,
-          "y": 420,
-          "w": 140,
-          "h": 22
-        },
-        {
-          "type": "block",
-          "x": 620,
-          "y": 180,
-          "w": 140,
-          "h": 22
-        },
-        {
-          "type": "pillar",
-          "x": 400,
           "y": 300,
-          "w": 40,
-          "h": 40
+          "w": 30,
+          "h": 250
         },
         {
-          "type": "pillar",
-          "x": 160,
-          "y": 160,
-          "w": 36,
-          "h": 36
-        },
-        {
-          "type": "pillar",
-          "x": 640,
-          "y": 440,
-          "w": 36,
-          "h": 36
+          "type": "wall",
+          "x": 500,
+          "y": 300,
+          "w": 30,
+          "h": 250
         }
       ],
       "decorations": [
@@ -1220,85 +880,67 @@
         },
         {
           "type": "torch",
+          "x": 760,
+          "y": 150
+        },
+        {
+          "type": "torch",
           "x": 40,
           "y": 450
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 150
-        },
-        {
-          "type": "torch",
-          "x": 760,
           "y": 450
         },
         {
-          "type": "bones",
-          "x": 120,
-          "y": 300
+          "type": "torch",
+          "x": 300,
+          "y": 60
+        },
+        {
+          "type": "torch",
+          "x": 500,
+          "y": 60
         },
         {
           "type": "bones",
-          "x": 680,
-          "y": 300
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 540
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 48
-        }
-      ],
-      "chests": [
-        {
-          "type": "brown",
           "x": 400,
-          "y": 520,
-          "locked": true,
-          "contains": "chicken_nuggets",
-          "unlockedBySwitch": "sw1"
+          "y": 520
         }
       ],
-      "switches": [
+      "chests": [],
+      "signs": [
         {
-          "id": "sw1",
           "x": 400,
-          "y": 420,
-          "triggersChest": "sw1"
+          "y": 100,
+          "message": "The Lazy Coder awaits beyond..."
         }
       ],
-      "signs": [],
       "enemies": [
         {
           "type": "goblin",
-          "x": 150,
-          "y": 150,
-          "count": 2
+          "x": 200,
+          "y": 250,
+          "count": 3,
+          "pattern": "rusher"
         },
         {
-          "type": "goblin",
-          "x": 650,
+          "type": "chatbot_clone",
+          "x": 600,
+          "y": 350,
+          "count": 2,
+          "pattern": "stick_and_move"
+        },
+        {
+          "type": "ai_bug",
+          "x": 400,
           "y": 450,
-          "count": 1
-        },
-        {
-          "type": "chatbot_clone",
-          "x": 620,
-          "y": 160,
-          "count": 1
-        },
-        {
-          "type": "chatbot_clone",
-          "x": 160,
-          "y": 440,
-          "count": 1
+          "count": 3,
+          "pattern": "runner"
         }
       ],
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 8,
@@ -1307,124 +949,120 @@
         "right": {
           "leadsTo": 10,
           "locked": true
+        }
+      },
+      "items": [
+        {
+          "key": "potion_md",
+          "x": 150,
+          "y": 500
         },
-        "top": null,
-        "bottom": null
-      }
+        {
+          "key": "mana_vial",
+          "x": 650,
+          "y": 500
+        }
+      ]
     },
     {
       "id": 10,
       "name": "The Lazy Coder's Lair",
-      "background": "#0f0808",
+      "background": "#201510",
       "obstacles": [
         {
           "type": "pillar",
-          "x": 180,
-          "y": 180,
-          "w": 44,
-          "h": 44
+          "x": 150,
+          "y": 150,
+          "w": 40,
+          "h": 40
         },
         {
           "type": "pillar",
-          "x": 620,
-          "y": 180,
-          "w": 44,
-          "h": 44
+          "x": 650,
+          "y": 150,
+          "w": 40,
+          "h": 40
         },
         {
           "type": "pillar",
-          "x": 180,
-          "y": 420,
-          "w": 44,
-          "h": 44
+          "x": 150,
+          "y": 450,
+          "w": 40,
+          "h": 40
         },
         {
           "type": "pillar",
-          "x": 620,
-          "y": 420,
-          "w": 44,
-          "h": 44
+          "x": 650,
+          "y": 450,
+          "w": 40,
+          "h": 40
         }
       ],
       "decorations": [
         {
           "type": "torch",
           "x": 40,
-          "y": 180
+          "y": 150
+        },
+        {
+          "type": "torch",
+          "x": 760,
+          "y": 150
         },
         {
           "type": "torch",
           "x": 40,
-          "y": 420
+          "y": 450
         },
         {
           "type": "torch",
           "x": 760,
-          "y": 180
+          "y": 450
         },
         {
           "type": "torch",
-          "x": 760,
-          "y": 420
+          "x": 400,
+          "y": 60
         },
         {
-          "type": "bones",
-          "x": 300,
-          "y": 520
+          "type": "terminal",
+          "x": 350,
+          "y": 100
         },
         {
-          "type": "bones",
-          "x": 500,
-          "y": 520
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 48
-        },
-        {
-          "type": "cobweb",
-          "x": 52,
-          "y": 540
-        },
-        {
-          "type": "cobweb",
-          "x": 720,
-          "y": 540
+          "type": "terminal",
+          "x": 450,
+          "y": 100
         }
       ],
       "chests": [],
-      "switches": [],
       "signs": [
         {
-          "x": 400,
-          "y": 520,
-          "message": "The Lazy Coder stirs. He has never finished anything. Finish him."
+          "x": 100,
+          "y": 500,
+          "message": "\"Why write code when you can just... not?\""
         }
       ],
       "enemies": [],
       "boss": {
         "type": "lazy_coder",
-        "x": 500,
-        "y": 250
+        "x": 550,
+        "y": 300
       },
+      "switches": [],
       "doors": {
         "left": {
           "leadsTo": 9,
-          "locked": true
-        },
-        "right": {
-          "leadsTo": null,
           "locked": false
-        },
-        "top": null,
-        "bottom": null
-      }
+        }
+      },
+      "items": [
+        {
+          "key": "potion_lg",
+          "x": 100,
+          "y": 300
+        }
+      ]
     }
   ]
 }

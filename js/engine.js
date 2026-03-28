@@ -227,6 +227,25 @@ const Fade = {
   }
 };
 
+// ── SCREEN SHAKE ─────────────────────────────────────────────
+const ScreenShake = {
+  intensity: 0,
+  duration:  0,
+  offsetX:   0,
+  offsetY:   0,
+  trigger(intensity, duration) {
+    this.intensity = intensity;
+    this.duration  = duration;
+  },
+  update() {
+    if (this.duration <= 0) { this.offsetX = 0; this.offsetY = 0; return; }
+    this.duration--;
+    const factor = this.duration > 0 ? this.intensity * (this.duration / 20) : 0;
+    this.offsetX = (Math.random() - 0.5) * factor * 2;
+    this.offsetY = (Math.random() - 0.5) * factor * 2;
+  }
+};
+
 // ── GAME LOOP ─────────────────────────────────────────────────
 let _gameUpdate  = null;
 let _gameRender  = null;
@@ -248,9 +267,13 @@ function _loop(now) {
 
   if (!_paused && _gameUpdate) _gameUpdate(dt);
   Fade.update();
+  ScreenShake.update();
 
+  ctx.save();
+  ctx.translate(ScreenShake.offsetX, ScreenShake.offsetY);
   clearScreen(0x0a0a0f);
   if (_gameRender) _gameRender();
+  ctx.restore();
   Fade.render();
 
   Input.clearFrame();
@@ -264,19 +287,4 @@ function engineInit() {
   Input.init();
 }
 
-// ── SMOKE TEST ────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  const container = document.getElementById('game-container');
-  if (!container || container.classList.contains('hidden')) return;
-  engineInit();
-  engineStart(
-    () => {},
-    () => {
-      clearScreen(0x182030);
-      drawRect(400, 300, 200, 100, 0x00e5ff, 0.8);
-      drawCircle(400, 300, 20, 0xffd700);
-      drawTextOutlined('ENGINE OK', 400, 200, 16, 0xffd700, 0x000000, 'center');
-      drawRectOutline(400, 300, 200, 100, 0x00ffff, 2);
-    }
-  );
-});
+// Engine ready — game boot happens in main.js

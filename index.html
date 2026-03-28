@@ -1,4 +1,3 @@
-cat > ~/Link_Quest/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,28 +29,84 @@ cat > ~/Link_Quest/index.html << 'EOF'
       <div class="char-card" data-char="lincoln">
         <div class="char-avatar" style="background:#3498db"></div>
         <p class="char-name">Lincoln</p>
-        <p class="char-desc">Sword | Balanced</p>
+        <p class="char-class">Sword | Knight</p>
+        <p class="char-spell">⚔️ Spin Attack</p>
+        <div class="char-stats">
+          <span class="stat-hp">♥110</span>
+          <span class="stat-mp">◆40</span>
+          <span class="stat-spd">⚡Med</span>
+        </div>
       </div>
       <div class="char-card" data-char="journey">
         <div class="char-avatar" style="background:#9b59b6"></div>
         <p class="char-name">Journey</p>
-        <p class="char-desc">Staff | Mage</p>
+        <p class="char-class">Staff | Mage</p>
+        <p class="char-spell">🔥 Fireball</p>
+        <div class="char-stats">
+          <span class="stat-hp">♥80</span>
+          <span class="stat-mp">◆80</span>
+          <span class="stat-spd">⚡Med</span>
+        </div>
       </div>
       <div class="char-card" data-char="bear">
         <div class="char-avatar" style="background:#27ae60"></div>
         <p class="char-name">Bear</p>
-        <p class="char-desc">Bow | Ranged</p>
+        <p class="char-class">Bow | Ranger</p>
+        <p class="char-spell">❄️ Ice Arrow</p>
+        <div class="char-stats">
+          <span class="stat-hp">♥90</span>
+          <span class="stat-mp">◆60</span>
+          <span class="stat-spd">⚡Fast</span>
+        </div>
       </div>
       <div class="char-card" data-char="dad">
         <div class="char-avatar" style="background:#e67e22"></div>
         <p class="char-name">Dad</p>
-        <p class="char-desc">Club | Tank</p>
+        <p class="char-class">Club | Tank</p>
+        <p class="char-spell">💨 Fart AoE</p>
+        <div class="char-stats">
+          <span class="stat-hp">♥140</span>
+          <span class="stat-mp">◆30</span>
+          <span class="stat-spd">⚡Slow</span>
+        </div>
+      </div>
+      <div class="char-card" data-char="noha">
+        <div class="char-avatar" style="background:#e74c3c"></div>
+        <p class="char-name">Noha</p>
+        <p class="char-class">Daggers | Rogue</p>
+        <p class="char-spell">🗡️ Shadow Dash</p>
+        <div class="char-stats">
+          <span class="stat-hp">♥85</span>
+          <span class="stat-mp">◆50</span>
+          <span class="stat-spd">⚡Max</span>
+        </div>
       </div>
     </div>
-    <button id="start-btn" disabled>Select a Character</button>
+
+    <!-- MULTIPLAYER OPTIONS -->
+    <div id="mp-options">
+      <button id="solo-btn" disabled>Solo Adventure</button>
+      <div id="mp-divider">— or play together —</div>
+      <div id="mp-buttons">
+        <button id="host-btn" disabled>Host Game</button>
+        <div id="join-row">
+          <input id="join-code" type="text" maxlength="4" placeholder="CODE" />
+          <button id="join-btn" disabled>Join</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- PHASER CANVAS MOUNTS HERE — full window, no overlap -->
+  <!-- MULTIPLAYER LOBBY -->
+  <div id="mp-lobby" class="hidden">
+    <h2>⚔️ LOBBY</h2>
+    <p>Room Code: <span id="lobby-code" class="lobby-code-display">----</span></p>
+    <p class="lobby-hint">Share this code with your friends!</p>
+    <div id="lobby-players"></div>
+    <button id="ready-btn">Ready Up!</button>
+  </div>
+
+  <!-- GAME CANVAS — full window -->
   <div id="game-container" class="hidden"></div>
 
   <!-- GAME OVER -->
@@ -79,8 +134,8 @@ cat > ~/Link_Quest/index.html << 'EOF'
   <script src="js/enemy.js"></script>
   <script src="js/boss.js"></script>
   <script src="js/room.js"></script>
+  <script src="js/network.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
-EOF
-#..
+

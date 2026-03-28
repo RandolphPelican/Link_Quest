@@ -7,6 +7,7 @@ const ITEMS = {
   sword:            { type:'weapon', name:'Sword',           damage:22, owner:'lincoln', color:0xaaaacc },
   staff:            { type:'weapon', name:'Staff',           damage:18, owner:'journey', color:0x9b59b6 },
   bow:              { type:'weapon', name:'Bow',             damage:20, owner:'bear',    color:0x27ae60 },
+  daggers:          { type:'weapon', name:'Daggers',          damage:24, owner:'noha',    color:0xe74c3c },
   cloth:            { type:'armor',  name:'Cloth Armor',     hpBonus:0,  resist:0.00, color:0xaaaaaa },
   leather:          { type:'armor',  name:'Leather Armor',   hpBonus:20, resist:0.15, color:0xcc8844 },
   metal:            { type:'armor',  name:'Metal Armor',     hpBonus:40, resist:0.30, color:0x8899bb },
@@ -17,8 +18,21 @@ const ITEMS = {
   chicken_nuggets:  { type:'food',   name:'Chicken Nuggets', heal:15,  color:0xffa040, emoji:'🍗' },
   mac_and_cheese:   { type:'food',   name:'Mac and Cheese',  heal:30,  color:0xffcc00, emoji:'🧀' },
   trader_jos_pizza: { type:'food',   name:"Trader Jo's Pizza", heal:60, color:0xff4400, emoji:'🍕' },
+  fruit_snacks:     { type:'food',   name:'Fruit Snacks',    heal:12,  color:0xff6688, emoji:'🍬' },
+  chocolate_milk:   { type:'food',   name:'Chocolate Milk',  heal:25,  color:0x8b5e3c, emoji:'🥛' },
+  dads_pancakes:    { type:'food',   name:"Dad's Pancakes",  heal:50,  color:0xdda040, emoji:'🥞' },
   small_key:        { type:'key',    name:'Small Key',       color:0xffd700, emoji:'🗝️' },
-  boss_key:         { type:'key',    name:'Boss Key',        color:0xff4400, emoji:'🔑' }
+  boss_key:         { type:'key',    name:'Boss Key',        color:0xff4400, emoji:'🔑' },
+  msg_lincoln:      { type:'message', name:'Dad\'s Note',    color:0xffd700, emoji:'💌',
+                      text:'Lincoln — you are brave, kind, and the best son a dad could ask for. I love you.' },
+  msg_journey:      { type:'message', name:'Dad\'s Note',    color:0xffd700, emoji:'💌',
+                      text:'Journey — your light and joy make every day magical. Dad loves you to the moon.' },
+  msg_noha:         { type:'message', name:'Dad\'s Note',    color:0xffd700, emoji:'💌',
+                      text:'Noha — you bring so much energy to this family. Your cousin loves you kid.' },
+  msg_bear:         { type:'message', name:'Dad\'s Note',    color:0xffd700, emoji:'💌',
+                      text:'Bear — you\'re a true friend to Lincoln and part of this family. Game on bro.' },
+  msg_team:         { type:'message', name:'Secret Note',    color:0xffd700, emoji:'💌',
+                      text:'This game was built with AI and love. Never stop building things together.' }
 };
 
 class Item {
@@ -51,11 +65,15 @@ class Item {
 
     // Glow
     const t = Date.now() / 1000;
-    drawCircle(this.x, fy, 14, color, 0.08 + Math.sin(t*3)*0.05);
+    const isMessage = this.data.type === 'message';
+    const glowR = isMessage ? 22 : 14;
+    const glowColor = isMessage ? 0xffd700 : color;
+    drawCircle(this.x, fy, glowR, glowColor, isMessage ? 0.18 + Math.sin(t*2)*0.1 : 0.08 + Math.sin(t*3)*0.05);
 
     // Item square
-    drawRect(this.x, fy, 18, 18, color);
-    drawRectOutline(this.x, fy, 18, 18, 0xffffff, 1);
+    const itemSize = isMessage ? 22 : 18;
+    drawRect(this.x, fy, itemSize, itemSize, color);
+    drawRectOutline(this.x, fy, itemSize, itemSize, isMessage ? 0xffd700 : 0xffffff, isMessage ? 2 : 1);
 
     // Emoji for food and keys
     if (this.data.emoji) {
@@ -99,6 +117,7 @@ class Item {
           p.hp      = Math.min(p.hp + this.data.hpBonus, p.maxHp);
           GameState.inventory.armor = this.key;
           showToast('🛡️ ' + this.data.name + ' equipped! +' + this.data.hpBonus + ' HP');
+          if (typeof Network !== 'undefined' && Network.enabled) Network.sendItemPickup(this.key, 'armor');
         }
         break;
       case 'weapon':
@@ -110,6 +129,10 @@ class Item {
       case 'key':
         GameState.inventory.keys++;
         showToast('🗝️ Got a ' + this.data.name + '! Keys: ' + GameState.inventory.keys);
+        if (typeof Network !== 'undefined' && Network.enabled) Network.sendItemPickup(this.key, 'key');
+        break;
+      case 'message':
+        showToast(this.data.emoji + ' ' + this.data.text, 6000);
         break;
     }
   }
