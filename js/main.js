@@ -108,9 +108,9 @@ const Cutscene = {
 document.getElementById('cutscene-next')
   .addEventListener('click', () => Cutscene.next());
 
-// Also allow spacebar to advance cutscenes
+// Also allow spacebar/K/Enter to advance cutscenes
 window.addEventListener('keydown', e => {
-  if (e.key === ' ' && !document.getElementById('cutscene-overlay').classList.contains('hidden')) {
+  if (['k',' ','enter'].includes(e.key.toLowerCase()) && !document.getElementById('cutscene-overlay').classList.contains('hidden')) {
     e.preventDefault();
     Cutscene.next();
   }
@@ -313,8 +313,8 @@ function loadRoom() {
       Cutscene.play([
         'Welcome to the Debug Dungeon, hero.',
         'The world has been overrun by rogue code.',
-        'WASD to move. SPACE to attack. E to cast your spell.',
-        'F to open chests and read signs.',
+        'WASD to move. K to attack. P to cast your spell.',
+        'O to open chests and read signs.',
         'Walk through the glowing door on the right to begin.',
         'Good luck. You\'re gonna need it.'
       ]);
@@ -468,9 +468,9 @@ function playEnding() {
 // ── GAME UPDATE ───────────────────────────────────────────────
 function gameUpdate(dt) {
   // Pause toggle
-  if (Input.pressed('p')) {
+  if (Input.pressed('escape')) {
     GameState.paused = !GameState.paused;
-    showToast(GameState.paused ? 'PAUSED — Press P to resume' : 'RESUMED');
+    showToast(GameState.paused ? 'PAUSED — Press ESC to resume' : 'RESUMED');
   }
   if (GameState.paused || !player || transitioning) return;
 
@@ -501,8 +501,8 @@ function gameUpdate(dt) {
   // Update items
   items.forEach(item => item.update());
 
-  // F key interact
-  if (Input.pressed('f')) {
+  // O key interact
+  if (Input.pressed('o')) {
     roomMgr.tryInteract(player);
     items.forEach(item => {
       if (item.collected) return;
@@ -553,8 +553,8 @@ function gameRender() {
   if (GameState.paused) {
     drawRect(400, 300, 800, 600, 0x000000, 0.5);
     drawTextOutlined('⏸ PAUSED', 400, 260, 20, 0xffd700, 0x000000, 'center');
-    drawTextOutlined('Press P to resume', 400, 310, 10, 0x00e5ff, 0x000000, 'center');
-    drawTextOutlined('WASD:Move  SPACE:Attack  E:Spell  F:Interact', 400, 350, 7, 0x666688, 0x000000, 'center');
+    drawTextOutlined('Press ESC to resume', 400, 310, 10, 0x00e5ff, 0x000000, 'center');
+    drawTextOutlined('WASD:Move  K:Attack  P:Spell  O:Interact', 400, 350, 7, 0x666688, 0x000000, 'center');
   }
 }
 
@@ -608,7 +608,7 @@ function renderHUD() {
   drawTextOutlined('🛡️ ' + GameState.inventory.armor, 400, 578, 8, 0xaaaaaa, 0x000000, 'center');
 
   // Controls bottom right
-  drawTextOutlined('WASD  SPACE:Atk  E:Spell  F:Use', 790, 578, 6, 0x334466, 0x000000, 'right');
+  drawTextOutlined('WASD  K:Atk  P:Spell  O:Use', 790, 578, 6, 0x334466, 0x000000, 'right');
 
   // Boss bar
   if (boss && boss.alive) {

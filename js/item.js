@@ -91,7 +91,7 @@ class Item {
       const dx = this.x - player.x;
       const dy = this.y - player.y;
       if (Math.sqrt(dx*dx+dy*dy) < 48) {
-        drawTextOutlined('[F]', this.x, fy - 20, 9, 0xffff00, 0x000000, 'center');
+        drawTextOutlined('[O]', this.x, fy - 20, 9, 0xffff00, 0x000000, 'center');
       }
     }
   }

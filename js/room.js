@@ -340,7 +340,7 @@ class RoomManager {
         const dx = chest.x - player.x;
         const dy = chest.y - player.y;
         if (!chest.opened && Math.sqrt(dx*dx+dy*dy) < 48) {
-          drawTextOutlined('[F]', chest.x, chest.y - 38, 9, 0xffff00, 0x000000, 'center');
+          drawTextOutlined('[O]', chest.x, chest.y - 38, 9, 0xffff00, 0x000000, 'center');
         }
       }
     });
@@ -357,7 +357,7 @@ class RoomManager {
         const dx = sign.x - player.x;
         const dy = sign.y - player.y;
         if (Math.sqrt(dx*dx+dy*dy) < 48) {
-          drawTextOutlined('[F]', sign.x, sign.y - 32, 9, 0xffff00, 0x000000, 'center');
+          drawTextOutlined('[O]', sign.x, sign.y - 32, 9, 0xffff00, 0x000000, 'center');
         }
       }
     });

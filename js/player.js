@@ -222,8 +222,8 @@ class Player extends PhysicsObject {
     super.update();
     if (roomMgr) roomMgr.resolveCollisions(this);
 
-    if (Input.pressed(' ') && this.attackCooldown <= 0) this.attack();
-    if (Input.pressed('e') && this.spellCooldown  <= 0) this.castSpell();
+    if (Input.pressed('k') && this.attackCooldown <= 0) this.attack();
+    if (Input.pressed('p') && this.spellCooldown  <= 0) this.castSpell();
 
     if (this.attackCooldown > 0) this.attackCooldown--;
     if (this.spellCooldown  > 0) this.spellCooldown--;
