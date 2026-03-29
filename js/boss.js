@@ -222,7 +222,7 @@ class Boss extends PhysicsObject {
     // Try animated sprite, fall back to canvas
     this._bossAnimFrame = (this._bossAnimFrame || 0) + 1;
     const isHit = this.flashTimer > 0;
-    const bossScale = this.type === 'gossip_gpt' ? 0.6 : 0.5;
+    const bossScale = this.type === 'gossip_gpt' ? 1.8 : 1.4;
     const spriteDrawn = Sprites.loaded &&
       Sprites.drawBoss(this.type, this.x + shakeX, this.y + shakeY, this._bossAnimFrame, bossScale, isHit, this.phase);
 

@@ -97,18 +97,26 @@ const Sprites = {
     const def = this.HEROES[charKey];
     if (!def || !this.sheets.rogues) return false;
 
-    const s = scale || 1.2;  // slightly larger than source
+    const s = scale || 3.0;
     const drawW = 32 * s;
     const drawH = 32 * s;
 
-    // Bob animation when moving
-    const bob = animFrame ? Math.sin(animFrame * 0.15) * 2 : 0;
+    // Walk bobbing
+    const bob = animFrame ? Math.sin(animFrame * 0.2) * 3 : 0;
 
-    // Attack flash — scale pulse
-    const atkScale = isAttacking ? 1.15 : 1.0;
+    // Attack lunge — push sprite toward facing direction
+    let lungeX = 0, lungeY = 0;
+    const atkScale = isAttacking ? 1.1 : 1.0;
+    if (isAttacking) {
+      const lungeAmt = 8;
+      if (facing === 'right') lungeX = lungeAmt;
+      else if (facing === 'left') lungeX = -lungeAmt;
+      else if (facing === 'down') lungeY = lungeAmt;
+      else if (facing === 'up') lungeY = -lungeAmt;
+    }
 
     ctx.save();
-    ctx.translate(x, y + bob);
+    ctx.translate(x + lungeX, y + bob + lungeY);
 
     // Flip horizontally for left-facing
     if (facing === 'left') {
@@ -117,15 +125,15 @@ const Sprites = {
       ctx.scale(atkScale, atkScale);
     }
 
-    // Attack tint
-    if (isAttacking) {
-      ctx.globalAlpha = 0.85;
-    }
+    // Slight breathing idle animation
+    const breath = 1.0 + Math.sin((animFrame || Date.now()/100) * 0.08) * 0.02;
+    ctx.scale(breath, breath);
 
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       this.sheets.rogues,
-      def.col * 32, def.row * 32, 32, 32,    // source
-      -drawW/2, -drawH/2, drawW, drawH        // dest (centered)
+      def.col * 32, def.row * 32, 32, 32,
+      -drawW/2, -drawH/2, drawW, drawH
     );
 
     ctx.restore();
@@ -137,37 +145,31 @@ const Sprites = {
     const def = this.ENEMIES[enemyType];
     if (!def || !this.sheets.monsters) return false;
 
-    const s = scale || 1.0;
+    const s = scale || 2.5;
     const drawW = 32 * s;
     const drawH = 32 * s;
 
-    const bob = animFrame ? Math.sin(animFrame * 0.12) * 1.5 : 0;
+    const bob = animFrame ? Math.sin(animFrame * 0.05) * 2 : 0;
+    const breath = 1.0 + Math.sin((animFrame || 0) * 0.06) * 0.03;
 
     ctx.save();
     ctx.translate(x, y + bob);
+    ctx.scale(breath, breath);
 
-    // Flip for direction
     if (facing === 'left') {
       ctx.scale(-1, 1);
     }
 
-    // Hit flash
     if (isHit) {
-      ctx.globalAlpha = 0.6;
+      ctx.globalAlpha = 0.5;
     }
 
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       this.sheets.monsters,
       def.col * 32, def.row * 32, 32, 32,
       -drawW/2, -drawH/2, drawW, drawH
     );
-
-    // White overlay for hit flash
-    if (isHit) {
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
-    }
 
     ctx.restore();
     return true;
@@ -178,39 +180,31 @@ const Sprites = {
     const def = this.BOSSES[bossType];
     if (!def) return false;
 
-    // Pick animation sheet based on state
     let sheetKey = def.sheet;
     const sheet = this.sheets[sheetKey];
     if (!sheet) return false;
 
     const frameIdx = Math.floor((animFrame || 0) / 10) % def.frames;
-    const s = scale || 0.5;  // 100x100 -> ~50px
+    const s = scale || 1.5;
     const drawW = def.frameW * s;
     const drawH = def.frameH * s;
 
+    const breath = 1.0 + Math.sin((animFrame || 0) * 0.04) * 0.03;
+
     ctx.save();
     ctx.translate(x, y);
+    ctx.scale(breath, breath);
 
     if (isHit) {
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 0.6;
     }
 
-    // Phase 2 red tint effect
-    if (phase === 2) {
-      ctx.filter = 'hue-rotate(320deg) saturate(1.5)';
-    }
-
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       sheet,
       frameIdx * def.frameW, 0, def.frameW, def.frameH,
       -drawW/2, -drawH/2, drawW, drawH
     );
-
-    if (isHit) {
-      ctx.globalCompositeOperation = 'source-atop';
-      ctx.fillStyle = 'rgba(255,100,100,0.4)';
-      ctx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
-    }
 
     ctx.restore();
     return true;

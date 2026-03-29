@@ -240,17 +240,18 @@ class Enemy extends PhysicsObject {
       }
     }
 
-    // HP bar
-    const barW = 30;
-    drawRect(this.x, this.y - this.size/2 - 6, barW, 4, 0x333333);
+    // HP bar — positioned above bigger sprite
+    const barW = 40;
+    const spriteHalf = 40;  // half of 2.5x scaled 32px sprite
+    drawRect(this.x, this.y - spriteHalf - 6, barW, 5, 0x333333);
     drawRect(
       this.x - barW/2 + (barW * this.hp/this.maxHp)/2,
-      this.y - this.size/2 - 6,
-      barW * this.hp/this.maxHp, 4, this.color
+      this.y - spriteHalf - 6,
+      barW * this.hp/this.maxHp, 5, this.color
     );
 
     // Label
-    drawTextOutlined(this.label, this.x, this.y - this.size/2 - 14, 6, this.color, 0x000000, 'center');
+    drawTextOutlined(this.label, this.x, this.y - spriteHalf - 16, 6, this.color, 0x000000, 'center');
 
     // Damage numbers
     this.damageNumbers.forEach(d => {

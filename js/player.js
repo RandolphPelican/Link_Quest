@@ -392,7 +392,7 @@ class Player extends PhysicsObject {
     this.dashTrail.forEach(t => {
       ctx.globalAlpha = (t.life / 24) * 0.35;
       if (Sprites.loaded) {
-        Sprites.drawHero(this.characterKey, t.x, t.y, this.facing, this.animFrame, 1.2, false);
+        Sprites.drawHero(this.characterKey, t.x, t.y, this.facing, this.animFrame, 3.0, false);
       } else {
         drawCharSprite(t.x, t.y, this.characterKey, this.facing, this.animFrame, false, this.w, this.h);
       }
@@ -424,7 +424,7 @@ class Player extends PhysicsObject {
     }
 
     // Draw character — try real sprites first, fall back to canvas
-    const isAtk = this.flashTimer > 0 && this.flashColor === 0xffff00;
+    const isAtk = this.attackCooldown > 20;
     const isHurt = this.flashTimer > 0 && this.flashColor === 0xff0000;
 
     if (isHurt) {
@@ -432,7 +432,7 @@ class Player extends PhysicsObject {
     }
 
     const spriteDrawn = Sprites.loaded &&
-      Sprites.drawHero(this.characterKey, this.x, this.y, this.facing, this.animFrame, 1.2, isAtk);
+      Sprites.drawHero(this.characterKey, this.x, this.y, this.facing, this.animFrame, 3.0, isAtk);
 
     if (!spriteDrawn) {
       drawCharSprite(this.x, this.y, this.characterKey, this.facing, this.animFrame, isAtk, this.w, this.h);
@@ -440,13 +440,43 @@ class Player extends PhysicsObject {
 
     if (isHurt) {
       ctx.globalAlpha = 0.3;
-      drawRect(this.x, this.y, this.w + 4, this.h + 4, 0xff0000);
+      drawRect(this.x, this.y, 40, 40, 0xff0000);
       ctx.globalAlpha = 1;
     }
 
-    // Name tag
+    // Attack slash arc — visible swing when K is pressed
+    if (this.attackCooldown > 18) {
+      const progress = (28 - this.attackCooldown) / 10;
+      const slashAlpha = 1.0 - progress;
+      const slashDist = 30 + progress * 15;
+      const offsets = { down:[0,1], up:[0,-1], left:[-1,0], right:[1,0] };
+      const [sx, sy] = offsets[this.facing] || [0,1];
+      const slashX = this.x + sx * slashDist;
+      const slashY = this.y + sy * slashDist;
+
+      ctx.save();
+      ctx.globalAlpha = slashAlpha * 0.7;
+      ctx.translate(slashX, slashY);
+      // Rotate slash based on facing
+      const angles = { down: 0, right: -Math.PI/2, up: Math.PI, left: Math.PI/2 };
+      ctx.rotate(angles[this.facing] || 0);
+      // Draw arc slash
+      ctx.strokeStyle = hexToCSS(0xffffff);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20 + progress * 10, -Math.PI * 0.6, Math.PI * 0.6);
+      ctx.stroke();
+      ctx.strokeStyle = hexToCSS(0xffdd44);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 14 + progress * 8, -Math.PI * 0.4, Math.PI * 0.4);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Name tag — positioned above the bigger sprite
     const def = CHAR_DEFS[this.characterKey] || CHAR_DEFS.lincoln;
-    drawTextOutlined(def.label, this.x, this.y - 26, 7, 0xffffff, 0x000000, 'center');
+    drawTextOutlined(def.label, this.x, this.y - 52, 8, 0xffffff, 0x000000, 'center');
 
     // Damage numbers
     this.damageNumbers.forEach(d => {

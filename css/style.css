@@ -104,8 +104,8 @@ html, body {
 
 #char-grid {
   display: grid;
-  grid-template-columns: repeat(5, 120px);
-  gap: 14px;
+  grid-template-columns: repeat(5, 150px);
+  gap: 12px;
 }
 
 .char-card {
@@ -129,7 +129,7 @@ html, body {
   box-shadow: 0 0 16px rgba(255,215,0,0.3);
 }
 
-.char-avatar { width: 64px; height: 64px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.1); }
+.char-avatar { width: 128px; height: 128px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.1); image-rendering: pixelated; image-rendering: crisp-edges; }
 .char-name   { font-family: var(--fp); font-size: 9px; color: var(--gold); }
 .char-class  { font-size: 14px; color: var(--text-dim); }
 .char-spell  { font-size: 14px; color: var(--accent); margin-top: 2px; }
