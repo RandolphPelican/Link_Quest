@@ -689,14 +689,20 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 // ── START GAME ────────────────────────────────────────────────
 function startGame() {
   engineInit();
-  // Load tile assets, then levels, then start
-  Tiles.load(() => {
-    console.log('Tiles loaded, loading levels...');
-    Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
-      loadRoom();
-      engineStart(gameUpdate, gameRender);
-    });
-  });
+  // Load tile and sprite assets, then levels, then start
+  let assetsReady = 0;
+  const checkReady = () => {
+    assetsReady++;
+    if (assetsReady >= 2) {
+      console.log('All assets loaded, loading levels...');
+      Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
+        loadRoom();
+        engineStart(gameUpdate, gameRender);
+      });
+    }
+  };
+  Tiles.load(checkReady);
+  Sprites.load(checkReady);
 }
 
 // ── BOOT ──────────────────────────────────────────────────────

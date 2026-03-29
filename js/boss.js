@@ -219,30 +219,27 @@ class Boss extends PhysicsObject {
         this.size * 1.2 + Math.sin(t*3)*4, this.color, 1);
     }
 
-    // Body
-    drawRect(this.x + shakeX, this.y + shakeY, this.size, this.size, color);
-    drawRectOutline(this.x + shakeX, this.y + shakeY, this.size, this.size, 0xffffff, 2);
+    // Try animated sprite, fall back to canvas
+    this._bossAnimFrame = (this._bossAnimFrame || 0) + 1;
+    const isHit = this.flashTimer > 0;
+    const bossScale = this.type === 'gossip_gpt' ? 0.6 : 0.5;
+    const spriteDrawn = Sprites.loaded &&
+      Sprites.drawBoss(this.type, this.x + shakeX, this.y + shakeY, this._bossAnimFrame, bossScale, isHit, this.phase);
 
-    // Face — menacing eyes
-    const eyeColor = this.phase === 2 ? 0xff0000 : 0xffee00;
-    drawRect(this.x - 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
-    drawRect(this.x + 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
-    drawRect(this.x - 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
-    drawRect(this.x + 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
+    if (!spriteDrawn) {
+      // Canvas fallback — body
+      drawRect(this.x + shakeX, this.y + shakeY, this.size, this.size, color);
+      drawRectOutline(this.x + shakeX, this.y + shakeY, this.size, this.size, 0xffffff, 2);
+      // Face
+      const eyeColor = this.phase === 2 ? 0xff0000 : 0xffee00;
+      drawRect(this.x - 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
+      drawRect(this.x + 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
+      drawRect(this.x - 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
+      drawRect(this.x + 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
+    }
 
-    // Type-specific decorations
-    if (this.type === 'lazy_coder') {
-      // Coffee cup
-      drawRect(this.x + this.size/2 + 8 + shakeX, this.y + shakeY, 10, 14, 0x885533);
-      drawRect(this.x + this.size/2 + 8 + shakeX, this.y - 10 + shakeY, 8, 3, 0xcccccc, 0.5);
-    } else if (this.type === 'data_corruptor') {
-      // Glitch effect
-      if (Math.random() < 0.1) {
-        const gy = this.y + (Math.random()-0.5)*this.size;
-        drawRect(this.x + shakeX, gy + shakeY, this.size + 10, 3, this.color, 0.5);
-      }
-    } else if (this.type === 'gossip_gpt') {
-      // Chat bubbles orbiting
+    // Type-specific decorations (drawn on top of sprite)
+    if (this.type === 'gossip_gpt') {
       for (let i = 0; i < 3; i++) {
         const a = t * 1.5 + (i/3) * Math.PI * 2;
         const bx = this.x + Math.cos(a) * (this.size * 0.8);
@@ -250,6 +247,9 @@ class Boss extends PhysicsObject {
         drawCircle(bx + shakeX, by + shakeY, 6, 0xcc00ff, 0.4);
         drawTextOutlined('...', bx + shakeX, by + shakeY, 6, 0xffffff, 0x000000, 'center');
       }
+    } else if (this.type === 'data_corruptor' && Math.random() < 0.1) {
+      const gy = this.y + (Math.random()-0.5)*this.size;
+      drawRect(this.x + shakeX, gy + shakeY, this.size + 10, 3, this.color, 0.5);
     }
 
     // HP bar

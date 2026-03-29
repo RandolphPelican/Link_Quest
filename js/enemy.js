@@ -201,33 +201,43 @@ class Enemy extends PhysicsObject {
   render() {
     if (!this.alive) return;
     const color = this.flashTimer > 0 ? 0xffffff : this.color;
-    const t = Date.now() / 1000;
+    const isHit = this.flashTimer > 0;
 
-    // Shape-based rendering
-    if (this.shape === 'diamond') {
-      ctx.save();
-      ctx.translate(this.x, this.y);
-      ctx.rotate(Math.PI/4 + Math.sin(this.animPhase)*0.1);
-      drawRect(0, 0, this.size*0.75, this.size*0.75, color);
-      drawRectOutline(0, 0, this.size*0.75, this.size*0.75, 0x000000, 1);
-      ctx.restore();
-    } else if (this.shape === 'circle') {
-      drawCircle(this.x, this.y, this.size/2, color);
-      drawCircleOutline(this.x, this.y, this.size/2, 0x000000, 1);
-      // Animated inner ring
-      drawCircleOutline(this.x, this.y, this.size/3, color, 1);
-    } else {
-      drawRect(this.x, this.y, this.size, this.size, color);
-      drawRectOutline(this.x, this.y, this.size, this.size, 0x000000, 1);
+    // Determine facing direction toward player
+    let facing = 'right';
+    if (typeof player !== 'undefined' && player) {
+      facing = player.x < this.x ? 'left' : 'right';
     }
 
-    // Eyes — always facing player
-    if (typeof player !== 'undefined' && player) {
-      const edx = player.x - this.x, edy = player.y - this.y;
-      const ed = Math.sqrt(edx*edx+edy*edy) || 1;
-      const eyeX = (edx/ed) * 3, eyeY = (edy/ed) * 3;
-      drawRect(this.x + eyeX - 3, this.y + eyeY - 2, 3, 3, 0x000000);
-      drawRect(this.x + eyeX + 3, this.y + eyeY - 2, 3, 3, 0x000000);
+    // Try sprite rendering first
+    const spriteDrawn = Sprites.loaded &&
+      Sprites.drawEnemy(this.type, this.x, this.y, facing, this.animPhase * 20, 1.0, isHit);
+
+    if (!spriteDrawn) {
+      // Canvas fallback
+      if (this.shape === 'diamond') {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(Math.PI/4 + Math.sin(this.animPhase)*0.1);
+        drawRect(0, 0, this.size*0.75, this.size*0.75, color);
+        drawRectOutline(0, 0, this.size*0.75, this.size*0.75, 0x000000, 1);
+        ctx.restore();
+      } else if (this.shape === 'circle') {
+        drawCircle(this.x, this.y, this.size/2, color);
+        drawCircleOutline(this.x, this.y, this.size/2, 0x000000, 1);
+        drawCircleOutline(this.x, this.y, this.size/3, color, 1);
+      } else {
+        drawRect(this.x, this.y, this.size, this.size, color);
+        drawRectOutline(this.x, this.y, this.size, this.size, 0x000000, 1);
+      }
+      // Eyes
+      if (typeof player !== 'undefined' && player) {
+        const edx = player.x - this.x, edy = player.y - this.y;
+        const ed = Math.sqrt(edx*edx+edy*edy) || 1;
+        const eyeX = (edx/ed) * 3, eyeY = (edy/ed) * 3;
+        drawRect(this.x + eyeX - 3, this.y + eyeY - 2, 3, 3, 0x000000);
+        drawRect(this.x + eyeX + 3, this.y + eyeY - 2, 3, 3, 0x000000);
+      }
     }
 
     // HP bar

@@ -391,7 +391,11 @@ class Player extends PhysicsObject {
     // Dash trail afterimages
     this.dashTrail.forEach(t => {
       ctx.globalAlpha = (t.life / 24) * 0.35;
-      drawCharSprite(t.x, t.y, this.characterKey, this.facing, this.animFrame, false, this.w, this.h);
+      if (Sprites.loaded) {
+        Sprites.drawHero(this.characterKey, t.x, t.y, this.facing, this.animFrame, 1.2, false);
+      } else {
+        drawCharSprite(t.x, t.y, this.characterKey, this.facing, this.animFrame, false, this.w, this.h);
+      }
       ctx.globalAlpha = 1;
     });
 
@@ -419,16 +423,25 @@ class Player extends PhysicsObject {
       }
     }
 
-    // Draw character sprite
+    // Draw character — try real sprites first, fall back to canvas
     const isAtk = this.flashTimer > 0 && this.flashColor === 0xffff00;
-    if (this.flashTimer > 0 && this.flashColor === 0xff0000) {
+    const isHurt = this.flashTimer > 0 && this.flashColor === 0xff0000;
+
+    if (isHurt) {
       ctx.globalAlpha = 0.7;
+    }
+
+    const spriteDrawn = Sprites.loaded &&
+      Sprites.drawHero(this.characterKey, this.x, this.y, this.facing, this.animFrame, 1.2, isAtk);
+
+    if (!spriteDrawn) {
       drawCharSprite(this.x, this.y, this.characterKey, this.facing, this.animFrame, isAtk, this.w, this.h);
+    }
+
+    if (isHurt) {
       ctx.globalAlpha = 0.3;
       drawRect(this.x, this.y, this.w + 4, this.h + 4, 0xff0000);
       ctx.globalAlpha = 1;
-    } else {
-      drawCharSprite(this.x, this.y, this.characterKey, this.facing, this.animFrame, isAtk, this.w, this.h);
     }
 
     // Name tag
