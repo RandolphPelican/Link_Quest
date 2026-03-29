@@ -477,25 +477,34 @@ function gameUpdate(dt) {
   player.update();
 
   // Enemy updates
-  let anyDied = false;
-  enemies.forEach(e => {
-    const wasAlive = e.alive;
-    e.update(player);
-    if (wasAlive && !e.alive) anyDied = true;
-  });
-  if (anyDied) {
-    enemies = enemies.filter(e => e.alive);
+  enemies.forEach(e => e.update(player));
+
+  // Check for dead enemies — deaths can happen during player.attack() OR enemy.update()
+  // so we always filter and check, not just when wasAlive flips
+  const prevEnemyCount = enemies.length;
+  enemies = enemies.filter(e => e.alive);
+  if (enemies.length < prevEnemyCount) {
     checkRoomClear();
   }
 
-  // Boss update
-  if (boss && boss.alive) {
-    boss.update(player);
-  } else if (boss && !boss.alive) {
-    const bossType = boss.type;
-    boss = null;
-    checkRoomClear();
-    onBossDefeated(bossType);
+  // Boss update — also handle deaths during player.attack()
+  if (boss) {
+    if (boss.alive) {
+      boss.update(player);
+    }
+    // Check if boss died (could happen during player.attack OR boss.update)
+    if (!boss.alive) {
+      const bossType = boss.type;
+      boss = null;
+      checkRoomClear();
+      onBossDefeated(bossType);
+    }
+  }
+
+  // Safety net — if all threats gone but room not cleared, force check
+  if (!roomCleared && enemies.length === 0 && !boss) {
+    const hasThreats = (roomData.enemies && roomData.enemies.length > 0) || roomData.boss;
+    if (hasThreats) checkRoomClear();
   }
 
   // Update items
