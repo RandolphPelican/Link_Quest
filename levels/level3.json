@@ -5,7 +5,7 @@
     {
       "id": 1,
       "name": "The Digital Void",
-      "background": "#0a0a1a",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "pillar",
@@ -44,16 +44,14 @@
           "y": 350
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 400,
-          "y": 100,
-          "color": 52479
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 400,
-          "y": 500,
-          "color": 52479
+          "y": 500
         }
       ],
       "chests": [
@@ -92,7 +90,7 @@
           "x": 350,
           "y": 400,
           "count": 2,
-          "pattern": "runner"
+          "pattern": "ranged"
         }
       ],
       "switches": [],
@@ -107,7 +105,7 @@
     {
       "id": 2,
       "name": "Stack Overflow",
-      "background": "#0a0a18",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "wall",
@@ -186,7 +184,7 @@
           "x": 500,
           "y": 350,
           "count": 2,
-          "pattern": "orbiter"
+          "pattern": "ranged"
         },
         {
           "type": "dark_compiler",
@@ -212,56 +210,61 @@
     {
       "id": 3,
       "name": "Syntax Jungle",
-      "background": "#0c0c1a",
+      "background": "#080810",
       "obstacles": [
         {
-          "type": "crate",
+          "type": "wall",
           "x": 200,
           "y": 200,
-          "w": 40,
-          "h": 40
+          "w": 30,
+          "h": 200
         },
         {
-          "type": "crate",
-          "x": 400,
-          "y": 200,
-          "w": 40,
-          "h": 40
+          "type": "wall",
+          "x": 350,
+          "y": 350,
+          "w": 300,
+          "h": 30
         },
         {
-          "type": "crate",
-          "x": 600,
+          "type": "wall",
+          "x": 550,
           "y": 200,
-          "w": 40,
-          "h": 40
+          "w": 30,
+          "h": 200
         },
         {
           "type": "crate",
           "x": 300,
-          "y": 400,
-          "w": 40,
-          "h": 40
+          "y": 250,
+          "w": 36,
+          "h": 36
         },
         {
           "type": "crate",
-          "x": 500,
-          "y": 400,
-          "w": 40,
-          "h": 40
+          "x": 450,
+          "y": 250,
+          "w": 36,
+          "h": 36
+        },
+        {
+          "type": "crate",
+          "x": 350,
+          "y": 180,
+          "w": 36,
+          "h": 36
         }
       ],
       "decorations": [
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 150,
-          "y": 350,
-          "color": 16711748
+          "y": 350
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 650,
-          "y": 350,
-          "color": 16711748
+          "y": 350
         },
         {
           "type": "torch",
@@ -290,7 +293,7 @@
           "x": 250,
           "y": 350,
           "count": 3,
-          "pattern": "teleporter"
+          "pattern": "ranged"
         },
         {
           "type": "stack_overflow",
@@ -323,7 +326,7 @@
     {
       "id": 4,
       "name": "Maze of Logic",
-      "background": "#0a0a1e",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "wall",
@@ -399,7 +402,7 @@
           "x": 500,
           "y": 400,
           "count": 3,
-          "pattern": "orbiter"
+          "pattern": "ranged"
         }
       ],
       "switches": [],
@@ -418,7 +421,7 @@
     {
       "id": 5,
       "name": "The Compiler's Domain",
-      "background": "#0a0518",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "pillar",
@@ -461,16 +464,14 @@
           "y": 300
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 400,
-          "y": 100,
-          "color": 6684876
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 400,
-          "y": 500,
-          "color": 6684876
+          "y": 500
         },
         {
           "type": "torch",
@@ -529,7 +530,7 @@
           "x": 500,
           "y": 400,
           "count": 2,
-          "pattern": "runner"
+          "pattern": "ranged"
         }
       ],
       "switches": [],
@@ -554,7 +555,7 @@
     {
       "id": 6,
       "name": "Security Clearance",
-      "background": "#0a0a20",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "wall",
@@ -583,16 +584,14 @@
           "y": 500
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 200,
-          "y": 150,
-          "color": 65382
+          "y": 150
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 600,
-          "y": 450,
-          "color": 65382
+          "y": 450
         },
         {
           "type": "torch",
@@ -662,28 +661,42 @@
     {
       "id": 7,
       "name": "Trojan Ambush",
-      "background": "#120a1a",
+      "background": "#080810",
       "obstacles": [
         {
-          "type": "pillar",
-          "x": 250,
-          "y": 200,
-          "w": 40,
-          "h": 40
+          "type": "wall",
+          "x": 200,
+          "y": 150,
+          "w": 30,
+          "h": 300
         },
         {
-          "type": "pillar",
-          "x": 550,
-          "y": 200,
-          "w": 40,
-          "h": 40
-        },
-        {
-          "type": "pillar",
+          "type": "wall",
           "x": 400,
+          "y": 250,
+          "w": 30,
+          "h": 300
+        },
+        {
+          "type": "wall",
+          "x": 600,
+          "y": 150,
+          "w": 30,
+          "h": 300
+        },
+        {
+          "type": "wall",
+          "x": 300,
           "y": 400,
-          "w": 40,
-          "h": 40
+          "w": 200,
+          "h": 30
+        },
+        {
+          "type": "wall",
+          "x": 500,
+          "y": 200,
+          "w": 200,
+          "h": 30
         }
       ],
       "decorations": [
@@ -748,7 +761,7 @@
           "x": 200,
           "y": 450,
           "count": 3,
-          "pattern": "teleporter"
+          "pattern": "ranged"
         }
       ],
       "switches": [],
@@ -767,7 +780,7 @@
     {
       "id": 8,
       "name": "Firewall 2.0",
-      "background": "#1a0a0a",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "wall",
@@ -818,10 +831,9 @@
           "y": 400
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 400,
-          "y": 500,
-          "color": 16729088
+          "y": 500
         }
       ],
       "chests": [
@@ -873,7 +885,7 @@
     {
       "id": 9,
       "name": "Last Stand",
-      "background": "#0a0510",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "pillar",
@@ -913,28 +925,24 @@
       ],
       "decorations": [
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 300,
-          "y": 100,
-          "color": 13369599
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 500,
-          "y": 100,
-          "color": 13369599
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 300,
-          "y": 500,
-          "color": 13369599
+          "y": 500
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 500,
-          "y": 500,
-          "color": 13369599
+          "y": 500
         },
         {
           "type": "torch",
@@ -982,7 +990,7 @@
           "x": 550,
           "y": 200,
           "count": 3,
-          "pattern": "teleporter"
+          "pattern": "ranged"
         }
       ],
       "switches": [],
@@ -1017,7 +1025,7 @@
     {
       "id": 10,
       "name": "GossipGPT's Chamber",
-      "background": "#0a0518",
+      "background": "#080810",
       "obstacles": [
         {
           "type": "pillar",
@@ -1050,28 +1058,24 @@
       ],
       "decorations": [
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 250,
-          "y": 100,
-          "color": 13369599
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 550,
-          "y": 100,
-          "color": 13369599
+          "y": 100
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 250,
-          "y": 500,
-          "color": 13369599
+          "y": 500
         },
         {
-          "type": "crystal",
+          "type": "terminal",
           "x": 550,
-          "y": 500,
-          "color": 13369599
+          "y": 500
         },
         {
           "type": "server_rack",

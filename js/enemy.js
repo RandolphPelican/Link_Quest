@@ -51,8 +51,10 @@ class Enemy extends PhysicsObject {
     this.retreatTimer = 0;
     this.flashTimer   = 0;
     this.damageNumbers = [];
-    this.dropChance   = 0.35;
+    this.dropChance   = 0.15;
     this.animPhase    = Math.random() * Math.PI * 2;
+    this.projectiles  = [];
+    this.shootCooldown = 0;
   }
 
   update(player) {
@@ -72,22 +74,53 @@ class Enemy extends PhysicsObject {
     const dist = Math.sqrt(dx*dx + dy*dy);
 
     if (dist < this.aggroRange) {
-      this.state = dist < this.attackRange ? 'attack' : 'chase';
+      if (this.pattern === 'ranged') {
+        this.state = dist < 120 ? 'retreat' : dist < 250 ? 'attack' : 'chase';
+      } else {
+        this.state = dist < this.attackRange ? 'attack' : 'chase';
+      }
     } else {
       this.state = 'idle';
     }
 
     switch(this.state) {
       case 'chase': this._moveByPattern(dx, dy, dist, player); break;
+      case 'retreat':
+        if (dist > 0) {
+          this.vx = -(dx/dist) * this.speed * 1.1;
+          this.vy = -(dy/dist) * this.speed * 1.1;
+        }
+        if (this.shootCooldown <= 0) this._rangedAttack(player, dx, dy, dist);
+        break;
       case 'attack':
-        this.vx = 0; this.vy = 0;
-        if (this.attackCooldown <= 0) this._attackPlayer(player);
+        if (this.pattern === 'ranged') {
+          this.vx = 0; this.vy = 0;
+          if (this.shootCooldown <= 0) this._rangedAttack(player, dx, dy, dist);
+        } else {
+          this.vx = 0; this.vy = 0;
+          if (this.attackCooldown <= 0) this._attackPlayer(player);
+        }
         break;
       case 'idle': this._wander(); break;
     }
 
     if (this.attackCooldown > 0) this.attackCooldown--;
+    if (this.shootCooldown > 0) this.shootCooldown--;
     if (this.flashTimer     > 0) this.flashTimer--;
+
+    // Update enemy projectiles
+    this.projectiles = this.projectiles.filter(p => p.active);
+    this.projectiles.forEach(p => {
+      p.x += p.vx/60;
+      p.y += p.vy/60;
+      if (p.x<30||p.x>770||p.y<30||p.y>570) { p.active=false; return; }
+      if (Date.now() - p.birth > 2500) { p.active=false; return; }
+      const pdx = player.x - p.x, pdy = player.y - p.y;
+      if (Math.sqrt(pdx*pdx+pdy*pdy) < 20) {
+        player.takeDamage(p.damage);
+        p.active = false;
+      }
+    });
 
     super.update();
     if (roomMgr) roomMgr.resolveCollisions(this);
@@ -158,6 +191,21 @@ class Enemy extends PhysicsObject {
     this.flashTimer = 4;
   }
 
+  _rangedAttack(player, dx, dy, dist) {
+    this.shootCooldown = 140;
+    this.flashTimer = 6;
+    if (dist === 0) return;
+    const speed = 180;
+    this.projectiles.push({
+      x: this.x, y: this.y,
+      vx: (dx/dist) * speed, vy: (dy/dist) * speed,
+      damage: Math.floor(this.attackPower * 0.7),
+      color: this.color,
+      active: true,
+      birth: Date.now()
+    });
+  }
+
   takeDamage(amount) {
     if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
@@ -211,7 +259,7 @@ class Enemy extends PhysicsObject {
 
     // Try sprite rendering first
     const spriteDrawn = Sprites.loaded &&
-      Sprites.drawEnemy(this.type, this.x, this.y, facing, this.animPhase * 20, 1.0, isHit);
+      Sprites.drawEnemy(this.type, this.x, this.y, facing, this.animPhase * 20, 3.0, isHit);
 
     if (!spriteDrawn) {
       // Canvas fallback
@@ -258,6 +306,13 @@ class Enemy extends PhysicsObject {
       ctx.globalAlpha = d.life/45;
       drawTextOutlined('-'+d.amount, d.x, d.y, 11, d.color, 0x000000, 'center');
       ctx.globalAlpha = 1;
+    });
+
+    // Enemy projectiles
+    this.projectiles.forEach(p => {
+      if (!p.active) return;
+      drawCircle(p.x, p.y, 5, p.color, 0.9);
+      drawCircle(p.x, p.y, 10, p.color, 0.2);
     });
   }
 }

@@ -111,32 +111,22 @@ class RoomManager {
   }
 
   _renderGrid(bgColor) {
-    // Grid is replaced by tile floor when tiles are loaded
-    if (Tiles.loaded && Tiles.sheets.floors) return;
-    const gridColor = (bgColor & 0xfefefe) + 0x0a0a0a;
+    // Clean subtle grid
     for (let x = 0; x <= 800; x += 32)
-      drawLine(x, 0, x, 600, gridColor, 0.2);
+      drawLine(x, 0, x, 600, 0xffffff, 0.04);
     for (let y = 0; y <= 600; y += 32)
-      drawLine(0, y, 800, y, gridColor, 0.2);
+      drawLine(0, y, 800, y, 0xffffff, 0.04);
   }
 
   _renderFloor() {
-    if (Tiles.loaded && Tiles.sheets.floors) {
-      // Use tileset floor rendering
-      const bg = this.roomData.background || '#182030';
-      // Pick floor variant based on level background color
-      let variant = 0;
-      if (bg.includes('2e') || bg.includes('1a2')) variant = 1;  // Level 2 purple
-      if (bg.includes('0a0a') || bg.includes('0a05')) variant = 2;  // Level 3 dark
-      Tiles.fillFloor(32, 32, 736, 536, variant);
-      return;
-    }
-    // Fallback: subtle floor tile variation
+    // Subtle floor tile variation — stone pattern
     for (let tx = 1; tx < 24; tx++) {
       for (let ty = 1; ty < 18; ty++) {
-        const hash = (tx * 7 + ty * 13) % 5;
+        const hash = (tx * 7 + ty * 13) % 7;
         if (hash === 0) {
-          drawRect(tx*32+16, ty*32+16, 30, 30, 0xffffff, 0.015);
+          drawRect(tx*32+16, ty*32+16, 30, 30, 0xffffff, 0.02);
+        } else if (hash === 3) {
+          drawRect(tx*32+16, ty*32+16, 30, 30, 0x000000, 0.03);
         }
       }
     }
@@ -149,61 +139,39 @@ class RoomManager {
     const hasTop    = doorsData.top    && doorsData.top.leadsTo    != null;
     const hasBottom = doorsData.bottom && doorsData.bottom.leadsTo != null;
 
-    if (Tiles.loaded && Tiles.sheets.walls) {
-      // ── TILE-BASED WALLS ──────────────────────────────
-      // Top wall (2 tiles tall)
-      for (let i = 0; i < 25; i++) {
-        const px = i * 32;
-        if (hasTop && px >= 352 && px < 448) continue;
-        Tiles.draw('walls', (i%2===0) ? 0 : 1, 3, px, 0);
-        Tiles.draw('walls', (i%2===0) ? 0 : 1, 4, px, 0);
-      }
-      // Bottom wall
-      for (let i = 0; i < 25; i++) {
-        const px = i * 32;
-        if (hasBottom && px >= 352 && px < 448) continue;
-        Tiles.draw('walls', (i%2===0) ? 4 : 5, 3, px, 576);
-      }
-      // Left wall
-      for (let i = 0; i < 19; i++) {
-        const py = i * 32;
-        if (hasLeft && py >= 256 && py < 352) continue;
-        Tiles.draw('walls', (i%2===0) ? 0 : 1, 4, 0, py);
-      }
-      // Right wall
-      for (let i = 0; i < 19; i++) {
-        const py = i * 32;
-        if (hasRight && py >= 256 && py < 352) continue;
-        Tiles.draw('walls', (i%2===0) ? 0 : 1, 4, 768, py);
-      }
-      return;
-    }
+    // Parse background to tint walls
+    const bgHex = this.roomData.background || '#182030';
+    const bgR = parseInt(bgHex.substr(1,2),16);
+    const bgG = parseInt(bgHex.substr(3,2),16);
+    const bgB = parseInt(bgHex.substr(5,2),16);
+    const wallColor  = ((Math.min(bgR+20,255))<<16) | ((Math.min(bgG+15,255))<<8) | Math.min(bgB+25,255);
+    const wallBorder = ((Math.min(bgR+40,255))<<16) | ((Math.min(bgG+35,255))<<8) | Math.min(bgB+50,255);
 
-    // ── FALLBACK CANVAS WALLS ───────────────────────────
-    const wallColor  = 0x1a2535;
-    const wallBorder = 0x2a3f55;
-    const brickLine  = 0x223344;
-
+    // Top wall
     for (let x = 0; x < 800; x += 32) {
       const cx = x + 16;
       if (hasTop && cx > 368 && cx < 432) continue;
       drawRect(cx, 14, 30, 28, wallColor);
       drawRectOutline(cx, 14, 30, 28, wallBorder, 1);
-      drawLine(x+8, 14, x+24, 14, brickLine, 0.5);
+      // Brick detail
+      if (x % 64 === 0) drawLine(x+4, 10, x+28, 10, wallBorder, 0.5);
+      else drawLine(x+16, 18, x+30, 18, wallBorder, 0.5);
     }
+    // Bottom wall
     for (let x = 0; x < 800; x += 32) {
       const cx = x + 16;
       if (hasBottom && cx > 368 && cx < 432) continue;
       drawRect(cx, 586, 30, 28, wallColor);
       drawRectOutline(cx, 586, 30, 28, wallBorder, 1);
-      drawLine(x+8, 586, x+24, 586, brickLine, 0.5);
     }
+    // Left wall
     for (let y = 32; y < 572; y += 32) {
       const cy = y + 16;
       if (hasLeft && cy > 268 && cy < 332) continue;
       drawRect(14, cy, 28, 30, wallColor);
       drawRectOutline(14, cy, 28, 30, wallBorder, 1);
     }
+    // Right wall
     for (let y = 32; y < 572; y += 32) {
       const cy = y + 16;
       if (hasRight && cy > 268 && cy < 332) continue;
@@ -216,48 +184,36 @@ class RoomManager {
     const t = Date.now() / 1000;
     this.switches.forEach((sw, i) => {
       if (sw.active) {
-        // Activated — bright, pulsing gently
-        drawRect(sw.x, sw.y, sw.w, sw.h, sw.color, 0.5);
+        // Activated — glowing
+        drawRect(sw.x, sw.y, sw.w, sw.h, sw.color, 0.4);
         drawRectOutline(sw.x, sw.y, sw.w, sw.h, 0xffffff, 2);
-        drawTextOutlined('✓', sw.x, sw.y, 14, 0xffffff, 0x000000, 'center');
       } else {
-        // Inactive — dim, pulsing to attract attention
-        const pulse = 0.15 + Math.sin(t * 3 + i) * 0.08;
+        // Inactive — subtle floor plate, barely visible
+        const pulse = 0.08 + Math.sin(t * 2 + i * 1.5) * 0.04;
         drawRect(sw.x, sw.y, sw.w, sw.h, sw.color, pulse);
-        drawRectOutline(sw.x, sw.y, sw.w, sw.h, sw.color, 1);
-        drawCircle(sw.x, sw.y, sw.w * 0.7, sw.color, 0.05 + Math.sin(t*2+i)*0.03);
-        drawTextOutlined((i+1)+'', sw.x, sw.y, 10, sw.color, 0x000000, 'center');
+        drawRectOutline(sw.x, sw.y, sw.w, sw.h, sw.color, 0.5);
       }
     });
   }
 
   _renderObstacles() {
     this.obstacles.forEach(o => {
-      if (Tiles.loaded && Tiles.sheets.decos) {
-        if (o.type === 'crate') {
-          // Draw crate tile
-          Tiles.draw('decos', 14, 6, o.x - 16, o.y - 16);
-          return;
-        }
-        if (o.type === 'pillar') {
-          // Draw pillar using wall tiles
-          Tiles.draw('walls', 9, 3, o.x - 16, o.y - 16);
-          return;
-        }
-      }
-      // Fallback canvas rendering
-      const color = o.type === 'pillar' ? 0x2a3f55 :
-                    o.type === 'wall'   ? 0x1e3040 :
-                    o.type === 'crate'  ? 0x6a5030 : 0x3a4f65;
-      drawRect(o.x, o.y, o.w, o.h, color);
-      drawRectOutline(o.x, o.y, o.w, o.h, 0x4a6f90, 1);
       if (o.type === 'pillar') {
+        drawRect(o.x, o.y, o.w, o.h, 0x2a3f55);
+        drawRectOutline(o.x, o.y, o.w, o.h, 0x4a6f90, 1);
         drawRect(o.x, o.y, o.w - 10, o.h - 10, 0x3a5570);
         drawRectOutline(o.x, o.y, o.w - 10, o.h - 10, 0x5a7f9f, 1);
-      }
-      if (o.type === 'crate') {
+      } else if (o.type === 'crate') {
+        drawRect(o.x, o.y, o.w, o.h, 0x6a5030);
+        drawRectOutline(o.x, o.y, o.w, o.h, 0x8a7050, 1);
         drawLine(o.x - o.w/2, o.y - o.h/2, o.x + o.w/2, o.y + o.h/2, 0x4a3520, 1);
         drawLine(o.x + o.w/2, o.y - o.h/2, o.x - o.w/2, o.y + o.h/2, 0x4a3520, 1);
+      } else if (o.type === 'wall') {
+        drawRect(o.x, o.y, o.w, o.h, 0x1e3040);
+        drawRectOutline(o.x, o.y, o.w, o.h, 0x3a5060, 1);
+      } else {
+        drawRect(o.x, o.y, o.w, o.h, 0x3a4f65);
+        drawRectOutline(o.x, o.y, o.w, o.h, 0x4a6f90, 1);
       }
     });
   }
@@ -269,18 +225,12 @@ class RoomManager {
         drawCircle(d.x, d.y, d.r || 14, 0x1a3a1a);
         drawCircle(d.x - 4, d.y - 3, 7, 0x1e471e);
       } else if (d.type === 'torch') {
-        if (Tiles.loaded && Tiles.sheets.decos) {
-          Tiles.drawDeco('torch1', d.x, d.y);
-          // Add glow halo around the tile torch
-          drawCircle(d.x, d.y, 24, 0xff6600, 0.08 + Math.sin(t*6+d.y)*0.04);
-        } else {
-          drawRect(d.x, d.y + 2, 5, 10, 0x6a5040);
-          const flicker = Math.sin(t * 8 + d.x) * 0.15 + 0.85;
-          drawCircle(d.x, d.y - 9, 7 * flicker, 0xff6600, 0.95);
-          drawCircle(d.x, d.y - 9, 18, 0xff4400, 0.12 + Math.sin(t*6+d.y)*0.05);
-          drawCircle(d.x, d.y - 9, 3, 0xffee00);
-          drawCircle(d.x, d.y + 20, 40, 0xff8800, 0.04);
-        }
+        drawRect(d.x, d.y + 2, 5, 10, 0x6a5040);
+        const flicker = Math.sin(t * 8 + d.x) * 0.15 + 0.85;
+        drawCircle(d.x, d.y - 9, 7 * flicker, 0xff6600, 0.95);
+        drawCircle(d.x, d.y - 9, 18, 0xff4400, 0.12 + Math.sin(t*6+d.y)*0.05);
+        drawCircle(d.x, d.y - 9, 3, 0xffee00);
+        drawCircle(d.x, d.y + 20, 40, 0xff8800, 0.04);
       } else if (d.type === 'cobweb') {
         ctx.font = '22px serif'; ctx.textAlign = 'center';
         ctx.globalAlpha = 0.5;
