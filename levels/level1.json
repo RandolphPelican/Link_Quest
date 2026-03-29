@@ -83,7 +83,7 @@
           "type": "brown",
           "x": 400,
           "y": 300,
-          "contains": "chicken_nuggets",
+          "contains": "small_key",
           "locked": false
         },
         {
@@ -105,7 +105,7 @@
         {
           "x": 200,
           "y": 200,
-          "message": "WASD move | SPACE attack | E spell | F interact"
+          "message": "WASD move | K attack | P spell | O interact"
         }
       ],
       "enemies": [],
@@ -116,7 +116,13 @@
           "locked": false
         }
       },
-      "items": []
+      "items": [
+        {
+          "key": "chicken_nuggets",
+          "x": 300,
+          "y": 400
+        }
+      ]
     },
     {
       "id": 2,
@@ -185,11 +191,11 @@
           "pattern": "rusher"
         },
         {
-          "type": "goblin",
+          "type": "goblin_chief",
           "x": 500,
           "y": 350,
           "count": 1,
-          "pattern": "rusher"
+          "pattern": "stick_and_move"
         }
       ],
       "switches": [],
@@ -200,7 +206,7 @@
         },
         "right": {
           "leadsTo": 3,
-          "locked": true
+          "locked": false
         }
       },
       "items": []

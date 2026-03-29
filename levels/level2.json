@@ -61,7 +61,7 @@
           "type": "brown",
           "x": 650,
           "y": 200,
-          "contains": "chicken_nuggets",
+          "contains": "small_key",
           "locked": false
         },
         {
@@ -95,7 +95,13 @@
           "locked": true
         }
       },
-      "items": []
+      "items": [
+        {
+          "key": "chicken_nuggets",
+          "x": 500,
+          "y": 350
+        }
+      ]
     },
     {
       "id": 2,
@@ -165,6 +171,13 @@
           "y": 250,
           "count": 1,
           "pattern": "rusher"
+        },
+        {
+          "type": "null_pointer",
+          "x": 400,
+          "y": 400,
+          "count": 1,
+          "pattern": "stick_and_move"
         }
       ],
       "switches": [],

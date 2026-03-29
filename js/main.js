@@ -689,9 +689,13 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 // ── START GAME ────────────────────────────────────────────────
 function startGame() {
   engineInit();
-  Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
-    loadRoom();
-    engineStart(gameUpdate, gameRender);
+  // Load tile assets, then levels, then start
+  Tiles.load(() => {
+    console.log('Tiles loaded, loading levels...');
+    Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
+      loadRoom();
+      engineStart(gameUpdate, gameRender);
+    });
   });
 }
 

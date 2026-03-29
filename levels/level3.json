@@ -63,6 +63,13 @@
           "y": 400,
           "contains": "potion_md",
           "locked": false
+        },
+        {
+          "type": "brown",
+          "x": 550,
+          "y": 200,
+          "contains": "small_key",
+          "locked": false
         }
       ],
       "signs": [
@@ -180,6 +187,13 @@
           "y": 350,
           "count": 2,
           "pattern": "orbiter"
+        },
+        {
+          "type": "dark_compiler",
+          "x": 350,
+          "y": 450,
+          "count": 1,
+          "pattern": "stick_and_move"
         }
       ],
       "switches": [],
