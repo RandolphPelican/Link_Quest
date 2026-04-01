@@ -37,7 +37,6 @@ const Input = {
       const k = e.key.toLowerCase();
       if (!this._held[k]) this._pressed[k] = true;
       this._held[k] = true;
-      // Prevent arrow keys scrolling page
       if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))
         e.preventDefault();
     });
@@ -46,18 +45,38 @@ const Input = {
       this._held[k]     = false;
       this._released[k] = true;
     });
+    this._initTouch();
   },
 
-  // Is key currently held down
+  _initTouch() {
+    const bindBtn = (id, key) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!this._held[key]) this._pressed[key] = true;
+        this._held[key] = true;
+      }, {passive:false});
+      el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this._held[key] = false;
+        this._released[key] = true;
+      }, {passive:false});
+    };
+    bindBtn('btn-up', 'w'); bindBtn('btn-down', 's');
+    bindBtn('btn-left', 'a'); bindBtn('btn-right', 'd');
+    bindBtn('btn-atk', 'k'); bindBtn('btn-spell', 'p');
+    
+    window.addEventListener('touchstart', () => {
+      const ctrls = document.getElementById('mobile-controls');
+      if (ctrls) ctrls.classList.remove('hidden');
+    }, { once: true });
+  },
+
   down(key) { return !!this._held[key.toLowerCase()]; },
-
-  // Was key just pressed this frame
   pressed(key) { return !!this._pressed[key.toLowerCase()]; },
-
-  // Was key just released this frame
   released(key) { return !!this._released[key.toLowerCase()]; },
 
-  // Clear per-frame state — call at end of each frame
   clearFrame() {
     this._pressed  = {};
     this._released = {};

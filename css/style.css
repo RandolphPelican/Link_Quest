@@ -298,3 +298,35 @@ html, body {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.65; }
 }
+
+/* ── MOBILE CONTROLS ──────────────────────────────────────── */
+#mobile-controls {
+  position: fixed;
+  bottom: 20px; left: 20px; right: 20px;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  pointer-events: none;
+  z-index: 80;
+}
+
+#dpad, #action-btns { pointer-events: auto; display: flex; flex-direction: column; align-items: center; }
+#dpad-mid { display: flex; gap: 10px; }
+
+.dpad-btn, .action-btn {
+  width: 60px; height: 60px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+  color: white; border-radius: 50%;
+  font-family: var(--fv); font-size: 24px;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
+.dpad-btn:active, .action-btn:active { background: var(--accent); border-color: white; }
+
+#action-btns { flex-direction: row; gap: 20px; }
+.action-btn { width: 70px; height: 70px; background: rgba(0,229,255,0.2); border-color: var(--accent); font-family: var(--fp); font-size: 18px; }
+#btn-spell { background: rgba(155,89,182,0.2); border-color: var(--purple); }
+
+@media (min-width: 1024px) {
+  #mobile-controls { display: none !important; }
+}

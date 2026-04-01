@@ -115,7 +115,12 @@
       </div>
     </div>
     <div id="maker-main">
-      <div id="maker-palette">
+    <div id="maker-palette">
+      <div id="maker-tabs" style="display:flex;gap:5px;margin-bottom:10px;">
+        <button class="maker-tab-btn active" data-mtab="palette">PALETTE</button>
+        <button class="maker-tab-btn" data-mtab="campaign">CAMPAIGN</button>
+      </div>
+      <div id="maker-tab-palette" class="maker-tab-content">
         <h3>PALETTE</h3>
         <div class="palette-section">
           <h4>TILES</h4>
@@ -130,6 +135,14 @@
           <div id="enemy-palette" class="palette-grid"></div>
         </div>
       </div>
+      <div id="maker-tab-campaign" class="maker-tab-content hidden">
+        <h3>CAMPAIGN</h3>
+        <div id="campaign-room-list" style="display:flex;flex-direction:column;gap:5px;">
+          <!-- Dynamic -->
+        </div>
+        <button id="add-room-btn" style="margin-top:10px;width:100%;">+ Add Room</button>
+      </div>
+    </div>
       <div id="maker-canvas-container">
         <canvas id="maker-canvas" width="800" height="600"></canvas>
       </div>
@@ -181,6 +194,22 @@
     <div id="cutscene-box">
       <p id="cutscene-text"></p>
       <button id="cutscene-next">▶ Next</button>
+    </div>
+  </div>
+
+  <!-- MOBILE CONTROLS -->
+  <div id="mobile-controls" class="hidden">
+    <div id="dpad">
+      <button class="dpad-btn" id="btn-up">▲</button>
+      <div id="dpad-mid">
+        <button class="dpad-btn" id="btn-left">◀</button>
+        <button class="dpad-btn" id="btn-right">▶</button>
+      </div>
+      <button class="dpad-btn" id="btn-down">▼</button>
+    </div>
+    <div id="action-btns">
+      <button class="action-btn" id="btn-atk">K</button>
+      <button class="action-btn" id="btn-spell">P</button>
     </div>
   </div>
 

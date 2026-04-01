@@ -1,9 +1,16 @@
-# ⚔️ Link Quest
+# ⚔️ Link Quest: AI Superpower Edition
 
 A browser-based top-down multiplayer RPG built by a dad and his kids —
 to prove that AI-assisted coding isn't a cop-out. It's a superpower.
 
 **Play now:** https://randolphpelican.github.io/Link_Quest/
+
+## 🛠️ NEW: Maker Mode
+Link Quest has evolved! You can now build your own dungeon rooms, place enemies, and design puzzles using the built-in **Maker Mode**.
+- **Palette:** Choose from various tiles, objects, and enemies.
+- **AI Suggest:** Get procedural room layout suggestions with the ✨ AI Suggest button.
+- **Playtest:** Instantly test your creation in the live game engine.
+- **Export/Import:** Save your rooms as `.room` files or JSON to share with others.
 
 ## 🎮 Characters
 
@@ -26,10 +33,11 @@ to prove that AI-assisted coding isn't a cop-out. It's a superpower.
 ## 🎮 Controls
 
 - **WASD / Arrow Keys** — Move
-- **SPACE** — Attack
-- **E** — Cast spell
-- **F** — Open chests / Read signs
-- **P** — Pause
+- **K / SPACE** — Attack
+- **P / E** — Cast spell
+- **O / F** — Open chests / Read signs
+- **ESC / P** — Pause
+- **Maker Mode:** Mouse Left-Click to place, Right-Click to remove.
 
 ## 👾 Enemy Types
 
@@ -62,9 +70,10 @@ Open http://localhost:8080 in your browser.
 - Pure Canvas2D — zero dependencies, runs everywhere
 - Custom game engine (engine.js)
 - Vanilla JS — zero build step, zero npm
+- IndexedDB — Persistent campaigns
 
 ## 👾 Built With
 
-Love, chaos, and AI-assisted coding.
+Love, chaos, and AI-assisted coding as a legitimate superpower.
 
 *Your dad loves you more than anything in this world.*

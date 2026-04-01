@@ -38,6 +38,12 @@ const Maker = {
     this._draw();
   },
 
+  campaign: {
+    id: "custom",
+    name: "My Campaign",
+    rooms: []
+  },
+
   _bindUI() {
     const btn = document.getElementById('maker-mode-btn');
     if (btn) btn.addEventListener('click', () => this.show());
@@ -49,19 +55,38 @@ const Maker = {
     document.getElementById('maker-export-btn').addEventListener('click', () => this.export());
     document.getElementById('maker-import-btn').addEventListener('click', () => this.import());
     
-    document.getElementById('maker-campaign-select').addEventListener('change', (e) => this._onCampaignChange(e));
-    document.getElementById('maker-room-id').addEventListener('change', (e) => this._onRoomIdChange(e));
-
-    this.canvas.addEventListener('mousedown', (e) => this._onMouseDown(e));
-    this.canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
-    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    
-    document.getElementById('room-name-input').addEventListener('input', (e) => {
-      this.room.name = e.target.value;
+    document.querySelectorAll('.maker-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.maker-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.maker-tab-content').forEach(c => c.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById('maker-tab-' + btn.dataset.mtab).classList.remove('hidden');
+      });
     });
-    document.getElementById('room-bg-input').addEventListener('input', (e) => {
-      this.room.background = e.target.value;
-      this._draw();
+
+    document.getElementById('add-room-btn').addEventListener('click', () => this.addRoom());
+...
+  addRoom() {
+    const newRoom = JSON.parse(JSON.stringify(this.room));
+    newRoom.id = this.campaign.rooms.length + 1;
+    newRoom.name = "Room " + newRoom.id;
+    this.campaign.rooms.push(newRoom);
+    this._updateCampaignUI();
+  },
+
+  _updateCampaignUI() {
+    const list = document.getElementById('campaign-room-list');
+    list.innerHTML = "";
+    this.campaign.rooms.forEach((r, i) => {
+      const el = document.createElement('div');
+      el.style.cssText = "background:#1a1a30;padding:5px;border:1px solid #334;cursor:pointer;font-size:14px;";
+      el.textContent = `${r.id}: ${r.name}`;
+      el.onclick = () => {
+        this.room = r;
+        document.getElementById('room-name-input').value = r.name;
+        this._draw();
+      };
+      list.appendChild(el);
     });
   },
 
