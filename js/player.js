@@ -205,41 +205,51 @@ class Player extends PhysicsObject {
     this.color       = def.color;
   }
 
-  update() {
+  update(dt) {
     if (!this.alive) return;
     this.vx = 0; this.vy = 0;
 
-    if (Input.down('a') || Input.down('arrowleft'))  { this.vx = -this.speed; this.facing = 'left';  }
-    if (Input.down('d') || Input.down('arrowright')) { this.vx =  this.speed; this.facing = 'right'; }
-    if (Input.down('w') || Input.down('arrowup'))    { this.vy = -this.speed; this.facing = 'up';    }
-    if (Input.down('s') || Input.down('arrowdown'))  { this.vy =  this.speed; this.facing = 'down';  }
+    let mvx = 0, mvy = 0;
+    if (Input.down('a') || Input.down('arrowleft'))  { mvx = -1; this.facing = 'left';  }
+    if (Input.down('d') || Input.down('arrowright')) { mvx =  1; this.facing = 'right'; }
+    if (Input.down('w') || Input.down('arrowup'))    { mvy = -1; this.facing = 'up';    }
+    if (Input.down('s') || Input.down('arrowdown'))  { mvy =  1; this.facing = 'down';  }
 
-    this.moving = this.vx !== 0 || this.vy !== 0;
-    if (this.moving) this.animFrame++;
+    if (mvx !== 0 || mvy !== 0) {
+      const mag = Math.sqrt(mvx*mvx + mvy*mvy);
+      this.vx = (mvx / mag) * this.speed;
+      this.vy = (mvy / mag) * this.speed;
+      this.moving = true;
+      this.animFrame += dt * 10;
+    } else {
+      this.moving = false;
+      this.animFrame = 0;
+    }
 
-    if (this.vx !== 0 && this.vy !== 0) { this.vx *= 0.707; this.vy *= 0.707; }
-
-    super.update();
+    super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
 
     if (Input.pressed('k') && this.attackCooldown <= 0) this.attack();
     if (Input.pressed('p') && this.spellCooldown  <= 0) this.castSpell();
 
-    if (this.attackCooldown > 0) this.attackCooldown--;
-    if (this.spellCooldown  > 0) this.spellCooldown--;
-    if (this.flashTimer     > 0) this.flashTimer--;
-    if (this.spinTimer      > 0) this.spinTimer--;
-    if (this.invincible) { this.invincibleTimer--; if (this.invincibleTimer <= 0) this.invincible = false; }
+    if (this.attackCooldown > 0) this.attackCooldown -= dt * 60;
+    if (this.spellCooldown  > 0) this.spellCooldown  -= dt * 60;
+    if (this.flashTimer     > 0) this.flashTimer     -= dt * 60;
+    if (this.spinTimer      > 0) this.spinTimer      -= dt * 60;
+    if (this.invincible) {
+      this.invincibleTimer -= dt * 60;
+      if (this.invincibleTimer <= 0) this.invincible = false;
+    }
 
     this.projectiles     = this.projectiles.filter(p => p.active);
-    this.projectiles.forEach(p => p.update());
+    this.projectiles.forEach(p => p.update(dt));
     this.damageNumbers   = this.damageNumbers.filter(d => d.life > 0);
-    this.damageNumbers.forEach(d => { d.y -= 0.5; d.life--; });
+    this.damageNumbers.forEach(d => { d.y -= 30 * dt; d.life -= dt * 60; });
     this.dashTrail       = this.dashTrail.filter(t => t.life > 0);
-    this.dashTrail.forEach(t => { t.life--; });
+    this.dashTrail.forEach(t => { t.life -= dt * 60; });
 
     // Passive MP regeneration (1 MP every ~2 seconds)
-    this.mpRegenTimer++;
+    this.mpRegenTimer += dt * 60;
     if (this.mpRegenTimer >= 120) {
       this.mpRegenTimer = 0;
       if (this.mp < this.maxMp) this.mp = Math.min(this.maxMp, this.mp + 1);
@@ -500,12 +510,13 @@ class Projectile {
     this.trail = [];
   }
 
-  update() {
+  update(dt) {
     if (!this.active) return;
     this.trail.push({x:this.x, y:this.y, life:8});
-    this.trail = this.trail.filter(t => t.life-- > 0);
-    this.x += this.vx/60;
-    this.y += this.vy/60;
+    this.trail.forEach(t => t.life -= dt * 60);
+    this.trail = this.trail.filter(t => t.life > 0);
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
     const dx=this.x-this.startX, dy=this.y-this.startY;
     if (Math.sqrt(dx*dx+dy*dy) > this.maxRange) { this.active=false; return; }
     if (this.x<30||this.x>770||this.y<30||this.y>570) { this.active=false; return; }

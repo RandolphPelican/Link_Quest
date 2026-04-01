@@ -175,10 +175,10 @@ const Network = {
   },
 
   // Called from game loop — throttled to ~20fps
-  sendState(player) {
+  sendState(player, dt) {
     if (!this.socket || !this.inRoom || !player) return;
-    this.sendTimer++;
-    if (this.sendTimer < 3) return;  // Send every 3rd frame (~20fps at 60fps)
+    this.sendTimer += dt;
+    if (this.sendTimer < 0.05) return;  // Send every 0.05s (~20fps)
     this.sendTimer = 0;
 
     this.socket.emit('player_state', {

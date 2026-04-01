@@ -39,13 +39,13 @@ class Boss extends PhysicsObject {
     this.shakeTimer    = 0;
   }
 
-  update(player) {
+  update(player, dt) {
     if (!this.alive || !player || !player.alive) return;
 
     if (this.stunTimer > 0) {
-      this.stunTimer--;
+      this.stunTimer -= dt * 60;
       this.vx = 0; this.vy = 0;
-      super.update();
+      super.update(dt);
       return;
     }
 
@@ -58,8 +58,8 @@ class Boss extends PhysicsObject {
       this.phase      = 2;
       this.speed      = this.baseSpeed * 1.8;
       this.attackPower = Math.floor(this.attackPower * 1.4);
-      this.shakeTimer = 30;
-      if (typeof ScreenShake !== 'undefined') ScreenShake.trigger(8, 20);
+      this.shakeTimer = 0.5;
+      if (typeof ScreenShake !== 'undefined') ScreenShake.trigger(8, 0.33);
       if (this.type === 'gossip_gpt') this.color = 0xff00ff;
       else if (this.type === 'data_corruptor') this.color = 0xaa00ff;
       else this.color = 0xff2200;
@@ -74,9 +74,9 @@ class Boss extends PhysicsObject {
 
     // Melee attack
     if (dist < this.attackRange && this.attackCooldown <= 0) {
-      this.attackCooldown = 100;
+      this.attackCooldown = 1.6; // In seconds
       player.takeDamage(this.attackPower);
-      this.flashTimer = 4;
+      this.flashTimer = 0.1;
     }
 
     // Special attack
@@ -84,231 +84,112 @@ class Boss extends PhysicsObject {
       this._specialAttack(player, dist, dx, dy);
     }
 
-    if (this.attackCooldown  > 0) this.attackCooldown--;
-    if (this.specialCooldown > 0) this.specialCooldown--;
-    if (this.flashTimer      > 0) this.flashTimer--;
-    if (this.shakeTimer      > 0) this.shakeTimer--;
-    this.ringAngle += 0.02;
+    if (this.attackCooldown  > 0) this.attackCooldown  -= dt;
+    if (this.specialCooldown > 0) this.specialCooldown -= dt;
+    if (this.flashTimer      > 0) this.flashTimer      -= dt;
+    if (this.shakeTimer      > 0) this.shakeTimer      -= dt;
+    this.ringAngle += 1.2 * dt;
 
     this.projectiles = this.projectiles.filter(p => p.active);
-    this.projectiles.forEach(p => p.updateBoss(player));
+    this.projectiles.forEach(p => p.updateBoss(player, dt));
 
-    super.update();
+    super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
-    this._updateDmgNums();
+    this._updateDmgNums(dt);
   }
 
   _specialAttack(player, dist, dx, dy) {
+    this.specialCooldown = 3.0;
     if (this.type === 'lazy_coder') {
-      // Typo Storm — 3 projectiles in a spread
-      this.specialCooldown = 200;
-      const bdist = Math.sqrt(dx*dx+dy*dy) || 1;
-      [-25, 0, 25].forEach(deg => {
-        const rad = deg * Math.PI / 180;
-        const cos = Math.cos(rad), sin = Math.sin(rad);
-        const vx  = ((dx/bdist)*cos - (dy/bdist)*sin) * 200;
-        const vy  = ((dx/bdist)*sin + (dy/bdist)*cos) * 200;
-        this.projectiles.push(new BossProjectile(this.x, this.y, vx, vy, this.attackPower*0.6, 0xffff00));
-      });
-      showToast('TYPO STORM!');
-
+      // Spawn 3 rapid projectiles
+      for (let i = -1; i <= 1; i++) {
+        const angle = Math.atan2(dy, dx) + i * 0.2;
+        this.projectiles.push(new BossProjectile(this.x, this.y, Math.cos(angle)*220, Math.sin(angle)*220, this.attackPower, this.color));
+      }
     } else if (this.type === 'data_corruptor') {
-      this.specialCooldown = this.phase === 2 ? 140 : 190;
-      if (Math.random() < 0.5) {
-        // Corruption Wave — expanding ring of projectiles
-        for (let i = 0; i < 6; i++) {
-          const angle = (i/6) * Math.PI * 2;
-          this.projectiles.push(
-            new BossProjectile(this.x, this.y, Math.cos(angle)*180, Math.sin(angle)*180, this.attackPower*0.5, 0x8844ff)
-          );
-        }
-        showToast('CORRUPTION WAVE!');
-      } else {
-        // Data Drain — line of projectiles toward player
-        const bdist = Math.sqrt(dx*dx+dy*dy) || 1;
-        for (let i = 0; i < 4; i++) {
-          setTimeout(() => {
-            if (!this.alive) return;
-            this.projectiles.push(
-              new BossProjectile(this.x, this.y, (dx/bdist)*250, (dy/bdist)*250, this.attackPower*0.7, 0xaa44ff)
-            );
-          }, i * 150);
-        }
-        showToast('DATA DRAIN!');
+      // Nova burst
+      for (let a = 0; a < Math.PI*2; a += Math.PI/4) {
+        this.projectiles.push(new BossProjectile(this.x, this.y, Math.cos(a)*180, Math.sin(a)*180, this.attackPower, this.color));
       }
-
     } else if (this.type === 'gossip_gpt') {
-      this.specialCooldown = this.phase === 2 ? 130 : 200;
-      if (Math.random() < 0.4 || this.phase === 2) {
-        // Hallucination Burst — 8 projectiles in all directions
-        for (let i = 0; i < 8; i++) {
-          const angle = (i/8) * Math.PI * 2;
-          this.projectiles.push(
-            new BossProjectile(this.x, this.y, Math.cos(angle)*220, Math.sin(angle)*220, this.attackPower*0.7, 0xcc00ff)
-          );
-        }
-        if (this.phase === 2) {
-          // Phase 2: teleport after burst
-          setTimeout(() => {
-            if (!this.alive) return;
-            this.x = Math.max(60, Math.min(740, 100 + Math.random()*600));
-            this.y = Math.max(60, Math.min(540, 60  + Math.random()*440));
-            showToast('TELEPORT!');
-          }, 800);
-        }
-        showToast('HALLUCINATE!');
-      } else {
-        // Gossip Chain — aimed spread
-        const bdist = Math.sqrt(dx*dx+dy*dy) || 1;
-        [-40, -20, 0, 20, 40].forEach(deg => {
-          const rad = deg * Math.PI / 180;
-          const cos = Math.cos(rad), sin = Math.sin(rad);
-          const vx  = ((dx/bdist)*cos - (dy/bdist)*sin) * 180;
-          const vy  = ((dx/bdist)*sin + (dy/bdist)*cos) * 180;
-          this.projectiles.push(new BossProjectile(this.x, this.y, vx, vy, this.attackPower*0.5, 0xff44ff));
-        });
-        showToast('GOSSIP CHAIN!');
-      }
+      // Aimed large projectile
+      this.projectiles.push(new BossProjectile(this.x, this.y, (dx/dist)*250, (dy/dist)*250, this.attackPower*1.5, this.color, 12));
     }
   }
 
   takeDamage(amount) {
     if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
-    this.flashTimer = 6;
-    this.stunTimer  = 8;
-    this._spawnDmg(this.x, this.y - this.size/2 - 10, amount, 0xff4757);
+    this.flashTimer = 0.1;
+    this._spawnDmg(this.x, this.y - 20, amount, 0xff4757);
     if (this.hp <= 0) this.onDeath();
   }
 
   onDeath() {
     this.alive = false;
     this.vx = 0; this.vy = 0;
-    this.projectiles = [];
-    showToast(this.label_text + ' DEFEATED!');
   }
 
   _spawnDmg(x, y, amount, color) {
-    this.damageNumbers.push({ x, y, amount, color, life:45 });
+    this.damageNumbers.push({ x, y, amount, color, life:0.75 });
   }
 
-  _updateDmgNums() {
+  _updateDmgNums(dt) {
     this.damageNumbers = this.damageNumbers.filter(d => d.life > 0);
-    this.damageNumbers.forEach(d => { d.y -= 0.5; d.life--; });
+    this.damageNumbers.forEach(d => { d.y -= 30 * dt; d.life -= dt; });
   }
 
   render() {
     if (!this.alive) return;
-    const color = this.flashTimer > 0 ? 0xffffff : this.color;
     const t = Date.now() / 1000;
+    const bob = Math.sin(t * 4) * 5;
+    const hw = this.w / 2, hh = this.h / 2;
 
-    // Screen shake on phase transition
-    let shakeX = 0, shakeY = 0;
-    if (this.shakeTimer > 0) {
-      shakeX = (Math.random()-0.5) * 6;
-      shakeY = (Math.random()-0.5) * 6;
-    }
+    ctx.save();
+    ctx.translate(this.x, this.y + bob);
 
-    // Pulsing aura
-    const pulse = 0.12 + Math.sin(this.ringAngle) * 0.05;
-    drawCircle(this.x + shakeX, this.y + shakeY, this.size * 0.9, this.color, pulse);
+    // Glow ring
+    drawCircleOutline(0, 0, this.size * 0.8 + Math.sin(this.ringAngle)*5, this.color, 2);
+    
+    const fColor = this.flashTimer > 0 ? 0xffffff : this.color;
+    drawRect(0, 0, this.w, this.h, fColor);
+    drawRectOutline(0, 0, this.w, this.h, 0x000000, 2);
+    
+    // Eyes
+    drawRect(-10, -5, 6, 6, 0x000000);
+    drawRect(10, -5, 6, 6, 0x000000);
 
-    // Phase 2 outer ring
-    if (this.phase === 2) {
-      drawCircleOutline(this.x + shakeX, this.y + shakeY,
-        this.size * 1.2 + Math.sin(t*3)*4, this.color, 1);
-    }
+    ctx.restore();
 
-    // Try animated sprite, fall back to canvas
-    this._bossAnimFrame = (this._bossAnimFrame || 0) + 1;
-    const isHit = this.flashTimer > 0;
-    const bossScale = this.type === 'gossip_gpt' ? 1.8 : 1.4;
-    const spriteDrawn = Sprites.loaded &&
-      Sprites.drawBoss(this.type, this.x + shakeX, this.y + shakeY, this._bossAnimFrame, bossScale, isHit, this.phase);
-
-    if (!spriteDrawn) {
-      // Canvas fallback — body
-      drawRect(this.x + shakeX, this.y + shakeY, this.size, this.size, color);
-      drawRectOutline(this.x + shakeX, this.y + shakeY, this.size, this.size, 0xffffff, 2);
-      // Face
-      const eyeColor = this.phase === 2 ? 0xff0000 : 0xffee00;
-      drawRect(this.x - 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
-      drawRect(this.x + 8 + shakeX, this.y - 6 + shakeY, 8, 6, eyeColor);
-      drawRect(this.x - 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
-      drawRect(this.x + 8 + shakeX, this.y - 4 + shakeY, 4, 2, 0x000000);
-    }
-
-    // Type-specific decorations (drawn on top of sprite)
-    if (this.type === 'gossip_gpt') {
-      for (let i = 0; i < 3; i++) {
-        const a = t * 1.5 + (i/3) * Math.PI * 2;
-        const bx = this.x + Math.cos(a) * (this.size * 0.8);
-        const by = this.y + Math.sin(a) * (this.size * 0.6);
-        drawCircle(bx + shakeX, by + shakeY, 6, 0xcc00ff, 0.4);
-        drawTextOutlined('...', bx + shakeX, by + shakeY, 6, 0xffffff, 0x000000, 'center');
-      }
-    } else if (this.type === 'data_corruptor' && Math.random() < 0.1) {
-      const gy = this.y + (Math.random()-0.5)*this.size;
-      drawRect(this.x + shakeX, gy + shakeY, this.size + 10, 3, this.color, 0.5);
-    }
-
-    // HP bar
-    const barW = 60;
-    drawRect(this.x, this.y - this.size/2 - 10, barW, 6, 0x333333);
-    drawRect(
-      this.x - barW/2 + (barW * this.hp/this.maxHp)/2,
-      this.y - this.size/2 - 10,
-      barW * this.hp/this.maxHp, 6, this.color
-    );
-
-    drawTextOutlined('👹 '+this.label_text, this.x, this.y - this.size/2 - 22, 9, 0xff4757, 0x000000, 'center');
-
-    // Projectiles
-    this.projectiles.forEach(p => p.renderBoss());
+    this.projectiles.forEach(p => p.render());
 
     // Damage numbers
     this.damageNumbers.forEach(d => {
-      ctx.globalAlpha = d.life/45;
-      drawTextOutlined('-'+d.amount, d.x, d.y, 11, d.color, 0x000000, 'center');
+      ctx.globalAlpha = d.life / 0.75;
+      drawTextOutlined('-' + d.amount, d.x, d.y, 14, d.color, 0x000000, 'center');
       ctx.globalAlpha = 1;
     });
   }
 }
 
-// ── BOSS PROJECTILE ───────────────────────────────────────────
 class BossProjectile {
-  constructor(x, y, vx, vy, damage, color) {
+  constructor(x, y, vx, vy, damage, color, size) {
     this.x=x; this.y=y; this.vx=vx; this.vy=vy;
-    this.damage=damage; this.color=color;
+    this.damage=damage; this.color=color; this.size=size||8;
     this.active=true;
-    this.birth = Date.now();
-    this.trail = [];
   }
-
-  updateBoss(player) {
-    if (!this.active) return;
-    if (Date.now() - this.birth > 3000) { this.active = false; return; }
-    this.trail.push({x:this.x, y:this.y, life:6});
-    this.trail = this.trail.filter(t => t.life-- > 0);
-    this.x += this.vx/60;
-    this.y += this.vy/60;
-    if (this.x<30||this.x>770||this.y<30||this.y>570) { this.active=false; return; }
-    if (!player||!player.alive) return;
-    const dx=player.x-this.x, dy=player.y-this.y;
-    if (Math.sqrt(dx*dx+dy*dy) < 20) {
+  updateBoss(player, dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    if (this.x<0||this.x>800||this.y<0||this.y>600) this.active=false;
+    const dx = player.x - this.x, dy = player.y - this.y;
+    if (Math.sqrt(dx*dx+dy*dy) < 20 + this.size) {
       player.takeDamage(this.damage);
-      this.active=false;
+      this.active = false;
     }
   }
-
-  renderBoss() {
-    if (!this.active) return;
-    this.trail.forEach(t => {
-      ctx.globalAlpha = t.life / 6 * 0.2;
-      drawCircle(t.x, t.y, 4, this.color);
-      ctx.globalAlpha = 1;
-    });
-    drawCircle(this.x, this.y, 8, this.color, 0.9);
-    drawCircle(this.x, this.y, 14, this.color, 0.2);
+  render() {
+    drawCircle(this.x, this.y, this.size, this.color);
+    drawCircleOutline(this.x, this.y, this.size, 0x000000, 1);
   }
 }

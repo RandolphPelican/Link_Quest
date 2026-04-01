@@ -5,23 +5,6 @@
 
 'use strict';
 
-// ── GAME STATE ────────────────────────────────────────────────
-const GameState = {
-  selectedChar:   null,
-  currentLevel:   1,
-  currentRoom:    1,
-  lastDoor:       null,
-  score:          0,
-  paused:         false,
-  inventory:      { keys: 0, armor: 'cloth' },
-  playerHP:       null,
-  playerMP:       null,
-  roomState:      {},
-  cutscenesSeen:  [],
-  deaths:         0,
-  totalRooms:     30
-};
-
 const LevelCache = {};
 
 async function loadLevel(num) {
@@ -31,29 +14,6 @@ async function loadLevel(num) {
     LevelCache[num] = await res.json();
     return LevelCache[num];
   } catch(e) { console.error('Level load failed:', e); return null; }
-}
-
-function getRoomState(level, room) {
-  const key = level + '_' + room;
-  if (!GameState.roomState[key])
-    GameState.roomState[key] = { openedChests: [], cleared: false };
-  return GameState.roomState[key];
-}
-
-function markChestOpened(level, room, index) {
-  getRoomState(level, room).openedChests.push(index);
-}
-
-function isChestOpened(level, room, index) {
-  return getRoomState(level, room).openedChests.includes(index);
-}
-
-function markCutsceneSeen(id) {
-  if (!GameState.cutscenesSeen.includes(id)) GameState.cutscenesSeen.push(id);
-}
-
-function isCutsceneSeen(id) {
-  return GameState.cutscenesSeen.includes(id);
 }
 
 function showToast(msg, duration) {
@@ -253,46 +213,23 @@ function loadRoom() {
 
   // Spawn player
   const spawn = getSpawnPosition(GameState.lastDoor);
-  player = new Player(spawn.x, spawn.y, GameState.selectedChar);
-  if (GameState.playerHP !== null) player.hp = GameState.playerHP;
-  if (GameState.playerMP !== null) player.mp = GameState.playerMP;
-  // Restore armor
-  if (GameState.inventory.armor !== 'cloth') {
-    player.armor = GameState.inventory.armor;
-    const armorData = ITEMS[GameState.inventory.armor];
-    if (armorData) player.maxHp = (CHAR_DEFS[GameState.selectedChar]||CHAR_DEFS.lincoln).maxHp + armorData.hpBonus;
-  }
+  player = EntityFactory.spawnPlayer(spawn.x, spawn.y, GameState.selectedChar);
 
   // Spawn enemies
   enemies = [];
   const state = getRoomState(GameState.currentLevel, GameState.currentRoom);
   if (!state.cleared) {
-    (roomData.enemies || []).forEach(group => {
-      for (let i = 0; i < (group.count || 1); i++) {
-        const ox = (i % 3) * 55, oy = Math.floor(i/3) * 55;
-        let ex = group.x + ox, ey = group.y + oy;
-        const ddx = ex - spawn.x, ddy = ey - spawn.y;
-        const dd  = Math.sqrt(ddx*ddx + ddy*ddy);
-        if (dd < 160 && dd > 0) {
-          ex += (ddx/dd) * (160 - dd + 20);
-          ey += (ddy/dd) * (160 - dd + 20);
-        }
-        enemies.push(new Enemy(ex, ey, group.type, group.pattern || 'rusher'));
-      }
-    });
+    enemies = EntityFactory.spawnEnemies(roomData.enemies, spawn);
   }
 
   // Spawn boss
   boss = null;
   if (roomData.boss && !state.cleared) {
-    boss = new Boss(roomData.boss.x, roomData.boss.y, roomData.boss.type);
+    boss = EntityFactory.spawnBoss(roomData.boss);
   }
 
   // Floor items
-  items = [];
-  (roomData.items || []).forEach(it => {
-    items.push(new Item(it.x, it.y, it.key));
-  });
+  items = EntityFactory.spawnItems(roomData.items);
 
   // Lock exits if threats present
   const hasThreats = enemies.length > 0 || boss;
@@ -474,10 +411,10 @@ function gameUpdate(dt) {
   }
   if (GameState.paused || !player || transitioning) return;
 
-  player.update();
+  player.update(dt);
 
   // Enemy updates
-  enemies.forEach(e => e.update(player));
+  enemies.forEach(e => e.update(player, dt));
 
   // Check for dead enemies — deaths can happen during player.attack() OR enemy.update()
   // so we always filter and check, not just when wasAlive flips
@@ -490,7 +427,7 @@ function gameUpdate(dt) {
   // Boss update — also handle deaths during player.attack()
   if (boss) {
     if (boss.alive) {
-      boss.update(player);
+      boss.update(player, dt);
     }
     // Check if boss died (could happen during player.attack OR boss.update)
     if (!boss.alive) {
@@ -508,7 +445,7 @@ function gameUpdate(dt) {
   }
 
   // Update items
-  items.forEach(item => item.update());
+  items.forEach(item => item.update(dt));
 
   // O key interact
   if (Input.pressed('o')) {
@@ -533,7 +470,7 @@ function gameUpdate(dt) {
 
   // Network: send state to other players
   if (Network.enabled && Network.inRoom) {
-    Network.sendState(player);
+    Network.sendState(player, dt);
   }
 
   // Player death — respawn in next room

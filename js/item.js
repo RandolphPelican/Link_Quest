@@ -51,10 +51,10 @@ class Item {
     }
   }
 
-  update() {
+  update(dt) {
     if (this.collected) return;
     // Float animation
-    this.floatOffset += 0.05 * this.floatDir;
+    this.floatOffset += 3 * dt * this.floatDir;
     if (Math.abs(this.floatOffset) > 3) this.floatDir *= -1;
   }
 

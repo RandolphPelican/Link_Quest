@@ -156,11 +156,14 @@ class PhysicsObject {
     this.x  = x; this.y  = y;
     this.w  = w; this.h  = h;
     this.vx = 0; this.vy = 0;
+    this.friction = 0.85; // Default friction
   }
 
-  update() {
-    this.x += this.vx / 60;
-    this.y += this.vy / 60;
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vx *= this.friction;
+    this.vy *= this.friction;
     clampToBounds(this);
   }
 
@@ -172,15 +175,21 @@ class PhysicsObject {
 
   // Push this object out of a static obstacle
   resolveCollision(obs) {
-    const overlapX = (this.w + obs.w) / 2 - Math.abs(this.x - obs.x);
-    const overlapY = (this.h + obs.h) / 2 - Math.abs(this.y - obs.y);
-    if (overlapX <= 0 || overlapY <= 0) return;
-    if (overlapX < overlapY) {
-      this.x += this.x < obs.x ? -overlapX : overlapX;
-      this.vx = 0;
-    } else {
-      this.y += this.y < obs.y ? -overlapY : overlapY;
-      this.vy = 0;
+    const dx = this.x - obs.x;
+    const dy = this.y - obs.y;
+    const combinedHalfW = (this.w + obs.w) / 2;
+    const combinedHalfH = (this.h + obs.h) / 2;
+    const overlapX = combinedHalfW - Math.abs(dx);
+    const overlapY = combinedHalfH - Math.abs(dy);
+
+    if (overlapX > 0 && overlapY > 0) {
+      if (overlapX < overlapY) {
+        this.x += dx > 0 ? overlapX : -overlapX;
+        this.vx = 0;
+      } else {
+        this.y += dy > 0 ? overlapY : -overlapY;
+        this.vy = 0;
+      }
     }
   }
 }
@@ -206,17 +215,18 @@ const Fade = {
     this.onDone = null;
   },
 
-  update() {
+  update(dt) {
     if (this.alpha === this.target) return;
+    const step = this.speed * dt * 60;
     if (this.alpha < this.target) {
-      this.alpha = Math.min(this.alpha + this.speed, this.target);
+      this.alpha = Math.min(this.alpha + step, this.target);
       if (this.alpha === this.target && this.onDone) {
         const fn = this.onDone;
         this.onDone = null;
         fn();
       }
     } else {
-      this.alpha = Math.max(this.alpha - this.speed, this.target);
+      this.alpha = Math.max(this.alpha - step, this.target);
     }
   },
 
@@ -237,10 +247,10 @@ const ScreenShake = {
     this.intensity = intensity;
     this.duration  = duration;
   },
-  update() {
+  update(dt) {
     if (this.duration <= 0) { this.offsetX = 0; this.offsetY = 0; return; }
-    this.duration--;
-    const factor = this.duration > 0 ? this.intensity * (this.duration / 20) : 0;
+    this.duration -= dt;
+    const factor = this.duration > 0 ? this.intensity * (this.duration / 0.33) : 0;
     this.offsetX = (Math.random() - 0.5) * factor * 2;
     this.offsetY = (Math.random() - 0.5) * factor * 2;
   }
@@ -266,8 +276,8 @@ function _loop(now) {
   _lastTime = now;
 
   if (!_paused && _gameUpdate) _gameUpdate(dt);
-  Fade.update();
-  ScreenShake.update();
+  Fade.update(dt);
+  ScreenShake.update(dt);
 
   ctx.save();
   ctx.translate(ScreenShake.offsetX, ScreenShake.offsetY);

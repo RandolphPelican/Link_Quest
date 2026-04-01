@@ -57,15 +57,15 @@ class Enemy extends PhysicsObject {
     this.shootCooldown = 0;
   }
 
-  update(player) {
+  update(player, dt) {
     if (!this.alive || !player || !player.alive) return;
-    this.animPhase += 0.05;
+    this.animPhase += 3 * dt;
 
     if (this.stunTimer > 0) {
-      this.stunTimer--;
+      this.stunTimer -= dt * 60;
       this.vx = 0; this.vy = 0;
-      super.update();
-      this._updateDmgNums();
+      super.update(dt);
+      this._updateDmgNums(dt);
       return;
     }
 
@@ -84,7 +84,7 @@ class Enemy extends PhysicsObject {
     }
 
     switch(this.state) {
-      case 'chase': this._moveByPattern(dx, dy, dist, player); break;
+      case 'chase': this._moveByPattern(dx, dy, dist, player, dt); break;
       case 'retreat':
         if (dist > 0) {
           this.vx = -(dx/dist) * this.speed * 1.1;
@@ -101,18 +101,20 @@ class Enemy extends PhysicsObject {
           if (this.attackCooldown <= 0) this._attackPlayer(player);
         }
         break;
-      case 'idle': this._wander(); break;
+      case 'idle':
+        this._wander(dt);
+        break;
     }
 
-    if (this.attackCooldown > 0) this.attackCooldown--;
-    if (this.shootCooldown > 0) this.shootCooldown--;
-    if (this.flashTimer     > 0) this.flashTimer--;
+    if (this.attackCooldown > 0) this.attackCooldown -= dt * 60;
+    if (this.shootCooldown  > 0) this.shootCooldown  -= dt * 60;
+    if (this.flashTimer      > 0) this.flashTimer      -= dt * 60;
 
     // Update enemy projectiles
     this.projectiles = this.projectiles.filter(p => p.active);
     this.projectiles.forEach(p => {
-      p.x += p.vx/60;
-      p.y += p.vy/60;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
       if (p.x<30||p.x>770||p.y<30||p.y>570) { p.active=false; return; }
       if (Date.now() - p.birth > 2500) { p.active=false; return; }
       const pdx = player.x - p.x, pdy = player.y - p.y;
@@ -122,12 +124,12 @@ class Enemy extends PhysicsObject {
       }
     });
 
-    super.update();
+    super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
-    this._updateDmgNums();
+    this._updateDmgNums(dt);
   }
 
-  _moveByPattern(dx, dy, dist, player) {
+  _moveByPattern(dx, dy, dist, player, dt) {
     if (dist === 0) return;
     if (this.pattern === 'rusher') {
       this.vx = (dx/dist) * this.speed;
@@ -136,10 +138,10 @@ class Enemy extends PhysicsObject {
       if (dist < 180) {
         this.vx = -(dx/dist) * this.speed * 1.2;
         this.vy = -(dy/dist) * this.speed * 1.2;
-      } else { this._wander(); }
+      } else { this._wander(dt); }
     } else if (this.pattern === 'stick_and_move') {
       if (this.retreating) {
-        this.retreatTimer--;
+        this.retreatTimer -= dt * 60;
         this.vx = -(dx/dist) * this.speed * 1.1;
         this.vy = -(dy/dist) * this.speed * 1.1;
         if (this.retreatTimer <= 0) this.retreating = false;
@@ -152,12 +154,10 @@ class Enemy extends PhysicsObject {
         }
       }
     } else if (this.pattern === 'orbiter') {
-      // Circles around player while slowly closing in
       const angle = Math.atan2(dy, dx) + Math.PI/2;
       this.vx = Math.cos(angle) * this.speed * 0.8 + (dx/dist) * this.speed * 0.3;
       this.vy = Math.sin(angle) * this.speed * 0.8 + (dy/dist) * this.speed * 0.3;
     } else if (this.pattern === 'teleporter') {
-      // Moves toward player, occasionally "blinks" to a new position
       this.vx = (dx/dist) * this.speed * 0.6;
       this.vy = (dy/dist) * this.speed * 0.6;
       if (Math.random() < 0.005 && dist > 100) {
@@ -169,8 +169,8 @@ class Enemy extends PhysicsObject {
     }
   }
 
-  _wander() {
-    this.wanderTimer--;
+  _wander(dt) {
+    this.wanderTimer -= dt * 60;
     if (this.wanderTimer <= 0) {
       this.wanderTimer = 80 + Math.floor(Math.random()*120);
       this.wanderX = Math.max(50, Math.min(750, this.x + (Math.random()-0.5)*140));
@@ -241,78 +241,56 @@ class Enemy extends PhysicsObject {
     this.damageNumbers.push({ x, y, amount, color, life:45 });
   }
 
-  _updateDmgNums() {
+  _updateDmgNums(dt) {
     this.damageNumbers = this.damageNumbers.filter(d => d.life > 0);
-    this.damageNumbers.forEach(d => { d.y -= 0.5; d.life--; });
+    this.damageNumbers.forEach(d => { d.y -= 30 * dt; d.life -= dt * 60; });
   }
 
   render() {
     if (!this.alive) return;
-    const color = this.flashTimer > 0 ? 0xffffff : this.color;
-    const isHit = this.flashTimer > 0;
+    const t = this.animPhase;
+    const bob = Math.sin(t) * 3;
+    const hw = this.w / 2, hh = this.h / 2;
 
-    // Determine facing direction toward player
-    let facing = 'right';
-    if (typeof player !== 'undefined' && player) {
-      facing = player.x < this.x ? 'left' : 'right';
+    ctx.save();
+    ctx.translate(this.x, this.y + bob);
+
+    const fColor = this.flashTimer > 0 ? 0xffffff : this.color;
+
+    if (this.shape === 'square') {
+      drawRect(0, 0, this.w, this.h, fColor);
+      drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
+    } else if (this.shape === 'diamond') {
+      ctx.rotate(Math.PI/4);
+      drawRect(0, 0, this.w, this.h, fColor);
+      drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
+      ctx.rotate(-Math.PI/4);
+    } else {
+      drawCircle(0, 0, this.w/2, fColor);
+      drawCircleOutline(0, 0, this.w/2, 0x000000, 1);
     }
 
-    // Try sprite rendering first
-    const spriteDrawn = Sprites.loaded &&
-      Sprites.drawEnemy(this.type, this.x, this.y, facing, this.animPhase * 20, 3.0, isHit);
+    // Eyes
+    const eyeSize = this.w * 0.15;
+    drawRect(-this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
+    drawRect(this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
 
-    if (!spriteDrawn) {
-      // Canvas fallback
-      if (this.shape === 'diamond') {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(Math.PI/4 + Math.sin(this.animPhase)*0.1);
-        drawRect(0, 0, this.size*0.75, this.size*0.75, color);
-        drawRectOutline(0, 0, this.size*0.75, this.size*0.75, 0x000000, 1);
-        ctx.restore();
-      } else if (this.shape === 'circle') {
-        drawCircle(this.x, this.y, this.size/2, color);
-        drawCircleOutline(this.x, this.y, this.size/2, 0x000000, 1);
-        drawCircleOutline(this.x, this.y, this.size/3, color, 1);
-      } else {
-        drawRect(this.x, this.y, this.size, this.size, color);
-        drawRectOutline(this.x, this.y, this.size, this.size, 0x000000, 1);
-      }
-      // Eyes
-      if (typeof player !== 'undefined' && player) {
-        const edx = player.x - this.x, edy = player.y - this.y;
-        const ed = Math.sqrt(edx*edx+edy*edy) || 1;
-        const eyeX = (edx/ed) * 3, eyeY = (edy/ed) * 3;
-        drawRect(this.x + eyeX - 3, this.y + eyeY - 2, 3, 3, 0x000000);
-        drawRect(this.x + eyeX + 3, this.y + eyeY - 2, 3, 3, 0x000000);
-      }
-    }
+    // Name tag
+    drawTextOutlined(this.label, 0, -hh - 12, 6, 0xffffff, 0x000000, 'center');
 
-    // HP bar — positioned above bigger sprite
-    const barW = 40;
-    const spriteHalf = 40;  // half of 2.5x scaled 32px sprite
-    drawRect(this.x, this.y - spriteHalf - 6, barW, 5, 0x333333);
-    drawRect(
-      this.x - barW/2 + (barW * this.hp/this.maxHp)/2,
-      this.y - spriteHalf - 6,
-      barW * this.hp/this.maxHp, 5, this.color
-    );
-
-    // Label
-    drawTextOutlined(this.label, this.x, this.y - spriteHalf - 16, 6, this.color, 0x000000, 'center');
+    ctx.restore();
 
     // Damage numbers
     this.damageNumbers.forEach(d => {
-      ctx.globalAlpha = d.life/45;
-      drawTextOutlined('-'+d.amount, d.x, d.y, 11, d.color, 0x000000, 'center');
+      ctx.globalAlpha = d.life / 45;
+      drawTextOutlined('-' + d.amount, d.x, d.y, 10, d.color, 0x000000, 'center');
       ctx.globalAlpha = 1;
     });
 
-    // Enemy projectiles
+    // Projectiles
     this.projectiles.forEach(p => {
-      if (!p.active) return;
-      drawCircle(p.x, p.y, 5, p.color, 0.9);
-      drawCircle(p.x, p.y, 10, p.color, 0.2);
+      drawCircle(p.x, p.y, 5, p.color);
+      drawCircleOutline(p.x, p.y, 5, 0x000000, 1);
     });
   }
 }

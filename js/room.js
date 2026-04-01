@@ -419,8 +419,6 @@ class RoomManager {
 
   // ── COLLISION ────────────────────────────────────────────
   resolveCollisions(obj) {
-    this.obstacles.forEach(obs => {
-      obj.resolveCollision({ x:obs.x, y:obs.y, w:obs.w, h:obs.h });
-    });
+    CollisionSystem.resolveStatic(obj, this.obstacles);
   }
 }
