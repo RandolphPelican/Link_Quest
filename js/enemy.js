@@ -248,37 +248,50 @@ class Enemy extends PhysicsObject {
 
   render() {
     if (!this.alive) return;
+    
+    // Try to draw with Sprites first
     const t = this.animPhase;
-    const bob = Math.sin(t) * 3;
-    const hw = this.w / 2, hh = this.h / 2;
+    const isHit = this.flashTimer > 0;
+    const facing = (this.vx < 0) ? 'left' : 'right';
+    
+    const spriteDrawn = Sprites.loaded && 
+      Sprites.drawEnemy(this.type, this.x, this.y, facing, t * 10, 2.5, isHit);
 
-    ctx.save();
-    ctx.translate(this.x, this.y + bob);
+    if (!spriteDrawn) {
+      // Fallback procedural drawing with phenotypic variation
+      const bob = Math.sin(t) * 3;
+      const hw = this.w / 2, hh = this.h / 2;
+      const stretch = 1.0 + Math.sin(t) * 0.05;
 
-    const fColor = this.flashTimer > 0 ? 0xffffff : this.color;
+      ctx.save();
+      ctx.translate(this.x, this.y + bob);
+      ctx.scale(stretch, 2.0 - stretch);
 
-    if (this.shape === 'square') {
-      drawRect(0, 0, this.w, this.h, fColor);
-      drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
-    } else if (this.shape === 'diamond') {
-      ctx.rotate(Math.PI/4);
-      drawRect(0, 0, this.w, this.h, fColor);
-      drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
-      ctx.rotate(-Math.PI/4);
-    } else {
-      drawCircle(0, 0, this.w/2, fColor);
-      drawCircleOutline(0, 0, this.w/2, 0x000000, 1);
+      const fColor = isHit ? 0xffffff : this.color;
+
+      if (this.shape === 'square') {
+        drawRect(0, 0, this.w, this.h, fColor);
+        drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
+      } else if (this.shape === 'diamond') {
+        ctx.rotate(Math.PI/4);
+        drawRect(0, 0, this.w, this.h, fColor);
+        drawRectOutline(0, 0, this.w, this.h, 0x000000, 1);
+        ctx.rotate(-Math.PI/4);
+      } else {
+        drawCircle(0, 0, this.w/2, fColor);
+        drawCircleOutline(0, 0, this.w/2, 0x000000, 1);
+      }
+
+      // Eyes
+      const eyeSize = this.w * 0.15;
+      drawRect(-this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
+      drawRect(this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
+      ctx.restore();
     }
 
-    // Eyes
-    const eyeSize = this.w * 0.15;
-    drawRect(-this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
-    drawRect(this.w*0.2, -this.h*0.1, eyeSize, eyeSize, 0x000000);
-
     // Name tag
-    drawTextOutlined(this.label, 0, -hh - 12, 6, 0xffffff, 0x000000, 'center');
-
-    ctx.restore();
+    const hh = this.h / 2;
+    drawTextOutlined(this.label, this.x, this.y - hh - 15, 6, 0xffffff, 0x000000, 'center');
 
     // Damage numbers
     this.damageNumbers.forEach(d => {
