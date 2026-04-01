@@ -111,6 +111,7 @@ function initCharSelect() {
   const joinBtn = document.getElementById('join-btn');
   const joinCode = document.getElementById('join-code');
   const readyBtn = document.getElementById('ready-btn');
+  const makerBtn = document.getElementById('maker-mode-btn');
 
   // Connect to multiplayer server
   Network.connect();
@@ -171,6 +172,15 @@ function initCharSelect() {
     readyBtn.disabled = true;
     readyBtn.style.borderColor = '#ffd700';
     readyBtn.style.color = '#ffd700';
+  });
+
+  // MAKER MODE
+  makerBtn.addEventListener('click', () => {
+    if (typeof Maker !== 'undefined') {
+      Maker.show();
+    } else {
+      console.error('Maker module not loaded');
+    }
   });
 
   // Listen for game_start to actually launch
