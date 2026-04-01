@@ -376,7 +376,6 @@ class Player extends PhysicsObject {
     this.invincible = true; this.invincibleTimer = 45;
     this.flashTimer = 8;    this.flashColor = 0xff0000;
     this._spawnDmg(this.x, this.y - 15, dmg, 0xff4757);
-    if (typeof ScreenShake !== 'undefined') ScreenShake.trigger(4, 8);
     if (this.hp <= 0) this.alive = false;
   }
 
