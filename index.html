@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/maker.css"/>
 </head>
 <body>
 
@@ -94,6 +95,55 @@
           <button id="join-btn" disabled>Join</button>
         </div>
       </div>
+      <div id="maker-option" style="margin-top:20px;">
+        <button id="maker-mode-btn" class="maker-btn">🛠️ MAKER MODE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAKER MODE SCREEN -->
+  <div id="maker-screen" class="hidden">
+    <div id="maker-header">
+      <div class="maker-title">🛠️ ROOM MAKER</div>
+      <div class="maker-actions">
+        <button id="maker-play-btn" class="primary">▶ PLAYTEST</button>
+        <button id="maker-save-btn">💾 SAVE</button>
+        <button id="maker-export-btn">📤 EXPORT</button>
+        <button id="maker-import-btn">📥 IMPORT</button>
+        <button id="maker-exit-btn" class="danger">EXIT</button>
+      </div>
+    </div>
+    <div id="maker-main">
+      <div id="maker-palette">
+        <h3>PALETTE</h3>
+        <div class="palette-section">
+          <h4>TILES</h4>
+          <div id="tile-palette" class="palette-grid"></div>
+        </div>
+        <div class="palette-section">
+          <h4>OBJECTS</h4>
+          <div id="object-palette" class="palette-grid"></div>
+        </div>
+        <div class="palette-section">
+          <h4>ENEMIES</h4>
+          <div id="enemy-palette" class="palette-grid"></div>
+        </div>
+      </div>
+      <div id="maker-canvas-container">
+        <canvas id="maker-canvas" width="800" height="600"></canvas>
+      </div>
+      <div id="maker-props">
+        <h3>PROPERTIES</h3>
+        <div id="prop-editor">
+          <label>Room Name</label>
+          <input type="text" id="room-name-input" value="New Room" />
+          <label>Background</label>
+          <input type="color" id="room-bg-input" value="#182030" />
+          <div id="selected-obj-props">
+            <!-- Dynamic -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -141,8 +191,8 @@
   <script src="js/boss.js"></script>
   <script src="js/item.js"></script>
   <script src="js/network.js"></script>
+  <script src="js/maker.js"></script>
   <script src="js/main.js"></script>
-
 </body>
 </html>
 
