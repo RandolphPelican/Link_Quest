@@ -135,6 +135,15 @@
       <div id="maker-props">
         <h3>PROPERTIES</h3>
         <div id="prop-editor">
+          <label>Campaign / Level</label>
+          <select id="maker-campaign-select">
+            <option value="custom">Custom (New)</option>
+            <option value="1">Preset: Debug Dungeon</option>
+            <option value="2">Preset: Hallucination Halls</option>
+            <option value="3">Preset: Final Compile</option>
+          </select>
+          <label>Room ID</label>
+          <input type="number" id="maker-room-id" value="1" min="1" />
           <label>Room Name</label>
           <input type="text" id="room-name-input" value="New Room" />
           <label>Background</label>

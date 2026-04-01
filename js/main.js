@@ -308,10 +308,33 @@ function transitionToRoom(roomId, fromSide) {
   transitioning = true;
   GameState.playerHP = player.hp;
   GameState.playerMP = player.mp;
+  
   // Broadcast to multiplayer
   if (Network.enabled && Network.inRoom) {
     Network.sendRoomTransition(roomId, GameState.currentLevel, fromSide);
   }
+
+  // Animation: move player toward edge
+  const duration = 0.4; // seconds
+  const startX = player.x, startY = player.y;
+  let targetX = startX, targetY = startY;
+  if (fromSide === 'right') targetX += 60;
+  if (fromSide === 'left')  targetX -= 60;
+  if (fromSide === 'top')   targetY -= 60;
+  if (fromSide === 'bottom') targetY += 60;
+
+  let elapsed = 0;
+  const anim = (dt) => {
+    elapsed += dt;
+    const pct = Math.min(elapsed / duration, 1);
+    player.x = startX + (targetX - startX) * pct;
+    player.y = startY + (targetY - startY) * pct;
+    if (pct < 1) {
+      // Continue anim next frame
+      // We don't need to do anything here because game loop calls gameUpdate
+    }
+  };
+
   Fade.fadeOut(0.05, () => {
     GameState.lastDoor    = fromSide || 'right';
     GameState.currentRoom = roomId;

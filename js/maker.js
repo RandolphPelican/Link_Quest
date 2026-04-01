@@ -48,8 +48,12 @@ const Maker = {
     document.getElementById('maker-export-btn').addEventListener('click', () => this.export());
     document.getElementById('maker-import-btn').addEventListener('click', () => this.import());
     
+    document.getElementById('maker-campaign-select').addEventListener('change', (e) => this._onCampaignChange(e));
+    document.getElementById('maker-room-id').addEventListener('change', (e) => this._onRoomIdChange(e));
+
     this.canvas.addEventListener('mousedown', (e) => this._onMouseDown(e));
     this.canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     
     document.getElementById('room-name-input').addEventListener('input', (e) => {
       this.room.name = e.target.value;
@@ -58,6 +62,33 @@ const Maker = {
       this.room.background = e.target.value;
       this._draw();
     });
+  },
+
+  _onCampaignChange(e) {
+    const val = e.target.value;
+    if (val === 'custom') return;
+    this._loadPreset(parseInt(val), parseInt(document.getElementById('maker-room-id').value));
+  },
+
+  _onRoomIdChange(e) {
+    const campaign = document.getElementById('maker-campaign-select').value;
+    if (campaign === 'custom') return;
+    this._loadPreset(parseInt(campaign), parseInt(e.target.value));
+  },
+
+  async _loadPreset(levelNum, roomId) {
+    const data = await loadLevel(levelNum);
+    if (!data) return;
+    const room = data.rooms.find(r => r.id === roomId);
+    if (room) {
+      this.room = JSON.parse(JSON.stringify(room));
+      document.getElementById('room-name-input').value = this.room.name;
+      document.getElementById('room-bg-input').value = this.room.background || "#182030";
+      this._draw();
+      showToast(`Loaded Level ${levelNum} Room ${roomId}`);
+    } else {
+      showToast(`Room ${roomId} not found in Level ${levelNum}`);
+    }
   },
 
   _initPalette() {
@@ -100,9 +131,12 @@ const Maker = {
     const saved = localStorage.getItem('maker_current_room');
     if (saved) {
       try {
-        this.room = JSON.parse(saved);
-        document.getElementById('room-name-input').value = this.room.name || "New Room";
-        document.getElementById('room-bg-input').value = this.room.background || "#182030";
+        const data = JSON.parse(saved);
+        if (data.name) {
+          this.room = data;
+          document.getElementById('room-name-input').value = this.room.name || "New Room";
+          document.getElementById('room-bg-input').value = this.room.background || "#182030";
+        }
       } catch(e) {}
     }
     this._draw();
