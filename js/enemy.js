@@ -215,10 +215,10 @@ class Enemy extends PhysicsObject {
     this._spawnDmg(this.x, this.y - 14, amount, 0xff4757);
     if (this.hp <= 0) this.onDeath();
   }
-
   onDeath() {
     this.alive = false;
     this.vx = 0; this.vy = 0;
+    ParticleSystem.spawn(this.x, this.y, this.color, 15);
     const scores = {
       goblin:50, goblin_chief:150, ai_bug:40, chatbot_clone:150,
       glitch_sprite:60, memory_leak:120, phantom_var:50, null_pointer:180,

@@ -299,6 +299,13 @@ function checkRoomClear() {
     state.cleared = true;
     roomMgr.openAllDoors();
     showToast('Room cleared! Door open!');
+    
+    // Victory particles!
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        ParticleSystem.spawn(400 + (Math.random()-0.5)*200, 300 + (Math.random()-0.5)*200, 0x00e5ff, 20);
+      }, i * 150);
+    }
   }
 }
 

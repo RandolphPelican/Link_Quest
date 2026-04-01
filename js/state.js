@@ -16,6 +16,7 @@ const GameState = {
   playerMP:       null,
   roomState:      {},
   cutscenesSeen:  [],
+  achievements:   [],
   deaths:         0,
   totalRooms:     30,
 
@@ -26,7 +27,8 @@ const GameState = {
       deaths: this.deaths,
       inventory: this.inventory,
       roomState: this.roomState,
-      cutscenesSeen: this.cutscenesSeen
+      cutscenesSeen: this.cutscenesSeen,
+      achievements: this.achievements
     });
     localStorage.setItem('link_quest_save', data);
   },
@@ -34,12 +36,15 @@ const GameState = {
   load() {
     const data = localStorage.getItem('link_quest_save');
     if (data) {
-      const parsed = JSON.parse(data);
-      this.score = parsed.score || 0;
-      this.deaths = parsed.deaths || 0;
-      this.inventory = parsed.inventory || { keys: 0, armor: 'cloth' };
-      this.roomState = parsed.roomState || {};
-      this.cutscenesSeen = parsed.cutscenesSeen || [];
+      try {
+        const parsed = JSON.parse(data);
+        this.score = parsed.score || 0;
+        this.deaths = parsed.deaths || 0;
+        this.inventory = parsed.inventory || { keys: 0, armor: 'cloth' };
+        this.roomState = parsed.roomState || {};
+        this.cutscenesSeen = parsed.cutscenesSeen || [];
+        this.achievements = parsed.achievements || [];
+      } catch(e) {}
     }
   },
 
@@ -55,8 +60,17 @@ const GameState = {
     this.inventory     = { keys: 0, armor: 'cloth' };
     this.roomState     = {};
     this.cutscenesSeen = [];
+    this.achievements  = [];
   }
 };
+
+function unlockAchievement(id, label) {
+  if (!GameState.achievements.includes(id)) {
+    GameState.achievements.push(id);
+    showToast("🏆 ACHIEVEMENT: " + label, 4000);
+    GameState.save();
+  }
+}
 
 function getRoomState(level, room) {
   const key = level + '_' + room;

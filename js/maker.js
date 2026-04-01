@@ -44,6 +44,7 @@ const Maker = {
     
     document.getElementById('maker-exit-btn').addEventListener('click', () => this.hide());
     document.getElementById('maker-play-btn').addEventListener('click', () => this.playtest());
+    document.getElementById('maker-ai-btn').addEventListener('click', () => this.aiSuggest());
     document.getElementById('maker-save-btn').addEventListener('click', () => this.save());
     document.getElementById('maker-export-btn').addEventListener('click', () => this.export());
     document.getElementById('maker-import-btn').addEventListener('click', () => this.import());
@@ -276,6 +277,7 @@ const Maker = {
   save() {
     localStorage.setItem('maker_current_room', JSON.stringify(this.room));
     showToast("Room saved to local storage!");
+    unlockAchievement('first_custom_room', 'First Custom Room');
   },
 
   export() {
@@ -286,6 +288,7 @@ const Maker = {
     a.download = `room_${this.room.name.replace(/\s+/g, '_')}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    unlockAchievement('exported_room', 'Room Architect');
   },
 
   import() {
@@ -310,6 +313,26 @@ const Maker = {
       reader.readAsText(file);
     };
     input.click();
+  },
+
+  aiSuggest() {
+    const suggestions = [
+      { name: "The Goblin Pit", enemies: [{type:'goblin', count:3, x:400, y:300}], obstacles: [{type:'pillar', x:200, y:200}, {type:'pillar', x:600, y:400}] },
+      { name: "Crystal Chamber", enemies: [{type:'glitch_sprite', count:2, x:300, y:200}], decorations: [{type:'crystal', x:400, y:300}, {type:'crystal', x:400, y:100}] },
+      { name: "Puzzle Room", switches: [{x:200, y:200}, {x:600, y:400}], chests: [{x:400, y:300, type:'brown', contains:'small_key'}] }
+    ];
+    const s = suggestions[Math.floor(Math.random() * suggestions.length)];
+    this.room.name = s.name;
+    this.room.enemies = s.enemies || [];
+    this.room.obstacles = s.obstacles || [];
+    this.room.switches = s.switches || [];
+    this.room.chests = s.chests || [];
+    this.room.decorations = s.decorations || [];
+    this.room.signs = s.signs || [];
+    
+    document.getElementById('room-name-input').value = this.room.name;
+    this._draw();
+    showToast("AI Suggestion applied: " + s.name);
   },
 
   playtest() {

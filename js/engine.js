@@ -256,6 +256,38 @@ const ScreenShake = {
   }
 };
 
+// ── PARTICLE SYSTEM ──────────────────────────────────────────
+const ParticleSystem = {
+  particles: [],
+  spawn(x, y, color, count) {
+    for (let i = 0; i < (count || 5); i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 100 + 50;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd,
+        life: 1.0,
+        color: color || 0xffffff
+      });
+    }
+  },
+  update(dt) {
+    this.particles.forEach(p => {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 200 * dt; // Gravity
+      p.life -= dt * 2;
+    });
+    this.particles = this.particles.filter(p => p.life > 0);
+  },
+  render() {
+    this.particles.forEach(p => {
+      drawRect(p.x, p.y, 4, 4, p.color, p.life);
+    });
+  }
+};
+
 // ── GAME LOOP ─────────────────────────────────────────────────
 let _gameUpdate  = null;
 let _gameRender  = null;
@@ -278,11 +310,13 @@ function _loop(now) {
   if (!_paused && _gameUpdate) _gameUpdate(dt);
   Fade.update(dt);
   ScreenShake.update(dt);
+  ParticleSystem.update(dt);
 
   ctx.save();
   ctx.translate(ScreenShake.offsetX, ScreenShake.offsetY);
   clearScreen(0x0a0a0f);
   if (_gameRender) _gameRender();
+  ParticleSystem.render();
   ctx.restore();
   Fade.render();
 
