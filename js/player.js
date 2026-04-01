@@ -43,15 +43,40 @@ const CHAR_DEFS = {
 function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
   const def = CHAR_DEFS[charKey] || CHAR_DEFS.lincoln;
   const t = animFrame || 0;
-  const bob = Math.sin(t * 0.15) * 1.5;
+  const bob = Math.sin(t * 0.4) * 2;
   const hw = (w || 28) / 2;
   const hh = (h || 28) / 2;
 
+  // Lunge offset
+  let lx = 0, ly = 0;
+  if (isAttacking) {
+    const lunge = 10;
+    if (facing === 'right') lx = lunge;
+    if (facing === 'left')  lx = -lunge;
+    if (facing === 'up')    ly = -lunge;
+    if (facing === 'down')  ly = lunge;
+  }
+
   ctx.save();
-  ctx.translate(x, y + bob);
+  ctx.translate(x + lx, y + bob + ly);
+
+  // ── LEGS ─────────────────────────────────────────────
+  const legW = 5, legH = 6;
+  const legY = hh - 2;
+  const legOff = Math.sin(t * 0.4) * 4;
+
+  ctx.fillStyle = hexToCSS(def.accent);
+  if (facing === 'left' || facing === 'right') {
+    drawRect(-legOff, legY, legW, legH, def.accent);
+    drawRect(legOff, legY, legW, legH, def.accent);
+  } else {
+    drawRect(-hw/2, legY + legOff, legW, legH, def.accent);
+    drawRect(hw/2, legY - legOff, legW, legH, def.accent);
+  }
 
   // ── BODY ─────────────────────────────────────────────
-  if (charKey === 'dad') {
+...
+
     drawRect(0, 2, hw*2.2, hh*2.2, def.color);
     drawRectOutline(0, 2, hw*2.2, hh*2.2, def.accent, 1);
     drawRect(0, 4, hw*2.2, 4, def.accent);

@@ -101,14 +101,15 @@ const Sprites = {
     const drawW = 32 * s;
     const drawH = 32 * s;
 
-    // Walk bobbing
-    const bob = animFrame ? Math.sin(animFrame * 0.2) * 3 : 0;
+    // Walk bobbing and tilt for movement animation
+    const bob = animFrame ? Math.sin(animFrame * 0.4) * 4 : 0;
+    const tilt = animFrame ? Math.sin(animFrame * 0.4) * 0.1 : 0;
 
     // Attack lunge — push sprite toward facing direction
     let lungeX = 0, lungeY = 0;
-    const atkScale = isAttacking ? 1.1 : 1.0;
+    const atkScale = isAttacking ? 1.15 : 1.0;
     if (isAttacking) {
-      const lungeAmt = 8;
+      const lungeAmt = 12;
       if (facing === 'right') lungeX = lungeAmt;
       else if (facing === 'left') lungeX = -lungeAmt;
       else if (facing === 'down') lungeY = lungeAmt;
@@ -117,6 +118,7 @@ const Sprites = {
 
     ctx.save();
     ctx.translate(x + lungeX, y + bob + lungeY);
+    ctx.rotate(tilt);
 
     // Flip horizontally for left-facing
     if (facing === 'left') {
