@@ -274,10 +274,16 @@ const Maker = {
     });
   },
 
-  save() {
+  async save() {
     localStorage.setItem('maker_current_room', JSON.stringify(this.room));
     showToast("Room saved to local storage!");
     unlockAchievement('first_custom_room', 'First Custom Room');
+    
+    // Also save to IndexedDB as part of a campaign
+    const campaignId = document.getElementById('maker-campaign-select').value;
+    if (campaignId === 'custom') {
+      await GameState.saveCampaign('custom', [this.room]);
+    }
   },
 
   export() {

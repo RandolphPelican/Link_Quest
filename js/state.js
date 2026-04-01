@@ -48,6 +48,47 @@ const GameState = {
     }
   },
 
+  // INDEXEDDB FOR CAMPAIGNS
+  async saveCampaign(id, rooms) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("LinkQuestMaker", 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("campaigns")) {
+          db.createObjectStore("campaigns", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("campaigns", "readwrite");
+        const store = tx.objectStore("campaigns");
+        store.put({ id, rooms, updated: Date.now() });
+        tx.oncomplete = () => resolve();
+      };
+      request.onerror = (e) => reject(e);
+    });
+  },
+
+  async loadCampaigns() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open("LinkQuestMaker", 1);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains("campaigns")) {
+          db.createObjectStore("campaigns", { keyPath: "id" });
+        }
+      };
+      request.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("campaigns", "readonly");
+        const store = tx.objectStore("campaigns");
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+      };
+      request.onerror = (e) => reject(e);
+    });
+  },
+
   reset() {
     this.score         = 0;
     this.deaths        = 0;
