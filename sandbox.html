@@ -221,6 +221,9 @@ button.danger { background: #3a1a1a; border-color: #a44; color: #faa; }
           <input type="range" id="enemy-anim-speed" min="0" max="5" step="0.1" value="1">
           <span id="enemy-anim-speed-val">1</span>
         </div>
+        <div class="ctrl-row">
+          <button id="btn-export-enemy" class="primary" style="width:100%">Export Enemy JSON</button>
+        </div>
       </div>
 
       <div class="ctrl-section">
@@ -284,6 +287,9 @@ button.danger { background: #3a1a1a; border-color: #a44; color: #faa; }
         </div>
         <div class="ctrl-row">
           <button id="btn-regen-enemies">Respawn Enemies</button>
+        </div>
+        <div class="ctrl-row">
+          <button id="btn-export-room" class="primary" style="width:100%">Download .room file</button>
         </div>
       </div>
       <div class="ctrl-section">
@@ -1128,6 +1134,31 @@ function _drawRoomObstacle(d, o) {
 
   document.getElementById('enemy-hit-flash').addEventListener('change', e => hitFlash = e.target.checked);
 
+  document.getElementById('btn-export-enemy').addEventListener('click', () => {
+    const def = ENEMY_DEFS[selectedEnemy];
+    const data = {
+      type: selectedEnemy,
+      label: def.label,
+      stats: {
+        hp: def.maxHp,
+        speed: def.speed,
+        atk: def.atk
+      },
+      display: {
+        scale: enemyScale,
+        color: def.color,
+        shape: def.shape
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `enemy_${selectedEnemy}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
   let last = 0;
   function loop(ts) {
     const dt = ts - last; last = ts;
@@ -1199,6 +1230,32 @@ function _drawRoomObstacle(d, o) {
   document.getElementById('btn-regen-room').addEventListener('click', regen);
   document.getElementById('room-enemy-type').addEventListener('change', e => { enemyType = e.target.value; regen(); });
   document.getElementById('btn-regen-enemies').addEventListener('click', regen);
+  
+  document.getElementById('btn-export-room').addEventListener('click', () => {
+    const data = {
+      name: "Custom Room",
+      theme,
+      obstacles: roomObstacles,
+      enemies: roomEnemies.map(e => ({
+        type: e.type,
+        x: e.x,
+        y: e.y,
+        count: 1,
+        pattern: ENEMY_DEFS[e.type].pattern
+      })),
+      doors: {
+        right: { leadsTo: null, locked: false },
+        left: { leadsTo: null, locked: false }
+      }
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `custom_room.room`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
   const recEl = document.getElementById('room-enemy-count');
   const recValEl = document.getElementById('room-enemy-count-val');
   recEl.addEventListener('input', () => { enemyCount = parseInt(recEl.value); recValEl.textContent = recEl.value; regen(); });
