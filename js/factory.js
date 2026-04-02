@@ -14,7 +14,7 @@ const EntityFactory = {
     if (GameState.inventory.armor !== 'cloth') {
       p.armor = GameState.inventory.armor;
       const armorData = ITEMS[GameState.inventory.armor];
-      if (armorData) p.maxHp = (CHAR_DEFS[charKey] || CHAR_DEFS.lincoln).maxHp + armorData.hpBonus;
+      if (armorData) p.maxHp = (window.CHAR_DEFS[charKey] || window.CHAR_DEFS.lincoln).maxHp + armorData.hpBonus;
     }
     return p;
   },

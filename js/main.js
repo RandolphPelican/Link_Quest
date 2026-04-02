@@ -142,7 +142,7 @@ function initCharSelect() {
           cards.forEach(cd => cd.classList.remove('selected'));
           card.classList.add('selected');
           GameState.selectedChar = card.dataset.char;
-          const def = CHAR_DEFS[card.dataset.char] || CHAR_DEFS.lincoln;
+          const def = window.CHAR_DEFS[card.dataset.char] || window.CHAR_DEFS.lincoln;
           
           console.log('Main: Selected', GameState.selectedChar);
 
@@ -161,6 +161,7 @@ function initCharSelect() {
           showToast('Selected: ' + def.label);
         } catch (cardErr) {
           console.error('Char selection error:', cardErr);
+          alert('Error selecting character: ' + cardErr.message);
           showToast('Error selecting character');
         }
       };
@@ -198,7 +199,7 @@ function initCharSelect() {
           showToast('Connecting to server... please wait.');
           return;
         }
-        const def = CHAR_DEFS[GameState.selectedChar] || CHAR_DEFS.lincoln;
+        const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
         Network.createRoom(def.label, GameState.selectedChar);
         charSelectScreen.classList.add('hidden');
         const lobby = document.getElementById('mp-lobby');
@@ -217,7 +218,7 @@ function initCharSelect() {
         if (!code || code.length < 4) { showToast('Enter a 4-letter room code!'); return; }
         if (!Network.connected) { showToast('Connecting to server...'); return; }
         
-        const def = CHAR_DEFS[GameState.selectedChar] || CHAR_DEFS.lincoln;
+        const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
         Network.joinRoom(code, def.label, GameState.selectedChar);
         charSelectScreen.classList.add('hidden');
         const lobby = document.getElementById('mp-lobby');
@@ -475,7 +476,7 @@ function onBossDefeated(bossType) {
 
 // ── THE ENDING ────────────────────────────────────────────────
 function playEnding() {
-  const charName = (CHAR_DEFS[GameState.selectedChar] || {}).label || 'Hero';
+  const charName = (window.CHAR_DEFS[GameState.selectedChar] || {}).label || 'Hero';
   Cutscene.play([
     'GossipGPT crackles... the screen glitches...',
     '...and then it speaks in a different voice.',
@@ -624,7 +625,7 @@ function renderHUD() {
   drawRectOutline(400, 578, 800, 44, 0x1e1e3a, 1);
 
   // Char name + level
-  const def = CHAR_DEFS[GameState.selectedChar] || CHAR_DEFS.lincoln;
+  const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
   drawTextOutlined(def.label.toUpperCase(), 10, 14, 8, 0xffd700, 0x000000, 'left');
   drawTextOutlined('Lv' + GameState.currentLevel, 10, 38, 7, 0x666688, 0x000000, 'left');
 

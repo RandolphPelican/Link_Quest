@@ -140,7 +140,7 @@ const Network = {
         const armorData = ITEMS[data.itemKey];
         if (armorData && player.armor !== data.itemKey) {
           player.armor = data.itemKey;
-          const def = CHAR_DEFS[player.characterKey] || CHAR_DEFS.lincoln;
+          const def = window.CHAR_DEFS[player.characterKey] || window.CHAR_DEFS.lincoln;
           player.maxHp = def.maxHp + armorData.hpBonus;
           player.hp = Math.min(player.hp + armorData.hpBonus, player.maxHp);
           GameState.inventory.armor = data.itemKey;
@@ -224,7 +224,7 @@ const Network = {
       drawCharSprite(rp.x, rp.y, rp.char, rp.facing, rp.animFrame, rp.attacking, 28, 28);
       ctx.globalAlpha = 1;
       // Name tag
-      const def = CHAR_DEFS[rp.char];
+      const def = window.CHAR_DEFS[rp.char];
       const name = rp.name || (def ? def.label : rp.char);
       drawTextOutlined(name, rp.x, rp.y - 26, 7, 0xaaddff, 0x000000, 'center');
       // HP bar

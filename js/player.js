@@ -41,7 +41,7 @@ window.CHAR_DEFS = {
 
 // ── SPRITE DRAWING ───────────────────────────────────────────
 function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
-  const def = CHAR_DEFS[charKey] || CHAR_DEFS.lincoln;
+  const def = window.CHAR_DEFS[charKey] || window.CHAR_DEFS.lincoln;
   const t = animFrame || 0;
   const bob = Math.sin(t * 0.4) * 2;
   const hw = (w || 28) / 2;
@@ -219,7 +219,7 @@ class Player extends PhysicsObject {
     this.mpRegenTimer    = 0;
     this.stepSfxTimer    = 0;
 
-    const def = CHAR_DEFS[characterKey] || CHAR_DEFS.lincoln;
+    const def = window.CHAR_DEFS[characterKey] || window.CHAR_DEFS.lincoln;
     this.maxHp       = def.maxHp;
     this.hp          = def.maxHp;
     this.maxMp       = def.maxMp;
@@ -316,7 +316,7 @@ class Player extends PhysicsObject {
   }
 
   castSpell() {
-    const def = CHAR_DEFS[this.characterKey];
+    const def = window.CHAR_DEFS[this.characterKey];
     if (!def || !def.spell) { showToast('No spell!'); return; }
     const spell = def.spell;
     if (this.mp < spell.mp) { showToast('Not enough MP!'); return; }
@@ -509,7 +509,7 @@ class Player extends PhysicsObject {
     }
 
     // Name tag — positioned above the bigger sprite
-    const def = CHAR_DEFS[this.characterKey] || CHAR_DEFS.lincoln;
+    const def = window.CHAR_DEFS[this.characterKey] || window.CHAR_DEFS.lincoln;
     drawTextOutlined(def.label, this.x, this.y - 52, 8, 0xffffff, 0x000000, 'center');
 
     // Damage numbers
