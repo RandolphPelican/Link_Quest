@@ -105,6 +105,19 @@ function runLoadingScreen(onDone) {
 function initCharSelect() {
   try {
     console.log('Main: Initializing character selection screen');
+    
+    // Ensure CHAR_DEFS exists even if state.js fails
+    if (!window.CHAR_DEFS) {
+      console.warn('Main: CHAR_DEFS missing, creating emergency fallback');
+      window.CHAR_DEFS = {
+        lincoln: { label: 'Lincoln', maxHp: 110, attackPower: 22 },
+        journey: { label: 'Journey', maxHp: 80, attackPower: 15 },
+        bear:    { label: 'Bear',    maxHp: 90, attackPower: 20 },
+        dad:     { label: 'Dad',     maxHp: 140, attackPower: 18 },
+        noha:    { label: 'Noha',    maxHp: 85, attackPower: 24 }
+      };
+    }
+
     const loadingScreen = document.getElementById('loading-screen');
     const charSelectScreen = document.getElementById('char-select-screen');
     
@@ -777,6 +790,11 @@ function startGame() {
 }
 
 // ── BOOT ──────────────────────────────────────────────────────
+window.onerror = function(msg, url, line, col, error) {
+  alert("FATAL ERROR: " + msg + "\nAt: " + url + ":" + line);
+  return false;
+};
+
 window.addEventListener('load', () => {
   runLoadingScreen(() => initCharSelect());
 });
