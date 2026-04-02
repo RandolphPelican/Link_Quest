@@ -103,114 +103,159 @@ function runLoadingScreen(onDone) {
 
 // ── CHAR SELECT ───────────────────────────────────────────────
 function initCharSelect() {
-  console.log('Main: Initializing character selection screen');
-  document.getElementById('loading-screen').classList.add('hidden');
-  document.getElementById('char-select-screen').classList.remove('hidden');
-  
-  const cards = document.querySelectorAll('.char-card');
-  const soloBtn = document.getElementById('solo-btn');
-  const hostBtn = document.getElementById('host-btn');
-  const joinBtn = document.getElementById('join-btn');
-  const joinCode = document.getElementById('join-code');
-  const readyBtn = document.getElementById('ready-btn');
-
-  // Connect to multiplayer server early
-  Network.connect();
-
-  // Reset character selection state if needed
-  GameState.selectedChar = null;
-  cards.forEach(c => c.classList.remove('selected'));
-  soloBtn.disabled = true;
-  hostBtn.disabled = true;
-  joinBtn.disabled = true;
-
-  // Cleanup any old listeners by replacing elements or removing if needed
-  // For simplicity here, we assume this runs once, or we use onclick if re-run
-  
-  cards.forEach(card => {
-    card.onclick = () => {
-      cards.forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      GameState.selectedChar = card.dataset.char;
-      const def = CHAR_DEFS[card.dataset.char];
-      
-      // Enable buttons visually and functionally
-      soloBtn.textContent = 'Solo as ' + (def ? def.label : card.dataset.char);
-      soloBtn.classList.add('ready');
-      soloBtn.disabled = false;
-      
-      hostBtn.classList.add('ready');
-      hostBtn.disabled = false;
-      
-      joinBtn.classList.add('ready');
-      joinBtn.disabled = false;
-      
-      showToast('Selected: ' + (def ? def.label : card.dataset.char));
-    };
-  });
-
-  // SOLO — just start the game
-  soloBtn.onclick = () => {
-    if (!GameState.selectedChar) {
-      showToast('Please pick a character first!');
-      return;
-    }
-    console.log('Main: Starting solo adventure as', GameState.selectedChar);
-    document.getElementById('char-select-screen').classList.add('hidden');
-    document.getElementById('game-container').classList.remove('hidden');
-    startGame();
-  };
-
-  // HOST — create a multiplayer room
-  hostBtn.onclick = () => {
-    if (!GameState.selectedChar) {
-      showToast('Pick a character first!');
-      return;
-    }
-    if (!Network.connected) {
-      showToast('Connecting to server... please wait.');
-      return;
-    }
-    const def = CHAR_DEFS[GameState.selectedChar];
-    Network.createRoom(def ? def.label : GameState.selectedChar, GameState.selectedChar);
-    document.getElementById('char-select-screen').classList.add('hidden');
-    document.getElementById('mp-lobby').classList.remove('hidden');
-  };
-
-  // JOIN — join with room code
-  joinBtn.onclick = () => {
-    const code = joinCode.value.trim().toUpperCase();
-    if (!GameState.selectedChar) { showToast('Pick a character first!'); return; }
-    if (!code || code.length < 4) { showToast('Enter a 4-letter room code!'); return; }
-    if (!Network.connected) { showToast('Connecting to server...'); return; }
+  try {
+    console.log('Main: Initializing character selection screen');
+    const loadingScreen = document.getElementById('loading-screen');
+    const charSelectScreen = document.getElementById('char-select-screen');
     
-    const def = CHAR_DEFS[GameState.selectedChar];
-    Network.joinRoom(code, def ? def.label : GameState.selectedChar, GameState.selectedChar);
-    document.getElementById('char-select-screen').classList.add('hidden');
-    document.getElementById('mp-lobby').classList.remove('hidden');
-  };
+    if (loadingScreen) loadingScreen.classList.add('hidden');
+    if (charSelectScreen) charSelectScreen.classList.remove('hidden');
+    
+    const cards = document.querySelectorAll('.char-card');
+    const soloBtn = document.getElementById('solo-btn');
+    const hostBtn = document.getElementById('host-btn');
+    const joinBtn = document.getElementById('join-btn');
+    const joinCode = document.getElementById('join-code');
+    const readyBtn = document.getElementById('ready-btn');
 
-  // READY UP in lobby
-  readyBtn.onclick = () => {
-    Network.readyUp();
-    readyBtn.textContent = 'READY! Waiting...';
-    readyBtn.disabled = true;
-    readyBtn.style.borderColor = '#ffd700';
-    readyBtn.style.color = '#ffd700';
-  };
+    if (!soloBtn || !hostBtn || !joinBtn) {
+      console.error('Main UI: Essential buttons missing from DOM');
+      return;
+    }
 
-  // Listen for game_start to actually launch
-  const checkStart = setInterval(() => {
-    if (Network.socket) {
-      // Clear interval as soon as we successfully bind the start listener
-      clearInterval(checkStart);
-      Network.socket.on('game_start', () => {
-        document.getElementById('mp-lobby').classList.add('hidden');
+    // Connect to multiplayer server early
+    try {
+      Network.connect();
+    } catch (netErr) {
+      console.error('Network initialization failed:', netErr);
+    }
+
+    // Reset character selection state
+    GameState.selectedChar = null;
+    cards.forEach(c => {
+      c.classList.remove('selected');
+      c.onclick = () => {
+        try {
+          cards.forEach(card => card.classList.remove('selected'));
+          c.classList.add('selected');
+          GameState.selectedChar = c.dataset.char;
+          const def = CHAR_DEFS[c.dataset.char] || CHAR_DEFS.lincoln;
+          
+          // Enable buttons visually and functionally
+          soloBtn.textContent = 'Solo as ' + def.label;
+          soloBtn.classList.add('ready');
+          soloBtn.disabled = false;
+          
+          hostBtn.classList.add('ready');
+          hostBtn.disabled = false;
+          
+          joinBtn.classList.add('ready');
+          joinBtn.disabled = false;
+          
+          showToast('Selected: ' + def.label);
+        } catch (cardErr) {
+          console.error('Char selection error:', cardErr);
+          showToast('Error selecting character');
+        }
+      };
+    });
+
+    soloBtn.disabled = true;
+    hostBtn.disabled = true;
+    joinBtn.disabled = true;
+
+    // SOLO — just start the game
+    soloBtn.onclick = () => {
+      try {
+        if (!GameState.selectedChar) {
+          showToast('Please pick a character first!');
+          return;
+        }
+        console.log('Main: Starting solo adventure as', GameState.selectedChar);
+        charSelectScreen.classList.add('hidden');
         document.getElementById('game-container').classList.remove('hidden');
         startGame();
-      });
+      } catch (soloErr) {
+        console.error('Solo start error:', soloErr);
+        showToast('Failed to start solo game');
+      }
+    };
+
+    // HOST — create a multiplayer room
+    hostBtn.onclick = () => {
+      try {
+        if (!GameState.selectedChar) {
+          showToast('Pick a character first!');
+          return;
+        }
+        if (!Network.connected) {
+          showToast('Connecting to server... please wait.');
+          return;
+        }
+        const def = CHAR_DEFS[GameState.selectedChar] || CHAR_DEFS.lincoln;
+        Network.createRoom(def.label, GameState.selectedChar);
+        charSelectScreen.classList.add('hidden');
+        const lobby = document.getElementById('mp-lobby');
+        if (lobby) lobby.classList.remove('hidden');
+      } catch (hostErr) {
+        console.error('Host game error:', hostErr);
+        showToast('Failed to create room');
+      }
+    };
+
+    // JOIN — join with room code
+    joinBtn.onclick = () => {
+      try {
+        const code = joinCode ? joinCode.value.trim().toUpperCase() : '';
+        if (!GameState.selectedChar) { showToast('Pick a character first!'); return; }
+        if (!code || code.length < 4) { showToast('Enter a 4-letter room code!'); return; }
+        if (!Network.connected) { showToast('Connecting to server...'); return; }
+        
+        const def = CHAR_DEFS[GameState.selectedChar] || CHAR_DEFS.lincoln;
+        Network.joinRoom(code, def.label, GameState.selectedChar);
+        charSelectScreen.classList.add('hidden');
+        const lobby = document.getElementById('mp-lobby');
+        if (lobby) lobby.classList.remove('hidden');
+      } catch (joinErr) {
+        console.error('Join game error:', joinErr);
+        showToast('Failed to join room');
+      }
+    };
+
+    // READY UP in lobby
+    if (readyBtn) {
+      readyBtn.onclick = () => {
+        try {
+          Network.readyUp();
+          readyBtn.textContent = 'READY! Waiting...';
+          readyBtn.disabled = true;
+          readyBtn.style.borderColor = '#ffd700';
+          readyBtn.style.color = '#ffd700';
+        } catch (readyErr) {
+          console.error('Ready up error:', readyErr);
+          showToast('Failed to ready up');
+        }
+      };
     }
-  }, 200);
+
+    // Listen for game_start to actually launch
+    if (!initCharSelect._networkBound) {
+      const checkStart = setInterval(() => {
+        if (Network.socket) {
+          clearInterval(checkStart);
+          initCharSelect._networkBound = true;
+          Network.socket.on('game_start', () => {
+            const lobby = document.getElementById('mp-lobby');
+            if (lobby) lobby.classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            startGame();
+          });
+        }
+      }, 200);
+    }
+  } catch (initErr) {
+    console.error('initCharSelect fatal error:', initErr);
+  }
 }
 
 // ── GAME WORLD ────────────────────────────────────────────────

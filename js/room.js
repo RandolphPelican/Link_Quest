@@ -389,7 +389,23 @@ class RoomManager {
       const dx = sign.x - player.x;
       const dy = sign.y - player.y;
       if (Math.sqrt(dx*dx+dy*dy) < 48) {
-        showToast(sign.message, 4000);
+        let msg = sign.message;
+        // Dad's AI Tip easter egg
+        if (sign.isAiTip || msg.toLowerCase().includes('tip')) {
+          const tips = [
+            "💡 Dad says: AI is like a power-up for your brain!",
+            "💡 Tip: If you're stuck on a bug, ask AI for a new perspective.",
+            "💡 Dad says: The best code is written with heart and a little help from AI.",
+            "💡 Tip: Use AI to handle the boring parts so you can focus on the fun!",
+            "💡 Dad says: Teamwork + AI = Superpowers!",
+            "💡 Tip: Don't be afraid to experiment. AI is a great safety net."
+          ];
+          msg = tips[Math.floor(Math.random() * tips.length)];
+          if (typeof ParticleSystem !== 'undefined') {
+            ParticleSystem.spawn(sign.x, sign.y, 0x00e5ff, 15);
+          }
+        }
+        showToast(msg, 4000);
       }
     });
   }

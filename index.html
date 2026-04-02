@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css"/>
   <link rel="stylesheet" href="css/maker.css"/>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -109,6 +110,7 @@
         <button id="maker-ai-btn" style="background:#4a1a4a; border-color:#a4a;">✨ AI SUGGEST</button>
         <button id="maker-play-btn" class="primary">▶ PLAYTEST</button>
         <button id="maker-save-btn">💾 SAVE</button>
+        <button id="maker-share-btn" style="background:#2a5a2a;">🔗 SHARE</button>
         <button id="maker-export-btn">📤 EXPORT</button>
         <button id="maker-import-btn">📥 IMPORT</button>
         <button id="maker-exit-btn" class="danger">EXIT</button>
@@ -232,6 +234,13 @@
   <script src="js/network.js"></script>
   <script src="js/maker.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>
 

@@ -10,6 +10,8 @@ const Maker = {
   active: false,
   selectedType: 'tile',
   selectedId: 'wall',
+  undoStack: [],
+  redoStack: [],
   
   room: {
     name: "New Room",
@@ -44,28 +46,157 @@ const Maker = {
     rooms: []
   },
 
-  _bindUI() {
-    const btn = document.getElementById('maker-mode-btn');
-    if (btn) btn.addEventListener('click', () => this.show());
-    
-    document.getElementById('maker-exit-btn').addEventListener('click', () => this.hide());
-    document.getElementById('maker-play-btn').addEventListener('click', () => this.playtest());
-    document.getElementById('maker-ai-btn').addEventListener('click', () => this.aiSuggest());
-    document.getElementById('maker-save-btn').addEventListener('click', () => this.save());
-    document.getElementById('maker-export-btn').addEventListener('click', () => this.export());
-    document.getElementById('maker-import-btn').addEventListener('click', () => this.import());
-    
-    document.querySelectorAll('.maker-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.maker-tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.maker-tab-content').forEach(c => c.classList.add('hidden'));
-        btn.classList.add('active');
-        document.getElementById('maker-tab-' + btn.dataset.mtab).classList.remove('hidden');
-      });
-    });
+  _saveState() {
+    this.undoStack.push(JSON.stringify(this.room));
+    if (this.undoStack.length > 50) this.undoStack.shift();
+    this.redoStack = []; // Clear redo on new action
+  },
 
-    document.getElementById('add-room-btn').addEventListener('click', () => this.addRoom());
-...
+  undo() {
+    if (this.undoStack.length === 0) return;
+    this.redoStack.push(JSON.stringify(this.room));
+    this.room = JSON.parse(this.undoStack.pop());
+    this._draw();
+    showToast("Undo");
+  },
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+    this.undoStack.push(JSON.stringify(this.room));
+    this.room = JSON.parse(this.redoStack.pop());
+    this._draw();
+    showToast("Redo");
+  },
+
+  _bindUI() {
+    try {
+      const btn = document.getElementById('maker-mode-btn');
+      if (btn) btn.onclick = () => this.show();
+      
+      const exitBtn = document.getElementById('maker-exit-btn');
+      if (exitBtn) exitBtn.onclick = () => this.hide();
+
+      const playBtn = document.getElementById('maker-play-btn');
+      if (playBtn) playBtn.onclick = () => {
+        try {
+          this.playtest();
+        } catch (err) {
+          console.error('Maker: Playtest failed', err);
+          showToast('Failed to start playtest');
+        }
+      };
+
+      const aiBtn = document.getElementById('maker-ai-btn');
+      if (aiBtn) aiBtn.onclick = () => {
+        try {
+          this._saveState();
+          this.aiSuggest();
+        } catch (err) {
+          console.error('Maker: AI Suggest failed', err);
+          showToast('AI Suggestion error');
+        }
+      };
+
+      const saveBtn = document.getElementById('maker-save-btn');
+      if (saveBtn) saveBtn.onclick = () => {
+        try {
+          this.save();
+        } catch (err) {
+          console.error('Maker: Save failed', err);
+          showToast('Save error');
+        }
+      };
+
+      const shareBtn = document.getElementById('maker-share-btn');
+      if (shareBtn) shareBtn.onclick = () => {
+        try {
+          this.share();
+        } catch (err) {
+          console.error('Maker: Share failed', err);
+          showToast('Share error');
+        }
+      };
+
+      const exportBtn = document.getElementById('maker-export-btn');
+      if (exportBtn) exportBtn.onclick = () => {
+        try {
+          this.export();
+        } catch (err) {
+          console.error('Maker: Export failed', err);
+          showToast('Export error');
+        }
+      };
+
+      const importBtn = document.getElementById('maker-import-btn');
+      if (importBtn) importBtn.onclick = () => {
+        try {
+          this.import();
+        } catch (err) {
+          console.error('Maker: Import failed', err);
+          showToast('Import error');
+        }
+      };
+
+      // Add Undo/Redo listeners (keyboard)
+      window.addEventListener('keydown', (e) => {
+        if (!this.active) return;
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); this.undo(); }
+        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); this.redo(); }
+      });
+      
+      document.querySelectorAll('.maker-tab-btn').forEach(btn => {
+        btn.onclick = () => {
+          try {
+            document.querySelectorAll('.maker-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.maker-tab-content').forEach(c => c.classList.add('hidden'));
+            btn.classList.add('active');
+            const target = document.getElementById('maker-tab-' + btn.dataset.mtab);
+            if (target) target.classList.remove('hidden');
+          } catch (tabErr) {
+            console.error('Maker: Tab switch error', tabErr);
+          }
+        };
+      });
+
+      const addRoomBtn = document.getElementById('add-room-btn');
+      if (addRoomBtn) addRoomBtn.onclick = () => {
+        try {
+          this.addRoom();
+        } catch (roomErr) {
+          console.error('Maker: Add room failed', roomErr);
+        }
+      };
+
+      const campaignSelect = document.getElementById('maker-campaign-select');
+      if (campaignSelect) campaignSelect.onchange = (e) => this._onCampaignChange(e);
+
+      const roomIdInput = document.getElementById('maker-room-id');
+      if (roomIdInput) roomIdInput.onchange = (e) => this._onRoomIdChange(e);
+
+      if (this.canvas) {
+        this.canvas.onmousedown = (e) => { this._saveState(); this._onMouseDown(e); };
+        this.canvas.onmousemove = (e) => this._onMouseMove(e);
+        this.canvas.oncontextmenu = (e) => e.preventDefault();
+        
+        // Mobile touch support
+        this.canvas.ontouchstart = (e) => {
+          this._saveState();
+          const t = e.touches[0];
+          const rect = this.canvas.getBoundingClientRect();
+          this._place(t.clientX - rect.left, t.clientY - rect.top);
+          e.preventDefault();
+        };
+        this.canvas.ontouchmove = (e) => {
+          const t = e.touches[0];
+          const rect = this.canvas.getBoundingClientRect();
+          this._place(t.clientX - rect.left, t.clientY - rect.top);
+          e.preventDefault();
+        };
+      }
+    } catch (bindErr) {
+      console.error('Maker: UI binding fatal error', bindErr);
+    }
+  },
   addRoom() {
     const newRoom = JSON.parse(JSON.stringify(this.room));
     newRoom.id = this.campaign.rooms.length + 1;
@@ -346,24 +477,141 @@ const Maker = {
     input.click();
   },
 
+  async share() {
+    const campaignData = {
+      name: this.campaign.name || "Custom Campaign",
+      rooms: this.campaign.rooms.length > 0 ? this.campaign.rooms : [this.room]
+    };
+
+    const token = prompt("Enter GitHub Personal Access Token (PAT) to share via Gist:\n(Required for anonymous Gist creation in modern GitHub API)");
+    if (!token) return;
+
+    showToast("Uploading to GitHub Gist...");
+    try {
+      const res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description: "Link Quest Campaign: " + campaignData.name,
+          public: true,
+          files: {
+            "campaign.json": { content: JSON.stringify(campaignData, null, 2) }
+          }
+        })
+      });
+
+      if (!res.ok) throw new Error('GitHub API error: ' + res.status);
+      const data = await res.json();
+      const shareUrl = window.location.origin + window.location.pathname + "?gist=" + data.id;
+      
+      console.log('Campaign shared!', data.html_url);
+      
+      // Show shareable link
+      const choice = confirm("Campaign shared successfully!\n\nShareable Game Link:\n" + shareUrl + "\n\nCopy to clipboard?");
+      if (choice) {
+        navigator.clipboard.writeText(shareUrl);
+        showToast("Link copied to clipboard!");
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+      showToast("Error: " + err.message);
+    }
+  },
+
+  async checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const gistId = params.get('gist');
+    if (gistId) {
+      showToast("Loading shared campaign...");
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`);
+        if (!res.ok) throw new Error('Could not fetch gist');
+        const data = await res.json();
+        const file = data.files["campaign.json"];
+        if (file) {
+          const campaign = JSON.parse(file.content);
+          this.campaign = campaign;
+          this.room = campaign.rooms[0];
+          showToast("Campaign '" + campaign.name + "' loaded!");
+          this._updateCampaignUI();
+          this._draw();
+        }
+      } catch (err) {
+        console.error('Failed to load gist:', err);
+        showToast("Error loading campaign");
+      }
+    }
+  },
+
   aiSuggest() {
-    const suggestions = [
-      { name: "The Goblin Pit", enemies: [{type:'goblin', count:3, x:400, y:300}], obstacles: [{type:'pillar', x:200, y:200}, {type:'pillar', x:600, y:400}] },
-      { name: "Crystal Chamber", enemies: [{type:'glitch_sprite', count:2, x:300, y:200}], decorations: [{type:'crystal', x:400, y:300}, {type:'crystal', x:400, y:100}] },
-      { name: "Puzzle Room", switches: [{x:200, y:200}, {x:600, y:400}], chests: [{x:400, y:300, type:'brown', contains:'small_key'}] }
+    const designs = [
+      {
+        name: "The Crossfire",
+        enemies: [
+          {type:'goblin', x:200, y:200}, {type:'goblin', x:600, y:200},
+          {type:'ai_bug', x:400, y:150}
+        ],
+        obstacles: [
+          {type:'pillar', x:128, y:128}, {type:'pillar', x:672, y:128},
+          {type:'pillar', x:128, y:472}, {type:'pillar', x:672, y:472}
+        ],
+        decorations: [{type:'torch', x:400, y:64}]
+      },
+      {
+        name: "Trial of Switches",
+        switches: [{x:128, y:128}, {x:672, y:472}],
+        obstacles: [
+          {type:'wall', x:400, y:200, w:32, h:32}, {type:'wall', x:400, y:400, w:32, h:32},
+          {type:'wall', x:200, y:300, w:32, h:32}, {type:'wall', x:600, y:300, w:32, h:32}
+        ],
+        chests: [{x:400, y:300, type:'brown', contains:'small_key'}],
+        enemies: [{type:'chatbot_clone', x:400, y:100}]
+      },
+      {
+        name: "The Gauntlet",
+        enemies: [
+          {type:'goblin', x:100, y:300}, {type:'goblin', x:250, y:300},
+          {type:'goblin', x:400, y:300}, {type:'goblin', x:550, y:300},
+          {type:'goblin_chief', x:700, y:300}
+        ],
+        obstacles: Array.from({length:8}, (_,i) => ({type:'crate', x:100+i*80, y:200})),
+        decorations: [{type:'torch', x:50, y:50}, {type:'torch', x:750, y:50}]
+      },
+      {
+        name: "Spider's Nest",
+        enemies: [
+          {type:'glitch_sprite', x:400, y:300}, {type:'ai_bug', x:100, y:100},
+          {type:'ai_bug', x:700, y:100}, {type:'ai_bug', x:100, y:500},
+          {type:'ai_bug', x:700, y:500}
+        ],
+        obstacles: [
+          {type:'pillar', x:400, y:150}, {type:'pillar', x:400, y:450},
+          {type:'pillar', x:250, y:300}, {type:'pillar', x:550, y:300}
+        ],
+        signs: [{x:400, y:50, message: "Beware of the glitches!"}]
+      }
     ];
-    const s = suggestions[Math.floor(Math.random() * suggestions.length)];
-    this.room.name = s.name;
-    this.room.enemies = s.enemies || [];
-    this.room.obstacles = s.obstacles || [];
-    this.room.switches = s.switches || [];
-    this.room.chests = s.chests || [];
-    this.room.decorations = s.decorations || [];
-    this.room.signs = s.signs || [];
+
+    const s = designs[Math.floor(Math.random() * designs.length)];
+    this.room = {
+      ...this.room,
+      name: s.name,
+      enemies: s.enemies || [],
+      obstacles: s.obstacles || [],
+      switches: s.switches || [],
+      chests: s.chests || [],
+      decorations: s.decorations || [],
+      signs: s.signs || [],
+      items: []
+    };
     
     document.getElementById('room-name-input').value = this.room.name;
     this._draw();
-    showToast("AI Suggestion applied: " + s.name);
+    showToast("AI Suggestion: " + s.name + " (Balanced)");
   },
 
   playtest() {
@@ -384,4 +632,7 @@ const Maker = {
   }
 };
 
-window.addEventListener('load', () => Maker.init());
+window.addEventListener('load', () => {
+  Maker.init();
+  Maker.checkUrlParams();
+});
