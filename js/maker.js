@@ -37,7 +37,17 @@ const Maker = {
     this.ctx = this.canvas.getContext('2d');
     this._bindUI();
     this._initPalette();
-    this._draw();
+    
+    // Load assets if not already loaded
+    if (!Tiles.loaded || !Sprites.loaded) {
+      Tiles.load(() => {
+        Sprites.load(() => {
+          this._draw();
+        });
+      });
+    } else {
+      this._draw();
+    }
   },
 
   campaign: {
@@ -140,8 +150,8 @@ const Maker = {
       // Add Undo/Redo listeners (keyboard)
       window.addEventListener('keydown', (e) => {
         if (!this.active) return;
-        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); this.undo(); }
-        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); this.redo(); }
+        if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); this.undo(); }
+        if (e.ctrlKey && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); this.redo(); }
       });
       
       document.querySelectorAll('.maker-tab-btn').forEach(btn => {
@@ -172,6 +182,18 @@ const Maker = {
 
       const roomIdInput = document.getElementById('maker-room-id');
       if (roomIdInput) roomIdInput.onchange = (e) => this._onRoomIdChange(e);
+
+      const bgInput = document.getElementById('room-bg-input');
+      if (bgInput) bgInput.oninput = (e) => {
+        this.room.background = e.target.value;
+        this._draw();
+      };
+
+      const nameInput = document.getElementById('room-name-input');
+      if (nameInput) nameInput.oninput = (e) => {
+        this.room.name = e.target.value;
+        this._updateCampaignUI();
+      };
 
       if (this.canvas) {
         this.canvas.onmousedown = (e) => { this._saveState(); this._onMouseDown(e); };
@@ -385,48 +407,63 @@ const Maker = {
 
     // Draw obstacles
     this.room.obstacles.forEach(o => {
-      ctx.fillStyle = o.type === 'wall' ? '#1e3040' : o.type === 'pillar' ? '#2a3f55' : '#6a5030';
-      ctx.fillRect(o.x - 16, o.y - 16, 32, 32);
-      ctx.strokeStyle = "#4a6f90";
-      ctx.strokeRect(o.x - 16, o.y - 16, 32, 32);
+      if (typeof Tiles !== 'undefined' && Tiles.loaded) {
+        Tiles.drawTile(o.type, o.x, o.y);
+      } else {
+        ctx.fillStyle = o.type === 'wall' ? '#1e3040' : o.type === 'pillar' ? '#2a3f55' : '#6a5030';
+        ctx.fillRect(o.x - 16, o.y - 16, 32, 32);
+      }
     });
 
     // Draw decorations
     this.room.decorations.forEach(d => {
-      ctx.fillStyle = d.type === 'bush' ? '#1a3a1a' : d.type === 'torch' ? '#ff6600' : '#aa44ff';
-      ctx.beginPath(); ctx.arc(d.x, d.y, 8, 0, Math.PI*2); ctx.fill();
+      if (typeof Tiles !== 'undefined' && Tiles.loaded) {
+        Tiles.drawDeco(d.type, d.x, d.y);
+      } else {
+        ctx.fillStyle = d.type === 'bush' ? '#1a3a1a' : d.type === 'torch' ? '#ff6600' : '#aa44ff';
+        ctx.beginPath(); ctx.arc(d.x, d.y, 8, 0, Math.PI*2); ctx.fill();
+      }
     });
 
     // Draw switches
     this.room.switches.forEach(s => {
-      ctx.strokeStyle = "#00ddff";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(s.x-12, s.y-12, 24, 24);
+      if (typeof Tiles !== 'undefined' && Tiles.loaded) {
+        Tiles.drawDeco('switch', s.x, s.y);
+      } else {
+        ctx.strokeStyle = "#00ddff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(s.x-12, s.y-12, 24, 24);
+      }
     });
 
     // Draw chests
     this.room.chests.forEach(c => {
-      ctx.fillStyle = "#8b4513";
-      ctx.fillRect(c.x-12, c.y-8, 24, 16);
-      ctx.strokeStyle = "#ffd700";
-      ctx.strokeRect(c.x-12, c.y-8, 24, 16);
+      if (typeof Tiles !== 'undefined' && Tiles.loaded) {
+        Tiles.drawDeco('chest', c.x, c.y);
+      } else {
+        ctx.fillStyle = "#8b4513";
+        ctx.fillRect(c.x-12, c.y-8, 24, 16);
+      }
     });
 
     // Draw signs
     this.room.signs.forEach(s => {
-      ctx.fillStyle = "#8b6914";
-      ctx.fillRect(s.x-10, s.y-12, 20, 15);
-      ctx.fillStyle = "#fff";
-      ctx.fillText("!", s.x-2, s.y-2);
+      if (typeof Tiles !== 'undefined' && Tiles.loaded) {
+        Tiles.drawDeco('sign', s.x, s.y);
+      } else {
+        ctx.fillStyle = "#8b6914";
+        ctx.fillRect(s.x-10, s.y-12, 20, 15);
+      }
     });
 
     // Draw enemies
     this.room.enemies.forEach(e => {
-      ctx.fillStyle = "#ff4444";
-      ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = "#fff";
-      ctx.font = "8px Arial";
-      ctx.fillText(e.type.substring(0,3), e.x-10, e.y+3);
+      if (typeof Sprites !== 'undefined' && Sprites.loaded) {
+        Sprites.draw(e.type, e.x, e.y, 'down', 0);
+      } else {
+        ctx.fillStyle = "#ff4444";
+        ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI*2); ctx.fill();
+      }
     });
   },
 

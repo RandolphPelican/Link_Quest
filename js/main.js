@@ -134,23 +134,29 @@ function initCharSelect() {
     GameState.selectedChar = null;
     cards.forEach(c => {
       c.classList.remove('selected');
-      c.onclick = () => {
+      c.onclick = (e) => {
         try {
-          cards.forEach(card => card.classList.remove('selected'));
-          c.classList.add('selected');
-          GameState.selectedChar = c.dataset.char;
-          const def = CHAR_DEFS[c.dataset.char] || CHAR_DEFS.lincoln;
+          const card = e.target.closest('.char-card');
+          if (!card) return;
           
+          cards.forEach(cd => cd.classList.remove('selected'));
+          card.classList.add('selected');
+          GameState.selectedChar = card.dataset.char;
+          const def = CHAR_DEFS[card.dataset.char] || CHAR_DEFS.lincoln;
+          
+          console.log('Main: Selected', GameState.selectedChar);
+
           // Enable buttons visually and functionally
-          soloBtn.textContent = 'Solo as ' + def.label;
-          soloBtn.classList.add('ready');
-          soloBtn.disabled = false;
+          [soloBtn, hostBtn, joinBtn].forEach(btn => {
+            if (btn) {
+              btn.disabled = false;
+              btn.classList.add('ready');
+              btn.style.cursor = 'pointer';
+              btn.style.pointerEvents = 'auto';
+            }
+          });
           
-          hostBtn.classList.add('ready');
-          hostBtn.disabled = false;
-          
-          joinBtn.classList.add('ready');
-          joinBtn.disabled = false;
+          if (soloBtn) soloBtn.textContent = 'Solo as ' + def.label;
           
           showToast('Selected: ' + def.label);
         } catch (cardErr) {
@@ -735,21 +741,38 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 
 // ── START GAME ────────────────────────────────────────────────
 function startGame() {
+  console.log('Main: startGame() called');
   engineInit();
+  
+  // Reset engine pause state
+  enginePause(false);
+
   // Load tile and sprite assets, then levels, then start
   let assetsReady = 0;
   const checkReady = () => {
     assetsReady++;
     if (assetsReady >= 2) {
-      console.log('All assets loaded, loading levels...');
+      console.log('Main: All assets loaded, loading levels...');
       Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
+        console.log('Main: Levels loaded, loading initial room');
         loadRoom();
         engineStart(gameUpdate, gameRender);
+      }).catch(err => {
+        console.error('Main: Level loading failed', err);
+        showToast('Error loading game levels');
       });
     }
   };
-  Tiles.load(checkReady);
-  Sprites.load(checkReady);
+
+  // If already loaded (e.g. playtest), skip loading or call immediately
+  if (Tiles.loaded && Sprites.loaded) {
+    console.log('Main: Assets already loaded, skipping to level load');
+    assetsReady = 1; // Fake one so checkReady triggers
+    checkReady();
+  } else {
+    Tiles.load(checkReady);
+    Sprites.load(checkReady);
+  }
 }
 
 // ── BOOT ──────────────────────────────────────────────────────
