@@ -6,7 +6,7 @@
 'use strict';
 
 // ── CHARACTER DEFINITIONS ────────────────────────────────────
-const CHAR_DEFS = {
+window.CHAR_DEFS = {
   lincoln: {
     maxHp: 110, maxMp: 40, attackPower: 22, speed: 180,
     color: 0x3498db, accent: 0x2980b9, weapon: 'sword',

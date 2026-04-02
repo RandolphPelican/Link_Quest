@@ -234,7 +234,7 @@ html, body {
 }
 
 #solo-btn.ready, #host-btn.ready, #join-btn.ready {
-  border-color: var(--gold); color: var(--gold); cursor: pointer;
+  border-color: var(--gold); color: var(--gold); cursor: pointer !important;
   box-shadow: 0 0 12px rgba(255,215,0,0.3);
 }
 
