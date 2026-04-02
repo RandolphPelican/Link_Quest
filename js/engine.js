@@ -12,7 +12,17 @@ const GAME_H = 600;
 let canvas, ctx;
 
 function initCanvas() {
-  canvas = document.createElement('canvas');
+  const container = document.getElementById('game-container');
+  if (!container) return;
+  // Prevent multiple canvases
+  let existing = container.querySelector('canvas');
+  if (existing) {
+    canvas = existing;
+  } else {
+    canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+  }
+  
   canvas.width  = GAME_W;
   canvas.height = GAME_H;
   canvas.style.cssText = [
@@ -22,7 +32,6 @@ function initCanvas() {
     'object-fit:contain',
     'background:#000'
   ].join(';');
-  document.getElementById('game-container').appendChild(canvas);
   ctx = canvas.getContext('2d');
 }
 

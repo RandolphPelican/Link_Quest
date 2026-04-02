@@ -103,96 +103,112 @@ function runLoadingScreen(onDone) {
 
 // ── CHAR SELECT ───────────────────────────────────────────────
 function initCharSelect() {
+  console.log('Main: Initializing character selection screen');
   document.getElementById('loading-screen').classList.add('hidden');
   document.getElementById('char-select-screen').classList.remove('hidden');
+  
   const cards = document.querySelectorAll('.char-card');
   const soloBtn = document.getElementById('solo-btn');
   const hostBtn = document.getElementById('host-btn');
   const joinBtn = document.getElementById('join-btn');
   const joinCode = document.getElementById('join-code');
   const readyBtn = document.getElementById('ready-btn');
-  const makerBtn = document.getElementById('maker-mode-btn');
 
-  // Connect to multiplayer server
+  // Connect to multiplayer server early
   Network.connect();
 
+  // Reset character selection state if needed
+  GameState.selectedChar = null;
+  cards.forEach(c => c.classList.remove('selected'));
+  soloBtn.disabled = true;
+  hostBtn.disabled = true;
+  joinBtn.disabled = true;
+
+  // Cleanup any old listeners by replacing elements or removing if needed
+  // For simplicity here, we assume this runs once, or we use onclick if re-run
+  
   cards.forEach(card => {
-    card.addEventListener('click', () => {
+    card.onclick = () => {
       cards.forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       GameState.selectedChar = card.dataset.char;
       const def = CHAR_DEFS[card.dataset.char];
-      // Enable buttons
+      
+      // Enable buttons visually and functionally
       soloBtn.textContent = 'Solo as ' + (def ? def.label : card.dataset.char);
       soloBtn.classList.add('ready');
       soloBtn.disabled = false;
+      
       hostBtn.classList.add('ready');
       hostBtn.disabled = false;
+      
       joinBtn.classList.add('ready');
       joinBtn.disabled = false;
-    });
+      
+      showToast('Selected: ' + (def ? def.label : card.dataset.char));
+    };
   });
 
   // SOLO — just start the game
-  soloBtn.addEventListener('click', () => {
-    if (!GameState.selectedChar) return;
+  soloBtn.onclick = () => {
+    if (!GameState.selectedChar) {
+      showToast('Please pick a character first!');
+      return;
+    }
+    console.log('Main: Starting solo adventure as', GameState.selectedChar);
     document.getElementById('char-select-screen').classList.add('hidden');
     document.getElementById('game-container').classList.remove('hidden');
     startGame();
-  });
+  };
 
   // HOST — create a multiplayer room
-  hostBtn.addEventListener('click', () => {
-    if (!GameState.selectedChar || !Network.connected) {
-      showToast(Network.connected ? 'Pick a character first!' : 'Connecting to server...');
+  hostBtn.onclick = () => {
+    if (!GameState.selectedChar) {
+      showToast('Pick a character first!');
+      return;
+    }
+    if (!Network.connected) {
+      showToast('Connecting to server... please wait.');
       return;
     }
     const def = CHAR_DEFS[GameState.selectedChar];
     Network.createRoom(def ? def.label : GameState.selectedChar, GameState.selectedChar);
     document.getElementById('char-select-screen').classList.add('hidden');
     document.getElementById('mp-lobby').classList.remove('hidden');
-  });
+  };
 
   // JOIN — join with room code
-  joinBtn.addEventListener('click', () => {
+  joinBtn.onclick = () => {
     const code = joinCode.value.trim().toUpperCase();
     if (!GameState.selectedChar) { showToast('Pick a character first!'); return; }
     if (!code || code.length < 4) { showToast('Enter a 4-letter room code!'); return; }
     if (!Network.connected) { showToast('Connecting to server...'); return; }
+    
     const def = CHAR_DEFS[GameState.selectedChar];
     Network.joinRoom(code, def ? def.label : GameState.selectedChar, GameState.selectedChar);
     document.getElementById('char-select-screen').classList.add('hidden');
     document.getElementById('mp-lobby').classList.remove('hidden');
-  });
+  };
 
   // READY UP in lobby
-  readyBtn.addEventListener('click', () => {
+  readyBtn.onclick = () => {
     Network.readyUp();
     readyBtn.textContent = 'READY! Waiting...';
     readyBtn.disabled = true;
     readyBtn.style.borderColor = '#ffd700';
     readyBtn.style.color = '#ffd700';
-  });
-
-  // MAKER MODE
-  makerBtn.addEventListener('click', () => {
-    if (typeof Maker !== 'undefined') {
-      Maker.show();
-    } else {
-      console.error('Maker module not loaded');
-    }
-  });
+  };
 
   // Listen for game_start to actually launch
   const checkStart = setInterval(() => {
     if (Network.socket) {
+      // Clear interval as soon as we successfully bind the start listener
+      clearInterval(checkStart);
       Network.socket.on('game_start', () => {
-        clearInterval(checkStart);
         document.getElementById('mp-lobby').classList.add('hidden');
         document.getElementById('game-container').classList.remove('hidden');
         startGame();
       });
-      clearInterval(checkStart);
     }
   }, 200);
 }
