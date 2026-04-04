@@ -3,8 +3,8 @@
     "target": "ESNext",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "../server/dist",
+    "rootDir": "..",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,5 +12,5 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "../shared/**/*"]
 }

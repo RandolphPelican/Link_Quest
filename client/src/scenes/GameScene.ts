@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import * as Colyseus from "colyseus.js";
 import { ProceduralAnimator } from "../animation/ProceduralAnimator";
-import { CLASSES, ENEMIES } from "shared";
+import { CLASSES, ENEMIES } from "../../shared/index";
 
 export class GameScene extends Phaser.Scene {
     private client: Colyseus.Client;

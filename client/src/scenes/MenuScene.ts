@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CLASSES } from "shared";
+import { CLASSES } from "../../shared/index";
 
 export class MenuScene extends Phaser.Scene {
     constructor() {

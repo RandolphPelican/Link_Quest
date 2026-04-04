@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { ANIMATION_STATES } from "shared";
+import { ANIMATION_STATES } from "../../shared/index";
 
 export interface ICharacterAnimator {
     update(delta: number, state: string, direction: string): void;
