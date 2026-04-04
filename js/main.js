@@ -305,6 +305,19 @@ function startGame() {
   engineStart(gameUpdate, gameRender);
 }
 
+// Load level data from JSON
+let levelData = {};
+
+async function loadLevelData() {
+  try {
+    const response = await fetch(`levels/level${currentLevel}.json`);
+    levelData = await response.json();
+    console.log(`Loaded level ${currentLevel} data`, levelData);
+  } catch (error) {
+    console.error(`Failed to load level ${currentLevel}:`, error);
+  }
+}
+
 // Load level and room
 function loadLevel(level, room) {
   currentLevel = level;
@@ -317,11 +330,52 @@ function loadLevel(level, room) {
   chests = [];
   doors = [];
   
-  // Spawn new entities
-  spawnEnemies();
-  spawnItems();
-  spawnChests();
-  spawnDoors();
+  // Load level data
+  loadLevelData().then(() => {
+    // Find current room data
+    const roomData = levelData.rooms.find(r => r.id === room);
+    if (roomData) {
+      spawnEntities(roomData);
+    } else {
+      console.error(`Room ${room} not found in level ${level}`);
+      // Fallback to default spawn
+      spawnEnemies();
+      spawnItems();
+      spawnChests();
+      spawnDoors();
+    }
+  });
+}
+
+// Spawn entities from room data
+function spawnEntities(roomData) {
+  // Spawn enemies
+  if (roomData.enemies) {
+    roomData.enemies.forEach(enemy => {
+      enemies.push(new Enemy(enemy.x, enemy.y, enemy.type));
+    });
+  }
+  
+  // Spawn items
+  if (roomData.items) {
+    roomData.items.forEach(item => {
+      items.push(new Item(item.x, item.y, item.type));
+    });
+  }
+  
+  // Spawn chests
+  if (roomData.chests) {
+    roomData.chests.forEach(chest => {
+      chests.push(new Chest(chest.x, chest.y, chest.locked));
+    });
+  }
+  
+  // Spawn doors
+  if (roomData.doors) {
+    roomData.doors.forEach(door => {
+      doors.push(new Door(door.x, door.y, door.leadsTo, door.locked));
+    });
+  }
 }
 
 // Enemy class
@@ -455,9 +509,77 @@ function gameUpdate(dt) {
     player.attack();
   }
   
+  // Door interaction
+  if (Input.down('e')) {
+    checkDoorInteraction();
+  }
+  
+  // Chest interaction
+  if (Input.down('e')) {
+    checkChestInteraction();
+  }
+  
   // Update enemies
   enemies.forEach(enemy => {
     enemy.update(dt);
+  });
+  
+  // Check enemy collisions with player
+  checkEnemyCollisions();
+}
+
+// Check door interaction
+function checkDoorInteraction() {
+  doors.forEach(door => {
+    const dist = Math.sqrt(
+      Math.pow(player.x - door.x, 2) + Math.pow(player.y - door.y, 2)
+    );
+    if (dist < 50) {
+      if (!door.locked) {
+        console.log(`Entering room ${door.leadsTo}`);
+        loadLevel(currentLevel, door.leadsTo);
+      } else {
+        console.log('Door is locked! Need a key.');
+      }
+    }
+  });
+}
+
+// Check chest interaction
+function checkChestInteraction() {
+  chests.forEach(chest => {
+    const dist = Math.sqrt(
+      Math.pow(player.x - chest.x, 2) + Math.pow(player.y - chest.y, 2)
+    );
+    if (dist < 40) {
+      if (!chest.locked) {
+        if (!chest.opened) {
+          chest.opened = true;
+          console.log('Chest opened!');
+          // TODO: Add chest loot
+        }
+      } else {
+        console.log('Chest is locked! Need a key.');
+      }
+    }
+  });
+}
+
+// Check enemy collisions
+function checkEnemyCollisions() {
+  enemies.forEach(enemy => {
+    const dist = Math.sqrt(
+      Math.pow(player.x - enemy.x, 2) + Math.pow(player.y - enemy.y, 2)
+    );
+    if (dist < 30) {
+      // Player takes damage
+      player.hp -= enemy.damage;
+      if (player.hp <= 0) {
+        player.hp = 0;
+        console.log('Game Over!');
+      }
+      console.log(`Player hit! HP: ${player.hp}/${player.maxHp}`);
+    }
   });
 }
 
