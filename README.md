@@ -1,32 +1,38 @@
-# ⚔️ LINK QUEST
+# Link Quest - Multiplayer RPG Foundation
 
-A browser-based multiplayer top-down action-adventure RPG built with Vanilla JavaScript and Canvas2D. This game is designed to teach AI-assisted coding as a tool, not something to be feared. The enemies and bosses are AI-themed, and the characters represent family members.
+A fully customizable, data-driven, multiplayer top-down action RPG foundation built with Phaser 3, Colyseus, and TypeScript.
 
-## 🎮 Game Concept
-- **Characters**: Lincoln (son), Journey (daughter), Bear (friend), Noha (cousin), Dad (father)
-- **Enemies**: AI-themed enemies like "Lazy Coder", "Data Corruptor", "GossipGPT"
-- **Gameplay**: Top-down Zelda-like adventure with combat, puzzles, and multiplayer support
-- **Technology**: Vanilla JavaScript, Canvas2D, Socket.io for multiplayer
+## Project Structure
+- `/client`: Phaser 3 frontend using Vite and TypeScript.
+- `/server`: Colyseus real-time authoritative server using Node.js and TypeScript.
+- `/shared`: Shared configuration and types used by both client and server.
 
-## 🚀 Features
-- Solo and multiplayer modes
-- Hand-coded animations (no sprites)
-- Transparent code structure for learning
-- Deployable on Render free tier
+## Features
+- **Authoritative Multiplayer**: Real-time state sync with Colyseus.
+- **Data-Driven**: All classes, enemies, items, and levels are defined in `shared/src/config`.
+- **Procedural Animation**: Modular, code-driven animation system (no sprite sheets required).
+- **Monorepo**: Single repository for easy management and deployment.
 
-## 🛠️ Development
-```bash
-npm install
-node server.js      # Express + Socket.io on port 3000
-```
+## Getting Started
+### Local Development
+1. Install dependencies from the root: `npm install`
+2. Run client in dev mode: `npm run dev:client`
+3. Run server in dev mode: `npm run dev:server`
+4. Open `http://localhost:5173` for the client.
 
-## 📋 Roadmap
-1. Core game engine with Canvas2D
-2. Character movement and combat
-3. Enemy AI and boss battles
-4. Multiplayer support via Socket.io
-5. Level design and progression
-6. Deployment on Render
+### Building for Production
+- `npm run build`
 
-Built with love for Lincoln, Journey, Noha, and Bear.
-"The best things are built with love, teamwork, and every tool available."
+### Deployment
+This project is configured for [Render](https://render.com) auto-deployment via `render.yaml`.
+Just push to the `main` branch on GitHub.
+
+## Customization
+### Modifying Classes
+Edit `shared/src/config/classesConfig.ts` to add or modify player classes.
+### Modifying Enemies
+Edit `shared/src/config/enemiesConfig.ts`.
+### Modifying Levels
+Edit `shared/src/config/levelsConfig.ts`.
+### Modifying Animation
+Edit `shared/src/config/animationConfig.ts` to tune procedural motion parameters.
