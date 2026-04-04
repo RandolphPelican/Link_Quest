@@ -9,34 +9,17 @@ const LevelCache = {};
 
 async function loadLevel(num) {
   if (LevelCache[num]) return LevelCache[num];
-  const maxRetries = 3;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const controller = new AbortController();
-    const abortMs = attempt === 0 ? 35000 : 15000;
-    const timeout = setTimeout(() => controller.abort(), abortMs);
-    try {
-      const res = await fetch('levels/level' + num + '.json', {
-        cache: 'no-cache',
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      if (!data || !data.rooms) throw new Error('Invalid level data');
-      LevelCache[num] = data;
-      return data;
-    } catch(e) {
-      clearTimeout(timeout);
-      console.warn('Level ' + num + ' load attempt ' + (attempt+1) + ' failed:', e.message);
-      if (attempt < maxRetries - 1) {
-        showToast('Server waking up, please wait...', 4000);
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    }
+  try {
+    const res = await fetch('levels/level' + num + '.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data || !data.rooms) throw new Error('Invalid data');
+    LevelCache[num] = data;
+    return data;
+  } catch(e) {
+    console.error('loadLevel(' + num + ') failed:', e.message);
+    return null;
   }
-  console.error('Level ' + num + ' failed after ' + maxRetries + ' attempts');
-  showToast('Failed to load Level ' + num + '. Refresh the page.', 8000);
-  return null;
 }
 
 function showToast(msg, duration) {
@@ -107,30 +90,6 @@ window.addEventListener('keydown', e => {
   }
 });
 
-// ── LOADING SCREEN ────────────────────────────────────────────
-function runLoadingScreen(onDone) {
-  const bar  = document.getElementById('loading-bar');
-  const tip  = document.getElementById('loading-tip');
-  const tips = [
-    'Loading assets...',
-    'Spawning goblins...',
-    'Charging fireballs...',
-    "Polishing Dad's club...",
-    "Sharpening Noha's daggers...",
-    'Lincoln unsheathes his sword...',
-    'Bear strings the bow...',
-    'Hiding GossipGPT...',
-    'Almost ready...'
-  ];
-  let pct = 0, tipIdx = 0;
-  const iv = setInterval(() => {
-    pct += Math.random() * 15 + 5;
-    if (pct > 100) pct = 100;
-    bar.style.width = pct + '%';
-    tip.textContent = tips[Math.min(tipIdx++, tips.length - 1)];
-    if (pct >= 100) { clearInterval(iv); setTimeout(onDone, 400); }
-  }, 350);
-}
 
 // ── CHAR SELECT ───────────────────────────────────────────────
 function initCharSelect() {
@@ -849,42 +808,15 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 
 // ── START GAME ────────────────────────────────────────────────
 function startGame() {
-  console.log('Main: startGame() called');
-  engineInit();
   enginePause(false);
-
-  const loadAssets = new Promise((resolve) => {
-    let tilesReady = Tiles.loaded;
-    let spritesReady = Sprites.loaded;
-
-    const check = () => {
-      if (tilesReady && spritesReady) resolve();
-    };
-
-    if (!tilesReady) {
-      Tiles.load(() => { tilesReady = true; check(); });
-    }
-    if (!spritesReady) {
-      Sprites.load(() => { spritesReady = true; check(); });
-    }
-    check();
-  });
-
-  loadAssets.then(() => {
-    console.log('Main: All assets loaded, loading levels...');
-    showToast('Loading levels...', 10000);
-    return Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]);
-  }).then(() => {
-    console.log('Main: Levels loaded, starting game');
+  try {
     loadRoom();
-    if (typeof SoundSystem !== 'undefined') {
-      SoundSystem.playMusic('level1');
-    }
-    engineStart(gameUpdate, gameRender);
-  }).catch(err => {
-    console.error('Main: Startup failed', err);
-    showToast('Error loading game. Please refresh.', 8000);
-  });
+  } catch(e) {
+    console.error('startGame: loadRoom threw:', e);
+    showToast('Game error: ' + e.message + ' — Refresh.', 10000);
+    return;
+  }
+  engineStart(gameUpdate, gameRender);
 }
 
 // ── DEBUG FUNCTIONS ──────────────────────────────────────────
@@ -926,5 +858,22 @@ window.onerror = function(msg, url, line, col, error) {
 };
 
 window.addEventListener('load', () => {
-  runLoadingScreen(() => initCharSelect());
+  engineInit();
+  const bar   = document.getElementById('loading-bar');
+  const tip   = document.getElementById('loading-tip');
+  let done    = 0;
+  const steps = 5;
+
+  function step(msg) {
+    done++;
+    if (bar) bar.style.width = Math.round(done / steps * 100) + '%';
+    if (tip) tip.textContent = msg;
+    if (done >= steps) setTimeout(initCharSelect, 300);
+  }
+
+  Tiles.load(()   => step('Tileset loaded'));
+  Sprites.load(() => step('Sprites loaded'));
+  loadLevel(1).then(d => step(d ? 'Level 1 ready' : 'Level 1 failed — refresh'));
+  loadLevel(2).then(d => step(d ? 'Level 2 ready' : 'Level 2 failed — refresh'));
+  loadLevel(3).then(d => step(d ? 'Level 3 ready' : 'Level 3 failed — refresh'));
 });
