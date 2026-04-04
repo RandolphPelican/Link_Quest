@@ -53,8 +53,7 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
   }
 
   // ── BODY ─────────────────────────────────────────────
-...
-
+  if (charKey === 'lincoln') {
     drawRect(0, 2, hw*2.2, hh*2.2, def.color);
     drawRectOutline(0, 2, hw*2.2, hh*2.2, def.accent, 1);
     drawRect(0, 4, hw*2.2, 4, def.accent);
@@ -140,7 +139,6 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
   const atkExt = isAttacking ? 6 : 0;
   
   // Arm animation - swings with walking and extends during attacks
-  const armSwing = isAttacking ? armSwing * 2 : armSwing;
   const armX = (facing === 'left' ? -hw : hw) * 0.9;
   const armY = -hh * 0.3;
   
@@ -187,7 +185,7 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
     
     // Weapons for front/back view
     if (def.weapon === 'sword') {
-      drawLine(0, hh * 0.6, wx * 14, sy + wy * atkExt, 0xccccdd, 2);
+      drawLine(0, hh * 0.6, wx * 14, hh * 0.6 + wy * atkExt, 0xccccdd, 2);
     } else if (def.weapon === 'staff') {
       drawLine(0, -hh - 5, 0, hh + 5, 0x8b6914, 2);
       drawCircle(0, -hh - 10, 4, 0xff6600, 0.8);
