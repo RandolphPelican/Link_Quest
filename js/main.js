@@ -400,11 +400,67 @@ class Enemy {
     this.type = type;
     this.w = 25;
     this.h = 25;
-    this.hp = 30;
-    this.maxHp = 30;
-    this.speed = 50;
-    this.damage = 5;
-    this.color = '#ff0000';
+    
+    // Set stats based on enemy type
+    switch (type) {
+      case 'goblin':
+        this.hp = 20;
+        this.maxHp = 20;
+        this.speed = 40;
+        this.damage = 3;
+        this.color = '#00ff00';
+        break;
+      case 'skeleton':
+        this.hp = 25;
+        this.maxHp = 25;
+        this.speed = 35;
+        this.damage = 4;
+        this.color = '#ffffff';
+        break;
+      case 'glitch':
+        this.hp = 15;
+        this.maxHp = 15;
+        this.speed = 50;
+        this.damage = 2;
+        this.color = '#ff00ff';
+        break;
+      case 'memory_leak':
+        this.hp = 30;
+        this.maxHp = 30;
+        this.speed = 30;
+        this.damage = 5;
+        this.color = '#00ffff';
+        break;
+      case 'null_pointer':
+        this.hp = 35;
+        this.maxHp = 35;
+        this.speed = 45;
+        this.damage = 6;
+        this.color = '#ffff00';
+        break;
+      case 'demon':
+        this.hp = 40;
+        this.maxHp = 40;
+        this.speed = 50;
+        this.damage = 7;
+        this.color = '#ff0000';
+        break;
+      case 'boss':
+        this.hp = 100;
+        this.maxHp = 100;
+        this.speed = 30;
+        this.damage = 10;
+        this.color = '#ff8800';
+        this.w = 40;
+        this.h = 40;
+        break;
+      default:
+        this.hp = 20;
+        this.maxHp = 20;
+        this.speed = 40;
+        this.damage = 3;
+        this.color = '#ff0000';
+    }
   }
   
   update(dt) {
@@ -417,6 +473,25 @@ class Enemy {
       this.x += (dx / dist) * this.speed * dt;
       this.y += (dy / dist) * this.speed * dt;
     }
+    
+    // Different attack patterns based on enemy type
+    if (this.type === 'glitch') {
+      // Glitch enemies teleport occasionally
+      if (Math.random() < 0.01) {
+        this.x = player.x + (Math.random() - 0.5) * 200;
+        this.y = player.y + (Math.random() - 0.5) * 200;
+      }
+    } else if (this.type === 'memory_leak') {
+      // Memory leaks move slower but hit harder
+      this.speed = 30;
+    } else if (this.type === 'boss') {
+      // Boss has special movement
+      if (dist < 100) {
+        // Move away if too close
+        this.x -= (dx / dist) * this.speed * dt;
+        this.y -= (dy / dist) * this.speed * dt;
+      }
+    }
   }
   
   render() {
@@ -424,6 +499,8 @@ class Enemy {
     // HP bar
     const hpWidth = (this.hp / this.maxHp) * this.w;
     drawRect(this.x - this.w/2, this.y - this.h/2 - 5, hpWidth, 3, '#00ff00');
+    // Enemy type label
+    drawText(this.x - 10, this.y - 20, this.type, '#fff');
   }
 }
 
@@ -485,20 +562,20 @@ function spawnEnemies() {
   enemies = [];
   // Spawn enemies based on level and room
   if (currentLevel === 1) {
-    // Level 1 enemies
+    // Level 1 enemies - goblins
     enemies.push(new Enemy(200, 200, 'goblin'));
     enemies.push(new Enemy(600, 400, 'goblin'));
   } else if (currentLevel === 2) {
-    // Level 2 enemies
+    // Level 2 enemies - skeletons and glitches
     enemies.push(new Enemy(150, 300, 'skeleton'));
-    enemies.push(new Enemy(400, 200, 'skeleton'));
+    enemies.push(new Enemy(400, 200, 'glitch'));
     enemies.push(new Enemy(650, 300, 'skeleton'));
   } else if (currentLevel === 3) {
-    // Level 3 enemies
+    // Level 3 enemies - demons and memory leaks
     enemies.push(new Enemy(200, 200, 'demon'));
-    enemies.push(new Enemy(400, 300, 'demon'));
+    enemies.push(new Enemy(400, 300, 'memory_leak'));
     enemies.push(new Enemy(600, 200, 'demon'));
-    enemies.push(new Enemy(400, 400, 'demon'));
+    enemies.push(new Enemy(400, 400, 'null_pointer'));
   }
 }
 
