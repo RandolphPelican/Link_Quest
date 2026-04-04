@@ -522,6 +522,12 @@ function engineStart(updateFn, renderFn) {
   // Initialize sound system
   SoundSystem.init();
   
+  // Ensure canvas is visible and properly initialized
+  if (canvas) {
+    canvas.style.display = 'block';
+    canvas.style.visibility = 'visible';
+  }
+  
   requestAnimationFrame(_loop);
 }
 

@@ -377,7 +377,10 @@ function loadRoom() {
         'O to open chests and read signs.',
         'Walk through the glowing door on the right to begin.',
         'Good luck. You\'re gonna need it.'
-      ]);
+      ], () => {
+        console.log('Cutscene finished, ensuring room is rendered.');
+        if (roomMgr) roomMgr.render();
+      });
     }, 600);
   }
 
@@ -390,7 +393,10 @@ function loadRoom() {
         'Watch for new enemies — they\'re faster and smarter.',
         'Don\'t trust everything you see.',
         'Keep pushing forward.'
-      ]);
+      ], () => {
+        console.log('Level 2 cutscene finished, ensuring room is rendered.');
+        if (roomMgr) roomMgr.render();
+      });
     }, 600);
   }
 
@@ -403,7 +409,10 @@ function loadRoom() {
         'It thinks AI should be feared... you\'re here to prove it wrong.',
         'Every bug you\'ve squashed has led to this.',
         'Show GossipGPT what teamwork + AI can really do.'
-      ]);
+      ], () => {
+        console.log('Level 3 cutscene finished, ensuring room is rendered.');
+        if (roomMgr) roomMgr.render();
+      });
     }, 600);
   }
 
@@ -608,14 +617,17 @@ function gameUpdate(dt) {
       const bossType = boss.type;
       boss = null;
       checkRoomClear();
-      onBossDefeated(bossType);
+      setTimeout(() => onBossDefeated(bossType), 100);
     }
   }
 
   // Safety net — if all threats gone but room not cleared, force check
   if (!roomCleared && enemies.length === 0 && !boss) {
     const hasThreats = (roomData.enemies && roomData.enemies.length > 0) || roomData.boss;
-    if (hasThreats) checkRoomClear();
+    if (hasThreats) {
+      checkRoomClear();
+      if (roomMgr) roomMgr.render();
+    }
   }
 
   // Update items
