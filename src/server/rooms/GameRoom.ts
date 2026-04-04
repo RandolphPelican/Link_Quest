@@ -2,7 +2,7 @@ import { Room, Client } from "colyseus";
 import { GameState } from "../state/GameState";
 import { PlayerState } from "../state/PlayerState";
 import { EnemyState } from "../state/EnemyState";
-import { CLASSES, LEVELS, ENEMIES } from "../../../shared/index";
+import { CLASSES, LEVELS, ENEMIES } from "../../shared/index";
 
 export class GameRoom extends Room<GameState> {
     maxClients = 4;

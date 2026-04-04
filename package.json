@@ -1,12 +1,13 @@
 {
   "name": "link-quest",
-  "version": "2.0.0",
-  "private": true,
+  "version": "2.1.0",
+  "description": "Multiplayer RPG foundation",
+  "main": "server.js",
   "scripts": {
-    "build:client": "tsc -p client && vite build client",
-    "build:server": "tsc -p server",
-    "build": "npm run build:client && npm run build:server",
-    "start": "node server.js"
+    "build": "tsc && vite build",
+    "start": "node server.js",
+    "dev:server": "ts-node-dev --respawn src/server/index.ts",
+    "dev:client": "vite"
   },
   "dependencies": {
     "phaser": "^3.60.0",
