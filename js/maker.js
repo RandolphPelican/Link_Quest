@@ -238,8 +238,57 @@ const Maker = {
         this.room = r;
         document.getElementById('room-name-input').value = r.name;
         this._draw();
+        this._updateDoorUI();
       };
       list.appendChild(el);
+    });
+    this._updateDoorUI();
+  },
+
+  _updateDoorUI() {
+    // Update door select boxes with available rooms
+    const roomOptions = this.campaign.rooms.map(r => ({ value: r.id, text: `${r.id}: ${r.name}` }));
+    roomOptions.unshift({ value: "null", text: "-- None --" });
+    
+    const updateSelect = (selectId, currentValue) => {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      select.innerHTML = "";
+      roomOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.text = opt.text;
+        if (opt.value === String(currentValue)) option.selected = true;
+        select.appendChild(option);
+      });
+    };
+    
+    // Update all door selects
+    updateSelect('door-left-select', this.room.doors.left.leadsTo);
+    updateSelect('door-right-select', this.room.doors.right.leadsTo);
+    updateSelect('door-top-select', this.room.doors.top.leadsTo);
+    updateSelect('door-bottom-select', this.room.doors.bottom.leadsTo);
+    
+    // Update locked checkboxes
+    document.getElementById('door-left-locked').checked = this.room.doors.left.locked || false;
+    document.getElementById('door-right-locked').checked = this.room.doors.right.locked || false;
+    document.getElementById('door-top-locked').checked = this.room.doors.top.locked || false;
+    document.getElementById('door-bottom-locked').checked = this.room.doors.bottom.locked || false;
+    
+    // Add event listeners
+    ['left', 'right', 'top', 'bottom'].forEach(side => {
+      const select = document.getElementById(`door-${side}-select`);
+      const locked = document.getElementById(`door-${side}-locked`);
+      
+      select.onchange = () => {
+        this._saveState();
+        this.room.doors[side].leadsTo = select.value === "null" ? null : parseInt(select.value);
+      };
+      
+      locked.onchange = () => {
+        this._saveState();
+        this.room.doors[side].locked = locked.checked;
+      };
     });
   },
 
@@ -272,7 +321,7 @@ const Maker = {
 
   _initPalette() {
     const tiles = ['wall', 'pillar', 'crate'];
-    const enemies = ['goblin', 'goblin_chief', 'ai_bug', 'chatbot_clone', 'glitch_sprite', 'memory_leak'];
+    const enemies = ['goblin', 'goblin_chief', 'ai_bug', 'chatbot_clone', 'glitch_sprite', 'memory_leak', 'stack_overflow', 'syntax_error', 'memory_corruption', 'infinite_loop'];
     const objects = ['chest', 'sign', 'switch', 'torch', 'bush', 'crystal', 'puddle'];
 
     const tPal = document.getElementById('tile-palette');
@@ -318,6 +367,7 @@ const Maker = {
         }
       } catch(e) {}
     }
+    this._updateDoorUI();
     this._draw();
   },
 
@@ -459,7 +509,7 @@ const Maker = {
     // Draw enemies
     this.room.enemies.forEach(e => {
       if (typeof Sprites !== 'undefined' && Sprites.loaded) {
-        Sprites.draw(e.type, e.x, e.y, 'down', 0);
+        Sprites.drawEnemy(e.type, e.x, e.y, 'down', 0, 2.5, false);
       } else {
         ctx.fillStyle = "#ff4444";
         ctx.beginPath(); ctx.arc(e.x, e.y, 12, 0, Math.PI*2); ctx.fill();
@@ -480,14 +530,33 @@ const Maker = {
   },
 
   export() {
-    const blob = new Blob([JSON.stringify(this.room, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `room_${this.room.name.replace(/\s+/g, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    unlockAchievement('exported_room', 'Room Architect');
+    // Export either single room or entire campaign
+    const campaignSelect = document.getElementById('maker-campaign-select');
+    if (campaignSelect && campaignSelect.value === 'custom' && this.campaign.rooms.length > 1) {
+      // Export entire campaign
+      const campaignData = {
+        name: this.campaign.name || "Custom Campaign",
+        rooms: this.campaign.rooms
+      };
+      const blob = new Blob([JSON.stringify(campaignData, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `campaign_${campaignData.name.replace(/\s+/g, '_')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      unlockAchievement('exported_campaign', 'Campaign Architect');
+    } else {
+      // Export single room
+      const blob = new Blob([JSON.stringify(this.room, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `room_${this.room.name.replace(/\s+/g, '_')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      unlockAchievement('exported_room', 'Room Architect');
+    }
   },
 
   import() {

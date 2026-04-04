@@ -18,18 +18,39 @@ const Network = {
 
   // ── CONNECT ──────────────────────────────────────────────
   connect(serverUrl) {
-    if (this.socket) return;
+    if (this.socket) {
+      console.log('Network: Already connected');
+      return;
+    }
+    
+    console.log('Network: Loading Socket.io from CDN...');
+    
     // Load Socket.io from CDN
     const script = document.createElement('script');
     script.src = 'https://cdn.socket.io/4.7.4/socket.io.min.js';
     script.onload = () => {
-      this.socket = io(serverUrl || window.location.origin, {
-        transports: ['websocket', 'polling']
-      });
-      this._bindEvents();
-      this.enabled = true;
-      console.log('Network: connecting to', serverUrl || window.location.origin);
+      console.log('Network: Socket.io loaded, connecting to server...');
+      try {
+        this.socket = io(serverUrl || window.location.origin, {
+          transports: ['websocket', 'polling'],
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+          timeout: 10000
+        });
+        this._bindEvents();
+        this.enabled = true;
+        console.log('Network: Socket created, connecting to', serverUrl || window.location.origin);
+      } catch (e) {
+        console.error('Network: Failed to create socket:', e);
+        showToast('Failed to connect to multiplayer server');
+      }
     };
+    
+    script.onerror = () => {
+      console.error('Network: Failed to load Socket.io library');
+      showToast('Failed to load multiplayer library');
+    };
+    
     document.head.appendChild(script);
   },
 
@@ -40,13 +61,24 @@ const Network = {
       this.connected = true;
       this.myId = s.id;
       console.log('Network: connected as', s.id);
+      showToast('Connected to multiplayer server', 2000);
     });
 
-    s.on('disconnect', () => {
+    s.on('disconnect', (reason) => {
       this.connected = false;
       this.inRoom = false;
-      console.log('Network: disconnected');
-      showToast('Disconnected from server');
+      console.log('Network: disconnected -', reason);
+      showToast('Disconnected from server: ' + reason, 3000);
+    });
+
+    s.on('connect_error', (err) => {
+      console.error('Network: connection error:', err);
+      showToast('Connection error: ' + err.message, 3000);
+    });
+
+    s.on('error', (err) => {
+      console.error('Network: socket error:', err);
+      showToast('Network error: ' + err.message, 3000);
     });
 
     // Room events
@@ -109,9 +141,11 @@ const Network = {
     s.on('remote_player_state', (state) => {
       if (state.id === this.myId) return;
       if (!this.remotePlayers[state.id]) {
+        console.log('Network: New remote player detected:', state.id, state.name);
         this.remotePlayers[state.id] = { char:'lincoln', name:'Player' };
       }
       Object.assign(this.remotePlayers[state.id], state);
+      // console.log('Network: updated remote player', state.id); // Debug logging
     });
 
     // Remote attack events
@@ -181,18 +215,23 @@ const Network = {
     if (this.sendTimer < 0.05) return;  // Send every 0.05s (~20fps)
     this.sendTimer = 0;
 
-    this.socket.emit('player_state', {
-      x: Math.round(player.x),
-      y: Math.round(player.y),
-      facing: player.facing,
-      hp: Math.round(player.hp),
-      mp: Math.round(player.mp),
-      alive: player.alive,
-      animFrame: player.animFrame,
-      attacking: player.attackCooldown > 20,
-      armor: player.armor,
-      char: player.characterKey
-    });
+    try {
+      this.socket.emit('player_state', {
+        x: Math.round(player.x),
+        y: Math.round(player.y),
+        facing: player.facing,
+        hp: Math.round(player.hp),
+        mp: Math.round(player.mp),
+        alive: player.alive,
+        animFrame: player.animFrame,
+        attacking: player.attackCooldown > 20,
+        armor: player.armor,
+        char: player.characterKey
+      });
+      // console.log('Network: sent player state'); // Debug logging
+    } catch (e) {
+      console.error('Network: Failed to send player state:', e);
+    }
   },
 
   sendAttack(type, facing, x, y) {

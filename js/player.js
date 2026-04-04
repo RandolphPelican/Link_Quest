@@ -9,11 +9,14 @@
 function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
   const def = window.CHAR_DEFS[charKey] || window.CHAR_DEFS.lincoln;
   const t = animFrame || 0;
-  const bob = Math.sin(t * 0.4) * 2;
   const hw = (w || 28) / 2;
   const hh = (h || 28) / 2;
 
-  // Lunge offset
+  // Enhanced animation system
+  const bob = Math.sin(t * 0.4) * 2;
+  const stepCycle = Math.sin(t * 0.8); // Faster cycle for walking
+  
+  // Lunge offset for attacks
   let lx = 0, ly = 0;
   if (isAttacking) {
     const lunge = 10;
@@ -23,21 +26,30 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
     if (facing === 'down')  ly = lunge;
   }
 
+  // Arm/leg movement for walking animation
+  const armSwing = stepCycle * 4;
+  const legSwing = stepCycle * 6;
+
   ctx.save();
   ctx.translate(x + lx, y + bob + ly);
 
   // ── LEGS ─────────────────────────────────────────────
   const legW = 5, legH = 6;
   const legY = hh - 2;
-  const legOff = Math.sin(t * 0.4) * 4;
+  
+  // Enhanced leg animation with proper walking cycle
+  const legOff = isAttacking ? 0 : legSwing;
+  const legRaise = Math.abs(legSwing) * 2;
 
   ctx.fillStyle = hexToCSS(def.accent);
   if (facing === 'left' || facing === 'right') {
-    drawRect(-legOff, legY, legW, legH, def.accent);
-    drawRect(legOff, legY, legW, legH, def.accent);
+    // Side view legs - swing forward/backward
+    drawRect(-legOff, legY - legRaise, legW, legH, def.accent);
+    drawRect(legOff, legY + legRaise, legW, legH, def.accent);
   } else {
-    drawRect(-hw/2, legY + legOff, legW, legH, def.accent);
-    drawRect(hw/2, legY - legOff, legW, legH, def.accent);
+    // Front/back view legs - swing side to side
+    drawRect(-hw/2 + legOff, legY - legRaise, legW, legH, def.accent);
+    drawRect(hw/2 - legOff, legY + legRaise, legW, legH, def.accent);
   }
 
   // ── BODY ─────────────────────────────────────────────
@@ -122,42 +134,64 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
     }
   }
 
-  // ── WEAPON ───────────────────────────────────────────
+  // ── ARMS & WEAPON ─────────────────────────────────────
   const wepDir = { down:[0,1], up:[0,-1], left:[-1,0], right:[1,0] };
   const [wx, wy] = wepDir[facing] || [0, 1];
   const atkExt = isAttacking ? 6 : 0;
-
-  if (def.weapon === 'sword') {
-    const sx = hw * wx * 1.2 + wx * atkExt;
-    const sy = hh * wy * 0.8 + wy * atkExt;
-    drawLine(sx, sy, sx + wx*14, sy + wy*14, 0xccccdd, 2);
-    drawLine(sx + wx*14 - wy*3, sy + wy*14 + wx*3,
-             sx + wx*14 + wy*3, sy + wy*14 - wx*3, 0x8b6914, 2);
-  } else if (def.weapon === 'staff') {
-    const sx = hw * (facing === 'left' ? -1 : 1) * 1.1;
-    drawLine(sx, -hh - 8, sx, hh + 4, 0x8b6914, 2);
-    drawCircle(sx, -hh - 10, 4, 0xff6600, 0.8);
-    drawCircle(sx, -hh - 10, 6, 0xff6600, 0.3);
-  } else if (def.weapon === 'bow') {
-    const sx = hw * (facing === 'left' ? -1 : 1) * 1.1;
-    ctx.strokeStyle = hexToCSS(0x8b6914);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(sx, 0, 10, -Math.PI*0.4, Math.PI*0.4);
-    ctx.stroke();
-    drawLine(sx + 8, -6, sx + 8, 6, 0xaaaaaa, 1);
-  } else if (def.weapon === 'club') {
-    const sx = hw * wx * 1.2 + wx * atkExt;
-    const sy = hh * wy * 0.8 + wy * atkExt;
-    drawLine(sx, sy, sx + wx*12, sy + wy*12, 0x8b6914, 3);
-    drawCircle(sx + wx*14, sy + wy*14, 5, 0x6a4020);
-  } else if (def.weapon === 'daggers') {
-    const atkOff = isAttacking ? 4 : 0;
-    const d1x = -hw * 0.8 + (facing === 'left' ? -atkOff : 0);
-    const d2x = hw * 0.8 + (facing === 'right' ? atkOff : 0);
-    const dy = wy * 8 + wy * atkOff;
-    drawLine(d1x, dy, d1x + wx*8, dy + wy*8, 0xccccdd, 1.5);
-    drawLine(d2x, dy, d2x + wx*8, dy + wy*8, 0xccccdd, 1.5);
+  
+  // Arm animation - swings with walking and extends during attacks
+  const armSwing = isAttacking ? armSwing * 2 : armSwing;
+  const armX = (facing === 'left' ? -hw : hw) * 0.9;
+  const armY = -hh * 0.3;
+  
+  // Draw arms (simple rectangles that swing)
+  ctx.fillStyle = hexToCSS(def.color);
+  if (facing === 'left' || facing === 'right') {
+    // Side view - single arm visible
+    const armPosX = armX - (facing === 'left' ? armSwing : -armSwing);
+    const armPosY = armY + Math.abs(armSwing) * 0.5;
+    drawRect(armPosX, armPosY, 3, 10, def.color);
+    
+    // Weapon extends from arm
+    if (def.weapon === 'sword') {
+      const sx = armPosX + (facing === 'left' ? -3 : 10);
+      const sy = armPosY + 5;
+      drawLine(sx, sy, sx + (facing === 'left' ? -14 : 14) + wx * atkExt, sy + wy * atkExt, 0xccccdd, 2);
+      drawLine(sx + (facing === 'left' ? -14 : 14) - wy*3, sy + wx*3,
+               sx + (facing === 'left' ? -14 : 14) + wy*3, sy - wx*3, 0x8b6914, 2);
+    } else if (def.weapon === 'staff') {
+      drawLine(armPosX, armPosY, armPosX, armPosY + 20, 0x8b6914, 2);
+      drawCircle(armPosX, armPosY - 5, 4, 0xff6600, 0.8);
+    } else if (def.weapon === 'bow') {
+      ctx.strokeStyle = hexToCSS(0x8b6914);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(armPosX + 5, armPosY + 5, 8, -Math.PI*0.4, Math.PI*0.4);
+      ctx.stroke();
+      drawLine(armPosX + 13, armPosY, armPosX + 13, armPosY + 10, 0xaaaaaa, 1);
+    } else if (def.weapon === 'club') {
+      drawLine(armPosX, armPosY + 5, armPosX + (facing === 'left' ? -12 : 12) + wx * atkExt, 
+               armPosY + 5 + wy * atkExt, 0x8b6914, 3);
+      drawCircle(armPosX + (facing === 'left' ? -14 : 14), armPosY + 5, 4, 0x6a4020);
+    } else if (def.weapon === 'daggers') {
+      drawLine(armPosX, armPosY + 5, armPosX + (facing === 'left' ? -8 : 8), armPosY + 5, 0xccccdd, 1.5);
+    }
+  } else {
+    // Front/back view - both arms visible
+    const leftArmX = -hw * 0.6 - armSwing;
+    const rightArmX = hw * 0.6 + armSwing;
+    const armYPos = armY + Math.abs(armSwing) * 0.3;
+    
+    drawRect(leftArmX, armYPos, 3, 10, def.color);
+    drawRect(rightArmX, armYPos, 3, 10, def.color);
+    
+    // Weapons for front/back view
+    if (def.weapon === 'sword') {
+      drawLine(0, hh * 0.6, wx * 14, sy + wy * atkExt, 0xccccdd, 2);
+    } else if (def.weapon === 'staff') {
+      drawLine(0, -hh - 5, 0, hh + 5, 0x8b6914, 2);
+      drawCircle(0, -hh - 10, 4, 0xff6600, 0.8);
+    }
   }
 
   ctx.restore();
@@ -217,6 +251,22 @@ class Player extends PhysicsObject {
       this.animFrame = 0;
     }
 
+    // Update animation frame based on movement
+    const wasMoving = this.moving;
+    this.moving = (this.vx !== 0 || this.vy !== 0);
+    
+    if (this.moving) {
+      this.animFrame += dt * 120; // Faster animation when moving
+    } else {
+      this.animFrame += dt * 30; // Slow breathing when idle
+    }
+    
+    // Determine facing direction based on movement
+    if (this.vx < -0.1) this.facing = 'left';
+    else if (this.vx > 0.1) this.facing = 'right';
+    else if (this.vy < -0.1) this.facing = 'up';
+    else if (this.vy > 0.1) this.facing = 'down';
+
     super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
 
@@ -271,14 +321,44 @@ class Player extends PhysicsObject {
     const [ox, oy] = offsets[this.facing] || [0, 30];
     const ax = this.x + ox, ay = this.y + oy;
     const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
+    
+    // Play attack sound
+    if (typeof SoundSystem !== 'undefined') {
+      SoundSystem.play('attack');
+    }
+    
+    let hitSomething = false;
     targets.forEach(t => {
       if (!t.alive) return;
       const dx = t.x - ax, dy = t.y - ay;
       if (Math.sqrt(dx*dx+dy*dy) < 55) {
         t.takeDamage(this.attackPower);
         this._spawnDmg(t.x, t.y - 10, this.attackPower, 0xff4757);
+        hitSomething = true;
+        
+        // Play hit sound
+        if (typeof SoundSystem !== 'undefined') {
+          SoundSystem.play('hit');
+        }
+        
+        // Blood particles on hit
+        if (typeof ParticleSystem !== 'undefined') {
+          ParticleSystem.spawn(t.x, t.y, 0xff4444, 6, 'blood');
+        }
       }
     });
+    
+    // Weapon hit effect at attack position
+    if (typeof ParticleSystem !== 'undefined') {
+      if (hitSomething) {
+        // Hit sparks
+        ParticleSystem.spawn(ax, ay, 0xffff00, 8, 'spark');
+        ParticleSystem.spawn(ax, ay, 0xffaa00, 4, 'spark');
+      } else {
+        // Miss effect - smaller sparks
+        ParticleSystem.spawn(ax, ay, 0xcccccc, 3, 'spark');
+      }
+    }
   }
 
   castSpell() {
@@ -290,6 +370,11 @@ class Player extends PhysicsObject {
     this.spellCooldown = 60;
 
     if (spell.type === 'aoe') {
+      // Play spell sound
+      if (typeof SoundSystem !== 'undefined') {
+        SoundSystem.play('spell');
+      }
+      
       const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
       targets.forEach(t => {
         if (!t.alive) return;
@@ -297,8 +382,24 @@ class Player extends PhysicsObject {
         if (Math.sqrt(dx*dx+dy*dy) < spell.range) {
           t.takeDamage(spell.damage);
           this._spawnDmg(t.x, t.y - 10, spell.damage, 0xaaff00);
+          
+          // Play hit sound
+          if (typeof SoundSystem !== 'undefined') {
+            SoundSystem.play('hit');
+          }
+          
+          // Fart cloud particles
+          if (typeof ParticleSystem !== 'undefined') {
+            ParticleSystem.spawn(t.x, t.y, 0xaaff00, 4, 'smoke');
+          }
         }
       });
+      
+      // Big fart explosion at player position
+      if (typeof ParticleSystem !== 'undefined') {
+        ParticleSystem.spawnExplosion(this.x, this.y, 0xaaff00);
+      }
+      
       showToast('💨 FART AoE!');
 
     } else if (spell.type === 'spin') {
@@ -310,8 +411,27 @@ class Player extends PhysicsObject {
         if (Math.sqrt(dx*dx+dy*dy) < spell.range) {
           t.takeDamage(spell.damage);
           this._spawnDmg(t.x, t.y - 10, spell.damage, 0x00ccff);
+          
+          // Spin hit particles
+          if (typeof ParticleSystem !== 'undefined') {
+            ParticleSystem.spawn(t.x, t.y, 0x00ccff, 6, 'spark');
+          }
         }
       });
+      
+      // Spin start particles
+      if (typeof ParticleSystem !== 'undefined') {
+        for (let i = 0; i < 10; i++) {
+          const angle = (i / 10) * Math.PI * 2;
+          const distance = 40 + Math.random() * 20;
+          ParticleSystem.spawn(
+            this.x + Math.cos(angle) * distance,
+            this.y + Math.sin(angle) * distance,
+            0x00ccff, 3, 'magic'
+          );
+        }
+      }
+      
       showToast('⚔️ SPIN ATTACK!');
 
     } else if (spell.type === 'dash') {

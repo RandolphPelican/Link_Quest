@@ -152,6 +152,11 @@ const Tiles = {
     gate:          [4, 0],   // Gate
     coffin_top:    [6, 0],   // Coffin
     coffin_bot:    [6, 1],
+    bush:          [1, 0],   // Bush
+    crystal:       [14, 7],  // Crystal
+    puddle:        [16, 7],  // Puddle/water
+    sign:          [10, 0],  // Sign
+    switch:        [12, 0],  // Switch/pressure plate
   },
 
   // ── ROOM RENDERING HELPERS ─────────────────────────────
@@ -218,5 +223,32 @@ const Tiles = {
     }
 
     this.draw('decos', tile[0], tile[1], x - TileDraw/2, y - TileDraw/2);
+  },
+
+  // Draw a tile (for maker mode)
+  drawTile(type, x, y) {
+    if (!this.sheets.walls && !this.sheets.decos) return;
+    
+    // Map maker tile types to actual tile definitions
+    const tileMap = {
+      'wall': this.WALL.face,
+      'pillar': this.WALL.pillar_mid,
+      'crate': this.DECO.crate,
+      'barrel': this.DECO.barrel,
+      'torch': this.DECO.torch1,
+      'bush': this.DECO.bush,
+      'crystal': this.DECO.skull,
+      'puddle': this.DECO.puddle
+    };
+    
+    const tile = tileMap[type];
+    if (!tile) {
+      console.warn('No tile definition found for type:', type);
+      return;
+    }
+    
+    // Determine which sheet to use
+    const sheet = (type === 'wall' || type === 'pillar') ? 'walls' : 'decos';
+    this.draw(sheet, tile[0], tile[1], x - TileDraw/2, y - TileDraw/2);
   }
 };

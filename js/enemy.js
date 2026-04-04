@@ -9,20 +9,26 @@ class Enemy extends PhysicsObject {
   constructor(x, y, type, pattern) {
     const typeStats = {
       // Level 1 — Debug Dungeon
-      goblin:        { maxHp:40,  speed:45, attackPower:6,  attackRange:36, aggroRange:320, color:0x00ff88, label:'Goblin',        size:22, shape:'square' },
-      goblin_chief:  { maxHp:80,  speed:38, attackPower:10, attackRange:40, aggroRange:350, color:0xcc2200, label:'Goblin Chief',  size:30, shape:'square' },
-      ai_bug:        { maxHp:30,  speed:55, attackPower:5,  attackRange:40, aggroRange:340, color:0xff4444, label:'AI Bug',        size:18, shape:'diamond' },
-      chatbot_clone: { maxHp:80,  speed:35, attackPower:10, attackRange:50, aggroRange:360, color:0x44aaff, label:'Chatbot Clone', size:28, shape:'circle' },
+      goblin:        { maxHp:35,  speed:40, attackPower:5,  attackRange:34, aggroRange:300, color:0x00ff88, label:'Goblin',        size:20, shape:'square' },
+      goblin_chief:  { maxHp:70,  speed:35, attackPower:9,  attackRange:38, aggroRange:330, color:0xcc2200, label:'Goblin Chief',  size:28, shape:'square' },
+      ai_bug:        { maxHp:25,  speed:50, attackPower:4,  attackRange:38, aggroRange:320, color:0xff4444, label:'AI Bug',        size:16, shape:'diamond' },
+      chatbot_clone: { maxHp:70,  speed:32, attackPower:8,  attackRange:45, aggroRange:340, color:0x44aaff, label:'Chatbot Clone', size:26, shape:'circle' },
       // Level 2 — Hallucination Halls
-      glitch_sprite: { maxHp:50,  speed:60, attackPower:8,  attackRange:38, aggroRange:380, color:0xff00ff, label:'Glitch Sprite', size:20, shape:'diamond' },
-      memory_leak:   { maxHp:90,  speed:25, attackPower:14, attackRange:50, aggroRange:300, color:0x8844ff, label:'Memory Leak',   size:34, shape:'circle' },
-      phantom_var:   { maxHp:45,  speed:70, attackPower:7,  attackRange:35, aggroRange:400, color:0xffaa00, label:'Phantom Var',   size:16, shape:'diamond' },
-      null_pointer:  { maxHp:100, speed:30, attackPower:16, attackRange:55, aggroRange:320, color:0xff2288, label:'Null Pointer',  size:32, shape:'square' },
+      glitch_sprite: { maxHp:45,  speed:55, attackPower:7,  attackRange:36, aggroRange:360, color:0xff00ff, label:'Glitch Sprite', size:18, shape:'diamond' },
+      memory_leak:   { maxHp:80,  speed:22, attackPower:12, attackRange:45, aggroRange:280, color:0x8844ff, label:'Memory Leak',   size:32, shape:'circle' },
+      phantom_var:   { maxHp:40,  speed:65, attackPower:6,  attackRange:33, aggroRange:380, color:0xffaa00, label:'Phantom Var',   size:14, shape:'diamond' },
+      null_pointer:  { maxHp:90,  speed:28, attackPower:14, attackRange:50, aggroRange:300, color:0xff2288, label:'Null Pointer',  size:30, shape:'square' },
       // Level 3 — The Final Compile
-      stack_overflow:{ maxHp:70,  speed:50, attackPower:12, attackRange:42, aggroRange:360, color:0xff6600, label:'Stack Overflow', size:26, shape:'circle' },
-      syntax_error:  { maxHp:55,  speed:65, attackPower:10, attackRange:36, aggroRange:380, color:0xff0044, label:'Syntax Error',  size:22, shape:'diamond' },
-      dark_compiler: { maxHp:120, speed:28, attackPower:18, attackRange:55, aggroRange:350, color:0x6600cc, label:'Dark Compiler', size:36, shape:'square' },
-      trojan_horse:  { maxHp:85,  speed:40, attackPower:15, attackRange:48, aggroRange:340, color:0xaa0000, label:'Trojan Horse',  size:30, shape:'circle' }
+      stack_overflow:{ maxHp:80,  speed:48, attackPower:14, attackRange:44, aggroRange:370, color:0xff6600, label:'Stack Overflow', size:28, shape:'circle' },
+      syntax_error:  { maxHp:60,  speed:62, attackPower:11, attackRange:38, aggroRange:390, color:0xff0044, label:'Syntax Error',  size:24, shape:'diamond' },
+      dark_compiler: { maxHp:130, speed:26, attackPower:20, attackRange:58, aggroRange:360, color:0x6600cc, label:'Dark Compiler', size:38, shape:'square' },
+      trojan_horse:  { maxHp:95,  speed:38, attackPower:17, attackRange:50, aggroRange:350, color:0xaa0000, label:'Trojan Horse',  size:32, shape:'circle' },
+      // Level 3 Elite Enemies
+      memory_corruption: { maxHp:100, speed:42, attackPower:16, attackRange:48, aggroRange:380, color:0xcc00ff, label:'Memory Corruption', size:30, shape:'diamond' },
+      infinite_loop:    { maxHp:65,  speed:68, attackPower:9,  attackRange:32, aggroRange:410, color:0x00ffff, label:'Infinite Loop',    size:22, shape:'circle' },
+      // Level 4 — Bonus Content (if needed)
+      segmentation_fault: { maxHp:160, speed:28, attackPower:22, attackRange:62, aggroRange:390, color:0xff0000, label:'Segmentation Fault', size:42, shape:'square' },
+      buffer_overflow:   { maxHp:90,  speed:52, attackPower:18, attackRange:42, aggroRange:370, color:0x00ff00, label:'Buffer Overflow',   size:26, shape:'circle' }
     };
     const s = typeStats[type] || typeStats.goblin;
     super(x, y, s.size, s.size);
@@ -256,6 +262,17 @@ class Enemy extends PhysicsObject {
     
     const spriteDrawn = Sprites.loaded && 
       Sprites.drawEnemy(this.type, this.x, this.y, facing, t * 10, 2.5, isHit);
+
+    // Debug: log sprite drawing status
+    if (Sprites.loaded) {
+      if (spriteDrawn) {
+        console.log('Enemy sprite drawn for type:', this.type);
+      } else {
+        console.warn('Enemy sprite NOT drawn for type:', this.type, 'Sprites.loaded:', Sprites.loaded);
+      }
+    } else {
+      console.log('Sprites not loaded yet, using fallback for:', this.type);
+    }
 
     if (!spriteDrawn) {
       // Fallback procedural drawing with phenotypic variation

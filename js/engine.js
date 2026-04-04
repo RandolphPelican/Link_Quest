@@ -287,32 +287,218 @@ const ScreenShake = {
 // ── PARTICLE SYSTEM ──────────────────────────────────────────
 const ParticleSystem = {
   particles: [],
-  spawn(x, y, color, count) {
+  
+  spawn(x, y, color, count, type = 'normal') {
     for (let i = 0; i < (count || 5); i++) {
+      if (type === 'normal') {
+        const a = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 100 + 50;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          life: 1.0,
+          color: color || 0xffffff,
+          size: 4,
+          gravity: 200,
+          fade: 2.0
+        });
+      } else if (type === 'spark') {
+        const a = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 150 + 100;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          life: 1.5,
+          color: color || 0xffff00,
+          size: 3,
+          gravity: 100,
+          fade: 1.5,
+          trail: true
+        });
+      } else if (type === 'smoke') {
+        const a = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 50 + 20;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          life: 2.0,
+          color: color || 0x888888,
+          size: 8,
+          gravity: 50,
+          fade: 0.8,
+          alpha: 0.6
+        });
+      } else if (type === 'blood') {
+        const a = Math.random() * Math.PI * 0.6 - Math.PI * 0.3; // Mostly downward
+        const spd = Math.random() * 80 + 40;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          life: 1.2,
+          color: color || 0xff4444,
+          size: 5,
+          gravity: 250,
+          fade: 1.8
+        });
+      } else if (type === 'magic') {
+        const a = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 60 + 30;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          life: 2.5,
+          color: color || 0x00ccff,
+          size: 6,
+          gravity: 80,
+          fade: 1.0,
+          glow: true
+        });
+      }
+    }
+  },
+  
+  spawnExplosion(x, y, color) {
+    // Big explosion effect
+    for (let i = 0; i < 30; i++) {
       const a = Math.random() * Math.PI * 2;
-      const spd = Math.random() * 100 + 50;
+      const spd = Math.random() * 200 + 100;
       this.particles.push({
         x, y,
         vx: Math.cos(a) * spd,
         vy: Math.sin(a) * spd,
-        life: 1.0,
-        color: color || 0xffffff
+        life: 1.5,
+        color: color || 0xffaa00,
+        size: 5,
+        gravity: 150,
+        fade: 2.0
+      });
+    }
+    // Add some smoke
+    this.spawn(x, y, 0x666666, 15, 'smoke');
+  },
+  
+  spawnHealEffect(x, y) {
+    // Green healing particles
+    for (let i = 0; i < 20; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 80 + 40;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd - 50, // Upward bias
+        life: 1.8,
+        color: 0x44ff44,
+        size: 4,
+        gravity: 100,
+        fade: 1.5
       });
     }
   },
+  
   update(dt) {
     this.particles.forEach(p => {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 200 * dt; // Gravity
-      p.life -= dt * 2;
+      p.vy += (p.gravity || 200) * dt; // Gravity
+      p.life -= dt * (p.fade || 2.0);
     });
     this.particles = this.particles.filter(p => p.life > 0);
   },
+  
   render() {
     this.particles.forEach(p => {
-      drawRect(p.x, p.y, 4, 4, p.color, p.life);
+      if (p.glow) {
+        ctx.globalAlpha = Math.min(1, p.life * 1.5);
+        drawCircle(p.x, p.y, p.size * 1.5, p.color, 0.2);
+        ctx.globalAlpha = 1;
+      }
+      ctx.globalAlpha = p.alpha || Math.min(1, p.life * 1.2);
+      if (p.trail && Math.random() < 0.3) {
+        drawCircle(p.x, p.y, p.size * 0.7, p.color, 0.8);
+      } else {
+        drawCircle(p.x, p.y, p.size * 0.5, p.color, 0.8);
+      }
+      ctx.globalAlpha = 1;
     });
+  }
+};
+
+// ── SOUND SYSTEM ──────────────────────────────────────────────
+const SoundSystem = {
+  enabled: true,
+  sounds: {},
+  backgroundMusic: null,
+  currentMusic: null,
+  
+  init() {
+    // Check if audio is supported
+    this.enabled = typeof Audio !== 'undefined';
+    if (!this.enabled) return;
+    
+    // Preload sounds
+    this.sounds = {
+      attack: new Audio('assets/sounds/attack.wav'),
+      hit: new Audio('assets/sounds/hit.wav'),
+      heal: new Audio('assets/sounds/heal.wav'),
+      collect: new Audio('assets/sounds/collect.wav'),
+      door: new Audio('assets/sounds/door.wav'),
+      explosion: new Audio('assets/sounds/explosion.wav'),
+      spell: new Audio('assets/sounds/spell.wav')
+    };
+    
+    // Set volume
+    Object.values(this.sounds).forEach(sound => {
+      sound.volume = 0.3;
+    });
+    
+    // Background music
+    this.backgroundMusic = {
+      level1: new Audio('assets/sounds/music_level1.mp3'),
+      level2: new Audio('assets/sounds/music_level2.mp3'),
+      level3: new Audio('assets/sounds/music_level3.mp3')
+    };
+    
+    Object.values(this.backgroundMusic).forEach(music => {
+      music.volume = 0.2;
+      music.loop = true;
+    });
+  },
+  
+  play(name) {
+    if (!this.enabled || !this.sounds[name]) return;
+    try {
+      this.sounds[name].currentTime = 0;
+      this.sounds[name].play();
+    } catch (e) {
+      console.warn('Sound play failed:', e);
+    }
+  },
+  
+  playMusic(name) {
+    if (!this.enabled || !this.backgroundMusic[name]) return;
+    
+    // Stop current music
+    if (this.currentMusic) {
+      this.currentMusic.pause();
+      this.currentMusic.currentTime = 0;
+    }
+    
+    this.currentMusic = this.backgroundMusic[name];
+    this.currentMusic.currentTime = 0;
+    this.currentMusic.play();
+  },
+  
+  stopMusic() {
+    if (this.currentMusic) {
+      this.currentMusic.pause();
+      this.currentMusic.currentTime = 0;
+      this.currentMusic = null;
+    }
   }
 };
 
@@ -326,6 +512,10 @@ function engineStart(updateFn, renderFn) {
   _gameUpdate = updateFn;
   _gameRender = renderFn;
   _lastTime   = performance.now();
+  
+  // Initialize sound system
+  SoundSystem.init();
+  
   requestAnimationFrame(_loop);
 }
 

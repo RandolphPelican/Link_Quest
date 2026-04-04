@@ -164,6 +164,41 @@
           <input type="text" id="room-name-input" value="New Room" />
           <label>Background</label>
           <input type="color" id="room-bg-input" value="#182030" />
+          
+          <div style="margin-top:10px;padding:5px;background:#1a1a30;border:1px solid #334;">
+            <label>DOOR LINKS</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px;">
+              <div>
+                <label style="font-size:12px;">Left Door:</label>
+                <select id="door-left-select" style="width:100%;font-size:12px;">
+                  <option value="null">-- None --</option>
+                </select>
+                <label><input type="checkbox" id="door-left-locked"> Locked</label>
+              </div>
+              <div>
+                <label style="font-size:12px;">Right Door:</label>
+                <select id="door-right-select" style="width:100%;font-size:12px;">
+                  <option value="null">-- None --</option>
+                </select>
+                <label><input type="checkbox" id="door-right-locked"> Locked</label>
+              </div>
+              <div>
+                <label style="font-size:12px;">Top Door:</label>
+                <select id="door-top-select" style="width:100%;font-size:12px;">
+                  <option value="null">-- None --</option>
+                </select>
+                <label><input type="checkbox" id="door-top-locked"> Locked</label>
+              </div>
+              <div>
+                <label style="font-size:12px;">Bottom Door:</label>
+                <select id="door-bottom-select" style="width:100%;font-size:12px;">
+                  <option value="null">-- None --</option>
+                </select>
+                <label><input type="checkbox" id="door-bottom-locked"> Locked</label>
+              </div>
+            </div>
+          </div>
+          
           <div id="selected-obj-props">
             <!-- Dynamic -->
           </div>

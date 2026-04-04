@@ -242,6 +242,11 @@ html, body {
   background: rgba(255,215,0,0.1); transform: scale(1.04);
 }
 
+/* Fix for disabled buttons - ensure they can be enabled */
+#solo-btn:not([disabled]), #host-btn:not([disabled]), #join-btn:not([disabled]) {
+  cursor: pointer !important;
+}
+
 #mp-divider { font-size: 13px; color: var(--text-dim); margin: 4px 0; }
 
 #mp-buttons { display: flex; gap: 12px; align-items: center; }

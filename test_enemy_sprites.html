@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enemy Sprite Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #eee;
+            padding: 20px;
+        }
+        canvas {
+            background-color: #222;
+            border: 2px solid #444;
+        }
+        .enemy-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enemy Sprite Test</h1>
+    <p>Testing enemy sprite rendering...</p>
+    
+    <div class="enemy-info">
+        <strong>Enemy Types:</strong> goblin, goblin_chief, ai_bug, chatbot_clone, glitch_sprite, memory_leak, phantom_var, null_pointer, stack_overflow, syntax_error, dark_compiler, trojan_horse
+    </div>
+    
+    <canvas id="testCanvas" width="800" height="600"></canvas>
+    
+    <script>
+        // Simple canvas setup
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Mock the draw functions that would be available in the game
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = 'rgb(' + ((color >> 16) & 255) + ',' + ((color >> 8) & 255) + ',' + (color & 255) + ')';
+            ctx.fillRect(x, y, w, h);
+        }
+        
+        function drawRectOutline(x, y, w, h, color, width) {
+            ctx.strokeStyle = 'rgb(' + ((color >> 16) & 255) + ',' + ((color >> 8) & 255) + ',' + (color & 255) + ')';
+            ctx.lineWidth = width;
+            ctx.strokeRect(x, y, w, h);
+        }
+        
+        function drawCircle(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.fillStyle = 'rgb(' + ((color >> 16) & 255) + ',' + ((color >> 8) & 255) + ',' + (color & 255) + ')';
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawCircleOutline(x, y, radius, color, width) {
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgb(' + ((color >> 16) & 255) + ',' + ((color >> 8) & 255) + ',' + (color & 255) + ')';
+            ctx.lineWidth = width;
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        function drawTextOutlined(text, x, y, size, color, outlineColor, align) {
+            ctx.font = size + 'px Arial';
+            ctx.textAlign = align || 'left';
+            ctx.textBaseline = 'middle';
+            
+            // Outline
+            ctx.strokeStyle = 'rgb(' + ((outlineColor >> 16) & 255) + ',' + ((outlineColor >> 8) & 255) + ',' + (outlineColor & 255) + ')';
+            ctx.lineWidth = 2;
+            ctx.strokeText(text, x, y);
+            
+            // Fill
+            ctx.fillStyle = 'rgb(' + ((color >> 16) & 255) + ',' + ((color >> 8) & 255) + ',' + (color & 255) + ')';
+            ctx.fillText(text, x, y);
+        }
+        
+        // Test enemy rendering with procedural drawing (fallback)
+        function testEnemyRendering() {
+            ctx.fillStyle = '#182030';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const enemyTypes = [
+                { type: 'goblin', x: 100, y: 100, color: 0x00ff88, shape: 'square' },
+                { type: 'goblin_chief', x: 300, y: 100, color: 0xcc2200, shape: 'square' },
+                { type: 'ai_bug', x: 500, y: 100, color: 0xff4444, shape: 'diamond' },
+                { type: 'chatbot_clone', x: 700, y: 100, color: 0x44aaff, shape: 'circle' },
+                { type: 'glitch_sprite', x: 100, y: 300, color: 0xff00ff, shape: 'diamond' },
+                { type: 'memory_leak', x: 300, y: 300, color: 0x8844ff, shape: 'circle' },
+                { type: 'phantom_var', x: 500, y: 300, color: 0xffaa00, shape: 'diamond' },
+                { type: 'null_pointer', x: 700, y: 300, color: 0xff2288, shape: 'square' },
+                { type: 'stack_overflow', x: 100, y: 500, color: 0xff6600, shape: 'circle' },
+                { type: 'syntax_error', x: 300, y: 500, color: 0xff0044, shape: 'diamond' },
+                { type: 'dark_compiler', x: 500, y: 500, color: 0x6600cc, shape: 'square' },
+                { type: 'trojan_horse', x: 700, y: 500, color: 0xaa0000, shape: 'circle' }
+            ];
+            
+            enemyTypes.forEach(enemy => {
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                
+                const w = 22, h = 22;
+                const hw = w / 2, hh = h / 2;
+                
+                if (enemy.shape === 'square') {
+                    drawRect(-hw, -hh, w, h, enemy.color);
+                    drawRectOutline(-hw, -hh, w, h, 0x000000, 1);
+                } else if (enemy.shape === 'diamond') {
+                    ctx.rotate(Math.PI/4);
+                    drawRect(-hw, -hh, w, h, enemy.color);
+                    drawRectOutline(-hw, -hh, w, h, 0x000000, 1);
+                    ctx.rotate(-Math.PI/4);
+                } else {
+                    drawCircle(0, 0, w/2, enemy.color);
+                    drawCircleOutline(0, 0, w/2, 0x000000, 1);
+                }
+                
+                // Eyes
+                const eyeSize = w * 0.15;
+                drawRect(-w*0.2, -h*0.1, eyeSize, eyeSize, 0x000000);
+                drawRect(w*0.2, -h*0.1, eyeSize, eyeSize, 0x000000);
+                
+                // Name tag
+                drawTextOutlined(enemy.type, 0, -hh - 20, 8, 0xffffff, 0x000000, 'center');
+                
+                ctx.restore();
+            });
+        }
+        
+        // Run the test
+        testEnemyRendering();
+        
+        console.log('Enemy rendering test completed. These are the placeholder squares that should be replaced with sprites.');
+    </script>
+</body>
+</html>

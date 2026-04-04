@@ -36,7 +36,13 @@ const Sprites = {
     stack_overflow:{ col: 5, row: 0 },   // orc
     syntax_error:  { col: 3, row: 0 },   // imp/demon
     dark_compiler: { col: 0, row: 2 },   // skeleton
-    trojan_horse:  { col: 7, row: 0 }    // armored orc
+    trojan_horse:  { col: 7, row: 0 },   // armored orc
+    // Level 3 Elite
+    memory_corruption: { col: 4, row: 2 },   // purple demon
+    infinite_loop:    { col: 5, row: 2 },   // blue spirit
+    // Level 4
+    segmentation_fault: { col: 6, row: 2 },   // red demon
+    buffer_overflow:   { col: 4, row: 3 }    // green slime
   },
 
   // ── BOSS ANIMATION STRIPS ──
@@ -67,6 +73,7 @@ const Sprites = {
       const img = new Image();
       img.onload = () => {
         this.sheets[key] = img;
+        console.log('Sprites: loaded sheet', key, 'from', src);
         remaining--;
         if (remaining === 0) {
           this.loaded = true;
@@ -144,8 +151,22 @@ const Sprites = {
 
   // ── DRAW ENEMY SPRITE ──────────────────────────────────────
   drawEnemy(enemyType, x, y, facing, animFrame, scale, isHit) {
+    console.log('Attempting to draw enemy sprite for type:', enemyType);
+    
     const def = this.ENEMIES[enemyType];
-    if (!def || !this.sheets.monsters) return false;
+    if (!def) {
+      console.warn('Sprite not found for enemy type:', enemyType, 'Available types:', Object.keys(this.ENEMIES));
+      return false;
+    }
+    
+    console.log('Found sprite definition for', enemyType, ':', def);
+    
+    if (!this.sheets.monsters) {
+      console.warn('Monsters sprite sheet not loaded. Available sheets:', Object.keys(this.sheets));
+      return false;
+    }
+    
+    console.log('Monsters sprite sheet loaded, drawing enemy...');
 
     const s = scale || 2.5;
     const drawW = 32 * s;
@@ -174,6 +195,7 @@ const Sprites = {
     );
 
     ctx.restore();
+    console.log('Successfully drew enemy sprite for type:', enemyType);
     return true;
   },
 

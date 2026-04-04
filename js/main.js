@@ -136,11 +136,12 @@ function initCharSelect() {
       return;
     }
 
-    // Connect to multiplayer server early
+    // Connect to multiplayer server early (non-blocking)
     try {
       Network.connect();
     } catch (netErr) {
-      console.error('Network initialization failed:', netErr);
+      console.warn('Network initialization failed (will retry later):', netErr);
+      // Don't let network issues block character selection
     }
 
     // Reset character selection state
@@ -166,6 +167,8 @@ function initCharSelect() {
               btn.classList.add('ready');
               btn.style.cursor = 'pointer';
               btn.style.pointerEvents = 'auto';
+              // Ensure the button is clickable
+              btn.removeAttribute('disabled');
             }
           });
           
@@ -210,6 +213,17 @@ function initCharSelect() {
         }
         if (!Network.connected) {
           showToast('Connecting to server... please wait.');
+          // Try to connect and then create room
+          Network.connect();
+          setTimeout(() => {
+            if (Network.connected) {
+              const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
+              Network.createRoom(def.label, GameState.selectedChar);
+              charSelectScreen.classList.add('hidden');
+              const lobby = document.getElementById('mp-lobby');
+              if (lobby) lobby.classList.remove('hidden');
+            }
+          }, 1000);
           return;
         }
         const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
@@ -229,7 +243,21 @@ function initCharSelect() {
         const code = joinCode ? joinCode.value.trim().toUpperCase() : '';
         if (!GameState.selectedChar) { showToast('Pick a character first!'); return; }
         if (!code || code.length < 4) { showToast('Enter a 4-letter room code!'); return; }
-        if (!Network.connected) { showToast('Connecting to server...'); return; }
+        if (!Network.connected) {
+          showToast('Connecting to server...');
+          // Try to connect and then join room
+          Network.connect();
+          setTimeout(() => {
+            if (Network.connected) {
+              const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
+              Network.joinRoom(code, def.label, GameState.selectedChar);
+              charSelectScreen.classList.add('hidden');
+              const lobby = document.getElementById('mp-lobby');
+              if (lobby) lobby.classList.remove('hidden');
+            }
+          }, 1000);
+          return;
+        }
         
         const def = window.CHAR_DEFS[GameState.selectedChar] || window.CHAR_DEFS.lincoln;
         Network.joinRoom(code, def.label, GameState.selectedChar);
@@ -437,19 +465,35 @@ function transitionToRoom(roomId, fromSide) {
     GameState.lastDoor    = fromSide || 'right';
     GameState.currentRoom = roomId;
     enemies = []; items = []; boss = null;
+    
+    // Play door sound
+    if (typeof SoundSystem !== 'undefined') {
+      SoundSystem.play('door');
+    }
+    
     loadRoom();
   });
 }
 
 function transitionToLevel(levelNum) {
+  console.log('transitionToLevel called with levelNum:', levelNum);
   if (transitioning) return;
   transitioning = true;
   GameState.playerHP = player.hp;
   GameState.playerMP = player.mp;
+  console.log('Transitioning to level', levelNum, 'room 1');
   Fade.fadeOut(0.04, () => {
     GameState.currentLevel = levelNum;
     GameState.currentRoom  = 1;
     GameState.lastDoor     = null;
+    
+    // Change background music based on level
+    if (typeof SoundSystem !== 'undefined') {
+      const musicName = 'level' + Math.min(3, levelNum); // Cap at level3
+      SoundSystem.playMusic(musicName);
+    }
+    
+    console.log('Level transition complete. Current level:', GameState.currentLevel, 'Current room:', GameState.currentRoom);
     enemies = []; items = []; boss = null;
     loadRoom();
   });
@@ -457,17 +501,22 @@ function transitionToLevel(levelNum) {
 
 // ── BOSS DEFEAT HANDLER ──────────────────────────────────────
 function onBossDefeated(bossType) {
+  console.log('Boss defeated:', bossType);
   GameState.score += 500;
 
   if (bossType === 'lazy_coder') {
     // Level 1 boss — transition to Level 2
+    console.log('Level 1 boss defeated, transitioning to level 2');
     setTimeout(() => {
       Cutscene.play([
         'The Lazy Coder collapses!',
         '"You... actually... wrote your own code?"',
         '"Fine. But the deeper systems won\'t be so easy."',
         'Level 1 Complete! Onward to the Hallucination Halls!'
-      ], () => { transitionToLevel(2); });
+      ], () => { 
+        console.log('Cutscene finished, calling transitionToLevel(2)');
+        transitionToLevel(2); 
+      });
     }, 1000);
 
   } else if (bossType === 'data_corruptor') {
@@ -770,6 +819,12 @@ function startGame() {
       Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
         console.log('Main: Levels loaded, loading initial room');
         loadRoom();
+        
+        // Start background music
+        if (typeof SoundSystem !== 'undefined') {
+          SoundSystem.playMusic('level1');
+        }
+        
         engineStart(gameUpdate, gameRender);
       }).catch(err => {
         console.error('Main: Level loading failed', err);
