@@ -12,7 +12,8 @@ async function loadLevel(num) {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const abortMs = attempt === 0 ? 35000 : 15000;
+    const timeout = setTimeout(() => controller.abort(), abortMs);
     try {
       const res = await fetch('levels/level' + num + '.json', {
         cache: 'no-cache',
@@ -28,8 +29,8 @@ async function loadLevel(num) {
       clearTimeout(timeout);
       console.warn('Level ' + num + ' load attempt ' + (attempt+1) + ' failed:', e.message);
       if (attempt < maxRetries - 1) {
-        showToast('Waking up server... retrying (' + (attempt+2) + '/3)', 3000);
-        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        showToast('Server waking up, please wait...', 4000);
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
   }
