@@ -209,7 +209,78 @@ class Player {
           drawCircle(swingX, swingY, 12, '#fff');
         }
         break;
-      // Add more weapon attack animations as needed
+      case 'staff':
+        // Staff spell animation - glowing orb
+        if (this.facing === 'right') {
+          const orbX = this.x + 30 + Math.sin(progress * Math.PI * 2) * 10;
+          const orbY = this.y;
+          drawCircle(orbX, orbY, 8, '#ff0');
+        } else if (this.facing === 'left') {
+          const orbX = this.x - 30 - Math.sin(progress * Math.PI * 2) * 10;
+          const orbY = this.y;
+          drawCircle(orbX, orbY, 8, '#ff0');
+        } else if (this.facing === 'up') {
+          const orbX = this.x;
+          const orbY = this.y - 30 - Math.sin(progress * Math.PI * 2) * 10;
+          drawCircle(orbX, orbY, 8, '#ff0');
+        } else {
+          const orbX = this.x;
+          const orbY = this.y + 30 + Math.sin(progress * Math.PI * 2) * 10;
+          drawCircle(orbX, orbY, 8, '#ff0');
+        }
+        break;
+      case 'bow':
+        // Arrow projectile
+        if (this.facing === 'right') {
+          const arrowX = this.x + 20 + progress * 100;
+          const arrowY = this.y;
+          drawRect(arrowX, arrowY, 15, 2, '#fff');
+        } else if (this.facing === 'left') {
+          const arrowX = this.x - 20 - progress * 100;
+          const arrowY = this.y;
+          drawRect(arrowX, arrowY, 15, 2, '#fff');
+        } else if (this.facing === 'up') {
+          const arrowX = this.x;
+          const arrowY = this.y - 20 - progress * 100;
+          drawRect(arrowX, arrowY, 2, 15, '#fff');
+        } else {
+          const arrowX = this.x;
+          const arrowY = this.y + 20 + progress * 100;
+          drawRect(arrowX, arrowY, 2, 15, '#fff');
+        }
+        break;
+      case 'daggers':
+        // Dual dagger slash
+        if (this.facing === 'right') {
+          const dagger1X = this.x + 15 + Math.sin(progress * Math.PI * 2) * 10;
+          const dagger1Y = this.y - 5 + Math.cos(progress * Math.PI * 2) * 5;
+          const dagger2X = this.x + 15 + Math.sin(progress * Math.PI * 2 + Math.PI) * 10;
+          const dagger2Y = this.y + 5 + Math.cos(progress * Math.PI * 2 + Math.PI) * 5;
+          drawRect(dagger1X, dagger1Y, 10, 2, '#fff');
+          drawRect(dagger2X, dagger2Y, 10, 2, '#fff');
+        } else if (this.facing === 'left') {
+          const dagger1X = this.x - 15 - Math.sin(progress * Math.PI * 2) * 10;
+          const dagger1Y = this.y - 5 + Math.cos(progress * Math.PI * 2) * 5;
+          const dagger2X = this.x - 15 - Math.sin(progress * Math.PI * 2 + Math.PI) * 10;
+          const dagger2Y = this.y + 5 + Math.cos(progress * Math.PI * 2 + Math.PI) * 5;
+          drawRect(dagger1X, dagger1Y, 10, 2, '#fff');
+          drawRect(dagger2X, dagger2Y, 10, 2, '#fff');
+        } else if (this.facing === 'up') {
+          const dagger1X = this.x - 5 + Math.cos(progress * Math.PI * 2) * 5;
+          const dagger1Y = this.y - 15 - Math.sin(progress * Math.PI * 2) * 10;
+          const dagger2X = this.x + 5 + Math.cos(progress * Math.PI * 2 + Math.PI) * 5;
+          const dagger2Y = this.y - 15 - Math.sin(progress * Math.PI * 2 + Math.PI) * 10;
+          drawRect(dagger1X, dagger1Y, 2, 10, '#fff');
+          drawRect(dagger2X, dagger2Y, 2, 10, '#fff');
+        } else {
+          const dagger1X = this.x - 5 + Math.cos(progress * Math.PI * 2) * 5;
+          const dagger1Y = this.y + 15 + Math.sin(progress * Math.PI * 2) * 10;
+          const dagger2X = this.x + 5 + Math.cos(progress * Math.PI * 2 + Math.PI) * 5;
+          const dagger2Y = this.y + 15 + Math.sin(progress * Math.PI * 2 + Math.PI) * 10;
+          drawRect(dagger1X, dagger1Y, 2, 10, '#fff');
+          drawRect(dagger2X, dagger2Y, 2, 10, '#fff');
+        }
+        break;
     }
   }
 }
