@@ -495,7 +495,62 @@ class Enemy {
   }
   
   render() {
-    drawRect(this.x, this.y, this.w, this.h, this.color);
+    // Different shapes based on enemy type
+    switch (this.type) {
+      case 'goblin':
+        drawRect(this.x, this.y, this.w, this.h, this.color);
+        // Draw goblin eyes
+        drawCircle(this.x - 5, this.y - 5, 3, '#fff');
+        drawCircle(this.x + 5, this.y - 5, 3, '#fff');
+        break;
+      case 'skeleton':
+        drawRect(this.x, this.y, this.w, this.h, this.color);
+        // Draw skeleton ribs
+        drawRect(this.x, this.y - 5, this.w, 3, '#fff');
+        drawRect(this.x, this.y, this.w, 3, '#fff');
+        drawRect(this.x, this.y + 5, this.w, 3, '#fff');
+        break;
+      case 'glitch':
+        // Glitch effect - random rectangles
+        for (let i = 0; i < 3; i++) {
+          const offsetX = (Math.random() - 0.5) * 10;
+          const offsetY = (Math.random() - 0.5) * 10;
+          drawRect(this.x + offsetX, this.y + offsetY, 15, 15, this.color);
+        }
+        break;
+      case 'memory_leak':
+        drawCircle(this.x, this.y, this.w/2, this.color);
+        // Draw memory leak particles
+        for (let i = 0; i < 5; i++) {
+          const angle = (i / 5) * Math.PI * 2;
+          const radius = 15;
+          drawCircle(
+            this.x + Math.cos(angle) * radius,
+            this.y + Math.sin(angle) * radius,
+            3, '#00ffff'
+          );
+        }
+        break;
+      case 'null_pointer':
+        drawRect(this.x, this.y, this.w, this.h, this.color);
+        // Draw null pointer symbol
+        drawText(this.x - 10, this.y, 'NULL', '#000');
+        break;
+      case 'demon':
+        drawCircle(this.x, this.y, this.w/2, this.color);
+        // Draw demon horns
+        drawRect(this.x - 10, this.y - 15, 5, 10, '#ff0000');
+        drawRect(this.x + 10, this.y - 15, 5, 10, '#ff0000');
+        break;
+      case 'boss':
+        drawCircle(this.x, this.y, this.w/2, this.color);
+        // Draw boss crown
+        drawRect(this.x - 15, this.y - 20, 30, 10, '#ffff00');
+        break;
+      default:
+        drawRect(this.x, this.y, this.w, this.h, this.color);
+    }
+    
     // HP bar
     const hpWidth = (this.hp / this.maxHp) * this.w;
     drawRect(this.x - this.w/2, this.y - this.h/2 - 5, hpWidth, 3, '#00ff00');
@@ -739,6 +794,27 @@ function renderUI() {
   // Draw key count
   drawRect(750, 30, 20, 20, '#ff0');
   drawText(780, 30, `x${keys}`, '#fff');
+  
+  // Draw level and room info
+  drawText(400, 30, `Level ${currentLevel} - Room ${currentRoom}`, '#fff');
+  
+  // Draw enemy count
+  drawText(400, 50, `Enemies: ${enemies.length}`, '#ff0');
+  
+  // Set different background colors based on level
+  switch (currentLevel) {
+    case 1:
+      clearScreen('#1a1a2e'); // Dark blue for level 1
+      break;
+    case 2:
+      clearScreen('#2e1a2e'); // Purple for level 2
+      break;
+    case 3:
+      clearScreen('#2e2e1a'); // Dark green for level 3
+      break;
+    default:
+      clearScreen('#0a0a0f');
+  }
 }
 
 // Draw text function
