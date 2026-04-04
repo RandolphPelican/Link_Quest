@@ -4,6 +4,41 @@
 
 'use strict';
 
+class Hitbox {
+  constructor(owner, offsetX, offsetY, w, h, damage) {
+    this.owner   = owner;
+    this.offsetX = offsetX;
+    this.offsetY = offsetY;
+    this.w       = w;
+    this.h       = h;
+    this.damage  = damage;
+    this.active  = true;
+  }
+
+  get x() { return this.owner.x + this.offsetX; }
+  get y() { return this.owner.y + this.offsetY; }
+
+  overlaps(hurtbox) {
+    if (!this.active || !hurtbox.active) return false;
+    return Math.abs(this.x - hurtbox.x) < (this.w + hurtbox.w) / 2 &&
+           Math.abs(this.y - hurtbox.y) < (this.h + hurtbox.h) / 2;
+  }
+}
+
+class Hurtbox {
+  constructor(owner, offsetX, offsetY, w, h) {
+    this.owner   = owner;
+    this.offsetX = offsetX;
+    this.offsetY = offsetY;
+    this.w       = w;
+    this.h       = h;
+    this.active  = true;
+  }
+
+  get x() { return this.owner.x + this.offsetX; }
+  get y() { return this.owner.y + this.offsetY; }
+}
+
 const CollisionSystem = {
   debugEnabled: false,
   collisionCount: 0,

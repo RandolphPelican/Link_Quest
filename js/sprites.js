@@ -6,6 +6,32 @@
 
 'use strict';
 
+class SpriteAnimator {
+  constructor(entity) {
+    this.entity = entity;
+    this.frame = 0;
+    this.timer = 0;
+    this.currentAnim = 'idle';
+  }
+
+  update(dt) {
+    this.timer += dt;
+    // Base animation speed on state
+    let speed = 0.1;
+    if (this.entity.state === 'walk') speed = 0.08;
+    if (this.entity.state === 'attack') speed = 0.05;
+
+    if (this.timer >= speed) {
+      this.timer = 0;
+      this.frame++;
+    }
+  }
+
+  getAnimFrame() {
+    return this.frame;
+  }
+}
+
 const Sprites = {
   loaded: false,
   sheets: {},
@@ -100,7 +126,7 @@ const Sprites = {
   // facing: 'left'|'right'|'up'|'down'
   // animFrame: for bobbing animation
   // scale: draw scale (default 1.0 = 32x32)
-  drawHero(charKey, x, y, facing, animFrame, scale, isAttacking) {
+  drawHero(charKey, x, y, facing, animFrame, scale, state) {
     const def = this.HEROES[charKey];
     if (!def || !this.sheets.rogues) return false;
 
@@ -108,9 +134,12 @@ const Sprites = {
     const drawW = 32 * s;
     const drawH = 32 * s;
 
+    const isAttacking = state === 'attack';
+    const isWalking = state === 'walk';
+
     // Walk bobbing and tilt for movement animation
-    const bob = animFrame ? Math.sin(animFrame * 0.4) * 4 : 0;
-    const tilt = animFrame ? Math.sin(animFrame * 0.4) * 0.1 : 0;
+    const bob = isWalking ? Math.sin(animFrame * 0.4) * 4 : 0;
+    const tilt = isWalking ? Math.sin(animFrame * 0.4) * 0.1 : 0;
 
     // Attack lunge — push sprite toward facing direction
     let lungeX = 0, lungeY = 0;

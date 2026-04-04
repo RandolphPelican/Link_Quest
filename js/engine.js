@@ -222,6 +222,41 @@ class PhysicsObject {
   }
 }
 
+// ── CAMERA ────────────────────────────────────────────────────
+class Camera {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.target = null;
+    this.lerp = 0.1;
+    this.deadzone = 20;
+  }
+
+  follow(target) {
+    this.target = target;
+  }
+
+  update(dt) {
+    if (!this.target) return;
+
+    const tx = this.target.x - GAME_W / 2;
+    const ty = this.target.y - GAME_H / 2;
+
+    // Smooth follow
+    this.x += (tx - this.x) * this.lerp;
+    this.y += (ty - this.y) * this.lerp;
+
+    // Room boundaries (optional, can be expanded)
+    // this.x = Math.max(0, Math.min(this.x, WORLD_W - GAME_W));
+  }
+
+  apply(ctx) {
+    ctx.translate(-this.x, -this.y);
+  }
+}
+
+const CameraSystem = new Camera();
+
 // ── FADE OVERLAY ──────────────────────────────────────────────
 const Fade = {
   alpha:    0,
@@ -526,12 +561,14 @@ function _loop(now) {
   _lastTime = now;
 
   if (!_paused && _gameUpdate) _gameUpdate(dt);
+  CameraSystem.update(dt);
   Fade.update(dt);
   ScreenShake.update(dt);
   ParticleSystem.update(dt);
 
   ctx.save();
   ctx.translate(ScreenShake.offsetX, ScreenShake.offsetY);
+  CameraSystem.apply(ctx);
   clearScreen(0x0a0a0f);
   if (_gameRender) _gameRender();
   ParticleSystem.render();

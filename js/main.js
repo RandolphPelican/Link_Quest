@@ -17,6 +17,10 @@ async function loadLevel(num) {
 }
 
 function showToast(msg, duration) {
+  Events.emit(GameEvents.TOAST_MESSAGE, { msg, duration });
+}
+
+function _internalShowToast(msg, duration) {
   duration = duration || 2200;
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -24,6 +28,10 @@ function showToast(msg, duration) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
+
+// Initialized in startGame or earlier
+Events.on(GameEvents.TOAST_MESSAGE, (data) => _internalShowToast(data.msg, data.duration));
+
 
 function getSpawnPosition(lastDoor) {
   switch(lastDoor) {
@@ -346,6 +354,7 @@ function loadRoom() {
   // Spawn player
   const spawn = getSpawnPosition(GameState.lastDoor);
   player = EntityFactory.spawnPlayer(spawn.x, spawn.y, GameState.selectedChar);
+  CameraSystem.follow(player);
 
   // Spawn enemies
   enemies = [];
