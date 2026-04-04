@@ -37,6 +37,8 @@ class Boss extends PhysicsObject {
     this.damageNumbers = [];
     this.ringAngle     = 0;
     this.shakeTimer    = 0;
+
+    this.hurtbox = new Hurtbox(this, 0, 0, this.size * 0.9, this.size * 0.9);
   }
 
   update(player, dt) {
@@ -98,6 +100,36 @@ class Boss extends PhysicsObject {
     this._updateDmgNums(dt);
   }
 
+  takeDamage(amount) {
+    if (!this.alive) return;
+    this.hp = Math.max(0, this.hp - amount);
+    this.flashTimer = 0.15;
+    this.stunTimer  = 0.1;
+    this._spawnDmg(this.x, this.y - 20, amount, 0xff4757);
+    if (this.hp <= 0) this.onDeath();
+  }
+
+  onDeath() {
+    this.alive = false;
+    this.vx = 0; this.vy = 0;
+    ParticleSystem.spawn(this.x, this.y, this.color, 40);
+    if (typeof GameState !== 'undefined') GameState.score += 1000;
+    showToast('BOSS DEFEATED!', 4000);
+    Events.emit(GameEvents.ENEMY_DIED, this);
+  }
+
+  _spawnDmg(x, y, amount, color) {
+    this.damageNumbers.push({ x, y, amount, color, life: 0.75 });
+  }
+
+  _updateDmgNums(dt) {
+    this.damageNumbers.forEach(d => {
+      d.y -= 30 * dt;
+      d.life -= dt;
+    });
+    this.damageNumbers = this.damageNumbers.filter(d => d.life > 0);
+  }
+
   _specialAttack(player, dist, dx, dy) {
     this.specialCooldown = 3.0;
     if (this.type === 'lazy_coder') {
@@ -115,28 +147,6 @@ class Boss extends PhysicsObject {
       // Aimed large projectile
       this.projectiles.push(new BossProjectile(this.x, this.y, (dx/dist)*250, (dy/dist)*250, this.attackPower*1.5, this.color, 12));
     }
-  }
-
-  takeDamage(amount) {
-    if (!this.alive) return;
-    this.hp = Math.max(0, this.hp - amount);
-    this.flashTimer = 0.1;
-    this._spawnDmg(this.x, this.y - 20, amount, 0xff4757);
-    if (this.hp <= 0) this.onDeath();
-  }
-
-  onDeath() {
-    this.alive = false;
-    this.vx = 0; this.vy = 0;
-  }
-
-  _spawnDmg(x, y, amount, color) {
-    this.damageNumbers.push({ x, y, amount, color, life:0.75 });
-  }
-
-  _updateDmgNums(dt) {
-    this.damageNumbers = this.damageNumbers.filter(d => d.life > 0);
-    this.damageNumbers.forEach(d => { d.y -= 30 * dt; d.life -= dt; });
   }
 
   render() {

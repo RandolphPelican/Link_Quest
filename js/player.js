@@ -197,12 +197,24 @@ function drawCharSprite(x, y, charKey, facing, animFrame, isAttacking, w, h) {
   ctx.restore();
 }
 
+// ── PLAYER STATES ─────────────────────────────────────────────
+const PlayerState = {
+  IDLE:   'idle',
+  WALK:   'walk',
+  ATTACK: 'attack',
+  SPELL:  'spell',
+  DASH:   'dash',
+  STUN:   'stun',
+  DEAD:   'dead'
+};
+
 // ── PLAYER CLASS ─────────────────────────────────────────────
 class Player extends PhysicsObject {
   constructor(x, y, characterKey) {
     super(x, y, 28, 28);
     this.characterKey    = characterKey;
     this.alive           = true;
+    this.state           = PlayerState.IDLE;
     this.facing          = 'down';
     this.attackCooldown  = 0;
     this.spellCooldown   = 0;
@@ -228,70 +240,101 @@ class Player extends PhysicsObject {
     this.speed       = def.speed;
     this.armor       = 'cloth';
     this.color       = def.color;
+
+    this.controller = new PlayerController(this);
+    this.interactionController = new InteractionController(this);
+    this.animator   = new SpriteAnimator(this);
+    this.hurtbox    = new Hurtbox(this, 0, 0, 20, 20);
+    this.activeHitbox = null;
+  }
+
+  setState(newState) {
+    if (this.state === newState || this.state === PlayerState.DEAD) return;
+    
+    // Exit logic
+    switch(this.state) {
+      case PlayerState.DASH: this.invincible = false; break;
+      case PlayerState.ATTACK: this.activeHitbox = null; break;
+    }
+
+    this.state = newState;
+
+    // Enter logic
+    switch(this.state) {
+      case PlayerState.IDLE: 
+        this.vx = 0; this.vy = 0; this.moving = false; this.animFrame = 0;
+        break;
+      case PlayerState.ATTACK:
+        this.attackCooldown = 28;
+        this.flashTimer = 4;
+        this.flashColor = 0xffff00;
+        this._createAttackHitbox();
+        break;
+      case PlayerState.DEAD:
+        this.alive = false;
+        this.vx = 0; this.vy = 0;
+        Events.emit(GameEvents.PLAYER_DIED, this);
+        break;
+    }
+  }
+
+  _createAttackHitbox() {
+    const offsets = { down:[0,24], up:[0,-24], left:[-24,0], right:[24,0] };
+    const [ox, oy] = offsets[this.facing] || [0, 24];
+    const hw = (this.facing === 'left' || this.facing === 'right') ? 30 : 40;
+    const hh = (this.facing === 'left' || this.facing === 'right') ? 40 : 30;
+    this.activeHitbox = new Hitbox(this, ox, oy, hw, hh, this.attackPower);
   }
 
   update(dt) {
-    if (!this.alive) return;
-    this.vx = 0; this.vy = 0;
+    if (this.state === PlayerState.DEAD) return;
 
-    let mvx = 0, mvy = 0;
-    if (Input.down('a') || Input.down('arrowleft'))  { mvx = -1; this.facing = 'left';  }
-    if (Input.down('d') || Input.down('arrowright')) { mvx =  1; this.facing = 'right'; }
-    if (Input.down('w') || Input.down('arrowup'))    { mvy = -1; this.facing = 'up';    }
-    if (Input.down('s') || Input.down('arrowdown'))  { mvy =  1; this.facing = 'down';  }
+    // Handle Input via Controller
+    this.controller.handleInput(dt);
+    this.animator.update(dt);
 
-    if (mvx !== 0 || mvy !== 0) {
-      const mag = Math.sqrt(mvx*mvx + mvy*mvy);
-      this.vx = (mvx / mag) * this.speed;
-      this.vy = (mvy / mag) * this.speed;
-      this.moving = true;
-      this.animFrame += dt * 10;
-    } else {
-      this.moving = false;
-      this.animFrame = 0;
+    // Interaction update
+    if (typeof roomMgr !== 'undefined' && roomMgr.room) {
+      const interactables = [...roomMgr.room.tiles.filter(t => t.type === 'sign' || t.type === 'chest'), ...items];
+      this.interactionController.update(dt, interactables);
     }
 
-    // Update animation frame based on movement
-    const wasMoving = this.moving;
-    this.moving = (this.vx !== 0 || this.vy !== 0);
-    
-    if (this.moving) {
-      this.animFrame += dt * 120; // Faster animation when moving
-    } else {
-      this.animFrame += dt * 30; // Slow breathing when idle
-    }
-    
-    // Determine facing direction based on movement
-    if (this.vx < -0.1) this.facing = 'left';
-    else if (this.vx > 0.1) this.facing = 'right';
-    else if (this.vy < -0.1) this.facing = 'up';
-    else if (this.vy > 0.1) this.facing = 'down';
-
-    // Debug: Log player state periodically
-    if (Math.random() < 0.01) { // 1% chance per frame
-      console.log(`Player: pos(${Math.round(this.x)},${Math.round(this.y)}), ` +
-                  `hp(${this.hp}/${this.maxHp}), ` +
-                  `mp(${this.mp}/${this.maxMp}), ` +
-                  `facing(${this.facing}), ` +
-                  `moving(${this.moving})`);
-    }
-    
+    // Physics Update
     super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
 
-    if (Input.pressed('k') && this.attackCooldown <= 0) this.attack();
-    if (Input.pressed('p') && this.spellCooldown  <= 0) this.castSpell();
+    // State-based updates
+    if (this.state === PlayerState.ATTACK) {
+      if (this.attackCooldown <= 0) this.setState(PlayerState.IDLE);
+    }
 
+    // Cooldowns and Timers
     if (this.attackCooldown > 0) this.attackCooldown -= dt * 60;
     if (this.spellCooldown  > 0) this.spellCooldown  -= dt * 60;
     if (this.flashTimer     > 0) this.flashTimer     -= dt * 60;
     if (this.spinTimer      > 0) this.spinTimer      -= dt * 60;
+    
     if (this.invincible) {
       this.invincibleTimer -= dt * 60;
       if (this.invincibleTimer <= 0) this.invincible = false;
     }
 
+    // Hitbox detection
+    if (this.activeHitbox) {
+      const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
+      targets.forEach(t => {
+        if (t.alive && t.hurtbox && this.activeHitbox.overlaps(t.hurtbox)) {
+          const kbDx = t.x - this.x, kbDy = t.y - this.y;
+          const kbDist = Math.sqrt(kbDx*kbDx + kbDy*kbDy) || 1;
+          t.takeDamage(this.activeHitbox.damage, (kbDx/kbDist)*220, (kbDy/kbDist)*220);
+          this._spawnDmg(t.x, t.y - 10, this.activeHitbox.damage, 0xff4757);
+          this.activeHitbox.active = false;
+        }
+      });
+    }
+
     this.projectiles     = this.projectiles.filter(p => p.active);
+
     this.projectiles.forEach(p => p.update(dt));
     this.damageNumbers   = this.damageNumbers.filter(d => d.life > 0);
     this.damageNumbers.forEach(d => { d.y -= 30 * dt; d.life -= dt * 60; });
@@ -323,51 +366,7 @@ class Player extends PhysicsObject {
   }
 
   attack() {
-    this.attackCooldown = 28;
-    this.flashTimer     = 4;
-    this.flashColor     = 0xffff00;
-    const offsets = { down:[0,30], up:[0,-30], left:[-30,0], right:[30,0] };
-    const [ox, oy] = offsets[this.facing] || [0, 30];
-    const ax = this.x + ox, ay = this.y + oy;
-    const targets = [...enemies, ...(boss && boss.alive ? [boss] : [])];
-    
-    // Play attack sound
-    if (typeof SoundSystem !== 'undefined') {
-      SoundSystem.play('attack');
-    }
-    
-    let hitSomething = false;
-    targets.forEach(t => {
-      if (!t.alive) return;
-      const dx = t.x - ax, dy = t.y - ay;
-      if (Math.sqrt(dx*dx+dy*dy) < 55) {
-        t.takeDamage(this.attackPower);
-        this._spawnDmg(t.x, t.y - 10, this.attackPower, 0xff4757);
-        hitSomething = true;
-        
-        // Play hit sound
-        if (typeof SoundSystem !== 'undefined') {
-          SoundSystem.play('hit');
-        }
-        
-        // Blood particles on hit
-        if (typeof ParticleSystem !== 'undefined') {
-          ParticleSystem.spawn(t.x, t.y, 0xff4444, 6, 'blood');
-        }
-      }
-    });
-    
-    // Weapon hit effect at attack position
-    if (typeof ParticleSystem !== 'undefined') {
-      if (hitSomething) {
-        // Hit sparks
-        ParticleSystem.spawn(ax, ay, 0xffff00, 8, 'spark');
-        ParticleSystem.spawn(ax, ay, 0xffaa00, 4, 'spark');
-      } else {
-        // Miss effect - smaller sparks
-        ParticleSystem.spawn(ax, ay, 0xcccccc, 3, 'spark');
-      }
-    }
+    this.setState(PlayerState.ATTACK);
   }
 
   castSpell() {
@@ -375,9 +374,12 @@ class Player extends PhysicsObject {
     if (!def || !def.spell) { showToast('No spell!'); return; }
     const spell = def.spell;
     if (this.mp < spell.mp) { showToast('Not enough MP!'); return; }
+    
+    this.setState(PlayerState.SPELL);
     this.mp -= spell.mp;
     this.spellCooldown = 60;
-
+    
+    // Existing spell logic remains largely the same but could be refactored further
     if (spell.type === 'aoe') {
       // Play spell sound
       if (typeof SoundSystem !== 'undefined') {
@@ -486,6 +488,11 @@ class Player extends PhysicsObject {
       if (spell.slow) showToast('❄️ ICE ARROW!');
       else showToast('🔥 FIREBALL!');
     }
+
+    // Set back to idle after spell (unless it's a timed one like dash)
+    if (spell.type !== 'dash') {
+        setTimeout(() => { if (this.state === PlayerState.SPELL) this.setState(PlayerState.IDLE); }, 300);
+    }
   }
 
   takeDamage(amount) {
@@ -496,6 +503,7 @@ class Player extends PhysicsObject {
     this.invincible = true; this.invincibleTimer = 45;
     this.flashTimer = 8;    this.flashColor = 0xff0000;
     this._spawnDmg(this.x, this.y - 15, dmg, 0xff4757);
+    Events.emit(GameEvents.PLAYER_DAMAGED, { player: this, amount: dmg });
     if (this.hp <= 0) this.alive = false;
   }
 
@@ -521,9 +529,9 @@ class Player extends PhysicsObject {
     this.dashTrail.forEach(t => {
       ctx.globalAlpha = (t.life / 24) * 0.35;
       if (Sprites.loaded) {
-        Sprites.drawHero(this.characterKey, t.x, t.y, this.facing, this.animFrame, 3.0, false);
+        Sprites.drawHero(this.characterKey, t.x, t.y, this.facing, this.animator.getAnimFrame(), 3.0, PlayerState.WALK);
       } else {
-        drawCharSprite(t.x, t.y, this.characterKey, this.facing, this.animFrame, false, this.w, this.h);
+        drawCharSprite(t.x, t.y, this.characterKey, this.facing, this.animator.getAnimFrame(), false, this.w, this.h);
       }
       ctx.globalAlpha = 1;
     });
@@ -553,7 +561,6 @@ class Player extends PhysicsObject {
     }
 
     // Draw character — try real sprites first, fall back to canvas
-    const isAtk = this.attackCooldown > 20;
     const isHurt = this.flashTimer > 0 && this.flashColor === 0xff0000;
 
     if (isHurt) {
@@ -561,10 +568,10 @@ class Player extends PhysicsObject {
     }
 
     const spriteDrawn = Sprites.loaded &&
-      Sprites.drawHero(this.characterKey, this.x, this.y, this.facing, this.animFrame, 3.0, isAtk);
+      Sprites.drawHero(this.characterKey, this.x, this.y, this.facing, this.animator.getAnimFrame(), 3.0, this.state);
 
     if (!spriteDrawn) {
-      drawCharSprite(this.x, this.y, this.characterKey, this.facing, this.animFrame, isAtk, this.w, this.h);
+      drawCharSprite(this.x, this.y, this.characterKey, this.facing, this.animator.getAnimFrame(), this.state === PlayerState.ATTACK, this.w, this.h);
     }
 
     if (isHurt) {
@@ -644,7 +651,8 @@ class Projectile {
       if (!t.alive||!this.active) return;
       const dx=t.x-this.x, dy=t.y-this.y;
       if (Math.sqrt(dx*dx+dy*dy) < 22) {
-        t.takeDamage(this.damage);
+        const spd = Math.sqrt(this.vx*this.vx+this.vy*this.vy) || 1;
+        t.takeDamage(this.damage, (this.vx/spd)*160, (this.vy/spd)*160);
         if (this.slow && t.speed) {
           t.speed = Math.max(20, t.speed*0.5);
           setTimeout(()=>{ if(t.speed) t.speed*=2; }, 2000);

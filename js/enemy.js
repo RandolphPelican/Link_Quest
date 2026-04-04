@@ -9,26 +9,26 @@ class Enemy extends PhysicsObject {
   constructor(x, y, type, pattern) {
     const typeStats = {
       // Level 1 — Debug Dungeon
-      goblin:        { maxHp:35,  speed:40, attackPower:5,  attackRange:34, aggroRange:300, color:0x00ff88, label:'Goblin',        size:20, shape:'square' },
-      goblin_chief:  { maxHp:70,  speed:35, attackPower:9,  attackRange:38, aggroRange:330, color:0xcc2200, label:'Goblin Chief',  size:28, shape:'square' },
-      ai_bug:        { maxHp:25,  speed:50, attackPower:4,  attackRange:38, aggroRange:320, color:0xff4444, label:'AI Bug',        size:16, shape:'diamond' },
-      chatbot_clone: { maxHp:70,  speed:32, attackPower:8,  attackRange:45, aggroRange:340, color:0x44aaff, label:'Chatbot Clone', size:26, shape:'circle' },
+      goblin:        { maxHp:35,  speed:40, attackPower:5,  attackRange:34, aggroRange:300, color:0x00ff88, label:'Goblin',        size:20, shape:'square',   score:50  },
+      goblin_chief:  { maxHp:70,  speed:35, attackPower:9,  attackRange:38, aggroRange:330, color:0xcc2200, label:'Goblin Chief',  size:28, shape:'square',   score:150 },
+      ai_bug:        { maxHp:25,  speed:50, attackPower:4,  attackRange:38, aggroRange:320, color:0xff4444, label:'AI Bug',        size:16, shape:'diamond',  score:40  },
+      chatbot_clone: { maxHp:70,  speed:32, attackPower:8,  attackRange:45, aggroRange:340, color:0x44aaff, label:'Chatbot Clone', size:26, shape:'circle',   score:150 },
       // Level 2 — Hallucination Halls
-      glitch_sprite: { maxHp:45,  speed:55, attackPower:7,  attackRange:36, aggroRange:360, color:0xff00ff, label:'Glitch Sprite', size:18, shape:'diamond' },
-      memory_leak:   { maxHp:80,  speed:22, attackPower:12, attackRange:45, aggroRange:280, color:0x8844ff, label:'Memory Leak',   size:32, shape:'circle' },
-      phantom_var:   { maxHp:40,  speed:65, attackPower:6,  attackRange:33, aggroRange:380, color:0xffaa00, label:'Phantom Var',   size:14, shape:'diamond' },
-      null_pointer:  { maxHp:90,  speed:28, attackPower:14, attackRange:50, aggroRange:300, color:0xff2288, label:'Null Pointer',  size:30, shape:'square' },
+      glitch_sprite: { maxHp:45,  speed:55, attackPower:7,  attackRange:36, aggroRange:360, color:0xff00ff, label:'Glitch Sprite', size:18, shape:'diamond',  score:60  },
+      memory_leak:   { maxHp:80,  speed:22, attackPower:12, attackRange:45, aggroRange:280, color:0x8844ff, label:'Memory Leak',   size:32, shape:'circle',   score:120 },
+      phantom_var:   { maxHp:40,  speed:65, attackPower:6,  attackRange:33, aggroRange:380, color:0xffaa00, label:'Phantom Var',   size:14, shape:'diamond',  score:50  },
+      null_pointer:  { maxHp:90,  speed:28, attackPower:14, attackRange:50, aggroRange:300, color:0xff2288, label:'Null Pointer',  size:30, shape:'square',   score:180 },
       // Level 3 — The Final Compile
-      stack_overflow:{ maxHp:80,  speed:48, attackPower:14, attackRange:44, aggroRange:370, color:0xff6600, label:'Stack Overflow', size:28, shape:'circle' },
-      syntax_error:  { maxHp:60,  speed:62, attackPower:11, attackRange:38, aggroRange:390, color:0xff0044, label:'Syntax Error',  size:24, shape:'diamond' },
-      dark_compiler: { maxHp:130, speed:26, attackPower:20, attackRange:58, aggroRange:360, color:0x6600cc, label:'Dark Compiler', size:38, shape:'square' },
-      trojan_horse:  { maxHp:95,  speed:38, attackPower:17, attackRange:50, aggroRange:350, color:0xaa0000, label:'Trojan Horse',  size:32, shape:'circle' },
+      stack_overflow:{ maxHp:80,  speed:48, attackPower:14, attackRange:44, aggroRange:370, color:0xff6600, label:'Stack Overflow', size:28, shape:'circle',  score:80  },
+      syntax_error:  { maxHp:60,  speed:62, attackPower:11, attackRange:38, aggroRange:390, color:0xff0044, label:'Syntax Error',  size:24, shape:'diamond',  score:70  },
+      dark_compiler: { maxHp:130, speed:26, attackPower:20, attackRange:58, aggroRange:360, color:0x6600cc, label:'Dark Compiler', size:38, shape:'square',   score:200 },
+      trojan_horse:  { maxHp:95,  speed:38, attackPower:17, attackRange:50, aggroRange:350, color:0xaa0000, label:'Trojan Horse',  size:32, shape:'circle',   score:100 },
       // Level 3 Elite Enemies
-      memory_corruption: { maxHp:100, speed:42, attackPower:16, attackRange:48, aggroRange:380, color:0xcc00ff, label:'Memory Corruption', size:30, shape:'diamond' },
-      infinite_loop:    { maxHp:65,  speed:68, attackPower:9,  attackRange:32, aggroRange:410, color:0x00ffff, label:'Infinite Loop',    size:22, shape:'circle' },
-      // Level 4 — Bonus Content (if needed)
-      segmentation_fault: { maxHp:160, speed:28, attackPower:22, attackRange:62, aggroRange:390, color:0xff0000, label:'Segmentation Fault', size:42, shape:'square' },
-      buffer_overflow:   { maxHp:90,  speed:52, attackPower:18, attackRange:42, aggroRange:370, color:0x00ff00, label:'Buffer Overflow',   size:26, shape:'circle' }
+      memory_corruption: { maxHp:100, speed:42, attackPower:16, attackRange:48, aggroRange:380, color:0xcc00ff, label:'Memory Corruption', size:30, shape:'diamond', score:160 },
+      infinite_loop:     { maxHp:65,  speed:68, attackPower:9,  attackRange:32, aggroRange:410, color:0x00ffff, label:'Infinite Loop',     size:22, shape:'circle',  score:90  },
+      // Bonus / Level 4 content
+      segmentation_fault: { maxHp:160, speed:28, attackPower:22, attackRange:62, aggroRange:390, color:0xff0000, label:'Segmentation Fault', size:42, shape:'square', score:250 },
+      buffer_overflow:    { maxHp:90,  speed:52, attackPower:18, attackRange:42, aggroRange:370, color:0x00ff00, label:'Buffer Overflow',    size:26, shape:'circle', score:130 }
     };
     const s = typeStats[type] || typeStats.goblin;
     super(x, y, s.size, s.size);
@@ -57,10 +57,14 @@ class Enemy extends PhysicsObject {
     this.retreatTimer = 0;
     this.flashTimer   = 0;
     this.damageNumbers = [];
+    this.score        = s.score || 50;
     this.dropChance   = 0.15;
-    this.animPhase    = Math.random() * Math.PI * 2;
+    // Deterministic animPhase based on spawn position so shared rooms play identically
+    this.animPhase    = ((x * 31 + y * 17 + (type.charCodeAt(0) || 0)) % 628) / 100;
     this.projectiles  = [];
     this.shootCooldown = 0;
+
+    this.hurtbox = new Hurtbox(this, 0, 0, this.size * 0.8, this.size * 0.8);
   }
 
   update(player, dt) {
@@ -212,25 +216,22 @@ class Enemy extends PhysicsObject {
     });
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, kbx, kby) {
     if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
     this.flashTimer = 6;
     this.stunTimer  = 10;
     this.state      = 'stunned';
+    if (kbx !== undefined) { this.vx = kbx; this.vy = kby; }
     this._spawnDmg(this.x, this.y - 14, amount, 0xff4757);
+    Events.emit(GameEvents.ENEMY_DAMAGED, { enemy: this, amount });
     if (this.hp <= 0) this.onDeath();
   }
   onDeath() {
     this.alive = false;
     this.vx = 0; this.vy = 0;
     ParticleSystem.spawn(this.x, this.y, this.color, 15);
-    const scores = {
-      goblin:50, goblin_chief:150, ai_bug:40, chatbot_clone:150,
-      glitch_sprite:60, memory_leak:120, phantom_var:50, null_pointer:180,
-      stack_overflow:80, syntax_error:70, dark_compiler:200, trojan_horse:100
-    };
-    if (typeof GameState !== 'undefined') GameState.score += (scores[this.type] || 50);
+    if (typeof GameState !== 'undefined') GameState.score += this.score;
 
     // Key drops from chief/elite enemies
     const keyDroppers = ['goblin_chief', 'null_pointer', 'dark_compiler'];

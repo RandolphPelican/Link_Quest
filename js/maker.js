@@ -14,6 +14,7 @@ const Maker = {
   redoStack: [],
   
   room: {
+    version: 1, // Current schema version
     name: "New Room",
     background: "#182030",
     obstacles: [],
@@ -29,6 +30,19 @@ const Maker = {
       top: { leadsTo: null, locked: false },
       bottom: { leadsTo: null, locked: false }
     }
+  },
+
+  _migrate(room) {
+    if (!room.version) {
+      console.log("Maker: Migrating room from v0 to v1");
+      room.version = 1;
+      // Add any missing fields for v1
+      if (!room.items) room.items = [];
+      if (!room.decorations) room.decorations = [];
+    }
+    // Future migrations would go here:
+    // if (room.version === 1) { ... migrate to v2 ... }
+    return room;
   },
 
   init() {
@@ -321,8 +335,13 @@ const Maker = {
 
   _initPalette() {
     const tiles = ['wall', 'pillar', 'crate'];
-    const enemies = ['goblin', 'goblin_chief', 'ai_bug', 'chatbot_clone', 'glitch_sprite', 'memory_leak', 'stack_overflow', 'syntax_error', 'memory_corruption', 'infinite_loop'];
-    const objects = ['chest', 'sign', 'switch', 'torch', 'bush', 'crystal', 'puddle'];
+    const enemies = [
+      'goblin', 'goblin_chief', 'ai_bug', 'chatbot_clone',
+      'glitch_sprite', 'memory_leak', 'phantom_var', 'null_pointer',
+      'stack_overflow', 'syntax_error', 'dark_compiler', 'trojan_horse',
+      'memory_corruption', 'infinite_loop', 'segmentation_fault', 'buffer_overflow'
+    ];
+    const objects = ['chest', 'sign', 'switch', 'torch', 'bush', 'crystal', 'puddle', 'server_rack', 'terminal'];
 
     const tPal = document.getElementById('tile-palette');
     tiles.forEach(id => this._addPaletteItem(tPal, 'tile', id));
@@ -359,12 +378,10 @@ const Maker = {
     const saved = localStorage.getItem('maker_current_room');
     if (saved) {
       try {
-        const data = JSON.parse(saved);
-        if (data.name) {
-          this.room = data;
-          document.getElementById('room-name-input').value = this.room.name || "New Room";
-          document.getElementById('room-bg-input').value = this.room.background || "#182030";
-        }
+        let data = JSON.parse(saved);
+        this.room = this._migrate(data);
+        document.getElementById('room-name-input').value = this.room.name || "New Room";
+        document.getElementById('room-bg-input').value = this.room.background || "#182030";
       } catch(e) {}
     }
     this._updateDoorUI();
@@ -375,6 +392,49 @@ const Maker = {
     this.active = false;
     document.getElementById('maker-screen').classList.add('hidden');
     document.getElementById('char-select-screen').classList.remove('hidden');
+  },
+
+  validate() {
+    const r = this.room;
+    const errors = [];
+
+    // C1 — Check for exits (room must be traversable)
+    const hasExit = Object.values(r.doors).some(d => d && d.leadsTo !== null);
+    if (!hasExit) errors.push("Room has no exits! Add at least one door.");
+
+    // C5 — Entity count limits
+    if (r.enemies.length > 20) errors.push("Too many enemies (max 20)!");
+
+    // C5 — Validate enemy types against registry
+    const validEnemyTypes = [
+      'goblin','goblin_chief','ai_bug','chatbot_clone',
+      'glitch_sprite','memory_leak','phantom_var','null_pointer',
+      'stack_overflow','syntax_error','dark_compiler','trojan_horse',
+      'memory_corruption','infinite_loop','segmentation_fault','buffer_overflow'
+    ];
+    const badEnemies = r.enemies.filter(e => !validEnemyTypes.includes(e.type));
+    if (badEnemies.length > 0) {
+      errors.push('Unknown enemy type(s): ' + badEnemies.map(e => e.type).join(', '));
+    }
+
+    // C9 — Check all entities are within playable bounds (32px inset from walls)
+    const allEntities = [
+      ...r.enemies,
+      ...r.chests,
+      ...r.signs,
+      ...r.switches,
+      ...r.obstacles
+    ];
+    const oob = allEntities.filter(e => e.x < 40 || e.x > 760 || e.y < 40 || e.y > 560);
+    if (oob.length > 0) {
+      errors.push(oob.length + ' entity/entities are outside the playable area (too close to walls).');
+    }
+
+    if (errors.length > 0) {
+      alert("Validation Errors:\n- " + errors.join("\n- "));
+      return false;
+    }
+    return true;
   },
 
   _onMouseDown(e) {
@@ -518,6 +578,7 @@ const Maker = {
   },
 
   async save() {
+    if (!this.validate()) return;
     localStorage.setItem('maker_current_room', JSON.stringify(this.room));
     showToast("Room saved to local storage!");
     unlockAchievement('first_custom_room', 'First Custom Room');
@@ -530,10 +591,9 @@ const Maker = {
   },
 
   export() {
-    // Export either single room or entire campaign
+    if (!this.validate()) return;
     const campaignSelect = document.getElementById('maker-campaign-select');
     if (campaignSelect && campaignSelect.value === 'custom' && this.campaign.rooms.length > 1) {
-      // Export entire campaign
       const campaignData = {
         name: this.campaign.name || "Custom Campaign",
         rooms: this.campaign.rooms
@@ -547,7 +607,6 @@ const Maker = {
       URL.revokeObjectURL(url);
       unlockAchievement('exported_campaign', 'Campaign Architect');
     } else {
-      // Export single room
       const blob = new Blob([JSON.stringify(this.room, null, 2)], {type: 'application/json'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -568,8 +627,8 @@ const Maker = {
       const reader = new FileReader();
       reader.onload = (re) => {
         try {
-          const data = JSON.parse(re.target.result);
-          this.room = data;
+          let data = JSON.parse(re.target.result);
+          this.room = this._migrate(data);
           document.getElementById('room-name-input').value = this.room.name || "Imported Room";
           document.getElementById('room-bg-input').value = this.room.background || "#182030";
           this._draw();
@@ -584,6 +643,7 @@ const Maker = {
   },
 
   async share() {
+    if (!this.validate()) return;
     const campaignData = {
       name: this.campaign.name || "Custom Campaign",
       rooms: this.campaign.rooms.length > 0 ? this.campaign.rooms : [this.room]
@@ -699,10 +759,54 @@ const Maker = {
           {type:'pillar', x:250, y:300}, {type:'pillar', x:550, y:300}
         ],
         signs: [{x:400, y:50, message: "Beware of the glitches!"}]
+      },
+      {
+        name: "Memory Maze",
+        enemies: [
+          {type:'memory_leak', x:200, y:200, pattern:'rusher'},
+          {type:'phantom_var', x:600, y:200, pattern:'orbiter'},
+          {type:'phantom_var', x:400, y:400, pattern:'orbiter'}
+        ],
+        obstacles: [
+          {type:'wall', x:160, y:300, w:32, h:32}, {type:'wall', x:192, y:300, w:32, h:32},
+          {type:'wall', x:608, y:300, w:32, h:32}, {type:'wall', x:640, y:300, w:32, h:32},
+          {type:'pillar', x:400, y:180}, {type:'pillar', x:400, y:420}
+        ],
+        chests: [{x:400, y:300, type:'silver', contains:'mana_vial'}],
+        decorations: [{type:'crystal', x:100, y:300}, {type:'crystal', x:700, y:300}]
+      },
+      {
+        name: "The Ambush",
+        enemies: [
+          {type:'null_pointer', x:400, y:300, pattern:'rusher'},
+          {type:'chatbot_clone', x:120, y:120, pattern:'stick_and_move'},
+          {type:'chatbot_clone', x:680, y:480, pattern:'stick_and_move'}
+        ],
+        obstacles: Array.from({length:5}, (_,i) => ({type:'crate', x:160+i*100, y:150}))
+          .concat(Array.from({length:5}, (_,i) => ({type:'crate', x:160+i*100, y:450}))),
+        decorations: [{type:'server_rack', x:720, y:100}, {type:'terminal', x:80, y:500}]
+      },
+      {
+        name: "Treasure Vault",
+        enemies: [
+          {type:'dark_compiler', x:400, y:300, pattern:'rusher'},
+          {type:'goblin', x:200, y:150, pattern:'ranged'},
+          {type:'goblin', x:600, y:450, pattern:'ranged'}
+        ],
+        chests: [
+          {x:100, y:300, type:'gold', contains:'potion_sm'},
+          {x:700, y:300, type:'gold', contains:'mana_vial'},
+          {x:400, y:100, type:'silver', contains:'chicken_nuggets'}
+        ],
+        obstacles: [
+          {type:'pillar', x:200, y:200}, {type:'pillar', x:600, y:200},
+          {type:'pillar', x:200, y:400}, {type:'pillar', x:600, y:400}
+        ],
+        decorations: [{type:'torch', x:400, y:64}, {type:'torch', x:100, y:150}, {type:'torch', x:700, y:150}]
       }
     ];
 
-    const s = designs[Math.floor(Math.random() * designs.length)];
+    const s = designs[Math.floor(Date.now() / 1000) % designs.length];
     this.room = {
       ...this.room,
       name: s.name,
@@ -721,19 +825,26 @@ const Maker = {
   },
 
   playtest() {
+    if (!this.validate()) return;
     GameState.selectedChar = GameState.selectedChar || 'lincoln';
     GameState.currentLevel = 'maker';
-    LevelCache['maker'] = { 
+
+    // Use the full campaign if rooms have been added, otherwise just the current room
+    const campaignRooms = this.campaign.rooms.length > 0
+      ? this.campaign.rooms.map((r, i) => ({ ...r, id: i + 1 }))
+      : [{ ...this.room, id: 1 }];
+
+    LevelCache['maker'] = {
       id: 'maker',
-      name: "Custom Campaign",
-      rooms: [ { ...this.room, id: 1 } ] 
+      name: this.campaign.name || "Custom Campaign",
+      rooms: campaignRooms
     };
     GameState.currentRoom = 1;
     GameState.lastDoor = null;
-    
+
     document.getElementById('maker-screen').classList.add('hidden');
     document.getElementById('game-container').classList.remove('hidden');
-    
+
     startGame();
   }
 };

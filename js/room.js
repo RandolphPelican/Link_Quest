@@ -83,6 +83,7 @@ class RoomManager {
       const dy = Math.abs(player.y - sw.y);
       if (dx < sw.w/2 + 8 && dy < sw.h/2 + 8) {
         sw.active = true;
+        Events.emit(GameEvents.SWITCH_ACTIVATED, { index: sw.index + 1, total: this.switches.length });
         showToast('Switch ' + (sw.index+1) + '/' + this.switches.length + ' activated!');
       }
     });
@@ -400,7 +401,8 @@ class RoomManager {
             "💡 Dad says: Teamwork + AI = Superpowers!",
             "💡 Tip: Don't be afraid to experiment. AI is a great safety net."
           ];
-          msg = tips[Math.floor(Math.random() * tips.length)];
+          const tipIdx = Math.abs(Math.floor(sign.x * 7 + sign.y * 13)) % tips.length;
+          msg = tips[tipIdx];
           if (typeof ParticleSystem !== 'undefined') {
             ParticleSystem.spawn(sign.x, sign.y, 0x00e5ff, 15);
           }
