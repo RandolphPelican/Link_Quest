@@ -300,10 +300,24 @@ let keys = 0;
 
 // Game initialization
 function startGame() {
-  player = new Player(400, 300, 'lincoln');
+  // Use selected character or default to lincoln
+  const charKey = window.selectedCharacter || 'lincoln';
+  player = new Player(400, 300, charKey);
   loadLevel(currentLevel, currentRoom);
   engineStart(gameUpdate, gameRender);
+  
+  // Hide loading screen if it exists
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) {
+    loadingScreen.style.display = 'none';
+  }
 }
+
+// Start game when page loads
+window.addEventListener('load', () => {
+  engineInit();
+  // Game will start after loading animation when user presses a key
+});
 
 // Load level data from JSON
 let levelData = {};

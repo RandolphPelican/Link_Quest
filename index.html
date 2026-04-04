@@ -5,9 +5,150 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Link Quest</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    #game-title {
+      font-size: 3em;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px #ff0;
+    }
+    
+    #loading-bar {
+      width: 200px;
+      height: 20px;
+      border: 2px solid #ff0;
+      margin: 20px 0;
+      overflow: hidden;
+    }
+    
+    #loading-progress {
+      height: 100%;
+      width: 0%;
+      background: #ff0;
+      transition: width 0.3s;
+    }
+    
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    canvas {
+      border: 2px solid #333;
+      background: #111;
+    }
+    
+    #char-select {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    
+    .char-option {
+      margin: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+    
+    .char-option:hover {
+      background: rgba(255,255,0,0.2);
+    }
+  </style>
 </head>
 <body>
+  <div id="loading-screen">
+    <h1 id="game-title">⚔️ LINK QUEST</h1>
+    <div id="loading-bar">
+      <div id="loading-progress"></div>
+    </div>
+    <p id="loading-text">Loading assets...</p>
+  </div>
+  
+  <div id="char-select">
+    <h3>Choose Character:</h3>
+    <div class="char-option" onclick="selectCharacter('lincoln')">Lincoln (Sword)</div>
+    <div class="char-option" onclick="selectCharacter('journey')">Journey (Staff)</div>
+    <div class="char-option" onclick="selectCharacter('bear')">Bear (Bow)</div>
+    <div class="char-option" onclick="selectCharacter('noha')">Noha (Daggers)</div>
+    <div class="char-option" onclick="selectCharacter('dad')">Dad (Club)</div>
+  </div>
+  
   <div id="game-container"></div>
+  
+  <script>
+    // Loading animation
+    let progress = 0;
+    const loadingText = document.getElementById('loading-text');
+    const loadingProgress = document.getElementById('loading-progress');
+    
+    function updateLoading() {
+      progress += 10;
+      if (progress > 100) progress = 100;
+      loadingProgress.style.width = progress + '%';
+      
+      if (progress === 30) loadingText.textContent = 'Loading game engine...';
+      if (progress === 60) loadingText.textContent = 'Initializing characters...';
+      if (progress === 90) loadingText.textContent = 'Almost there...';
+      if (progress === 100) {
+        loadingText.textContent = 'Press any key to start!';
+        document.getElementById('char-select').style.display = 'block';
+        document.addEventListener('keydown', startGameOnKey);
+      }
+    }
+    
+    function startGameOnKey() {
+      document.removeEventListener('keydown', startGameOnKey);
+      document.getElementById('loading-screen').style.display = 'none';
+      startGame();
+    }
+    
+    function selectCharacter(charKey) {
+      console.log('Selected character:', charKey);
+      // This will be handled by the game code
+      window.selectedCharacter = charKey;
+      document.getElementById('char-select').style.display = 'none';
+    }
+    
+    // Start loading animation
+    const loadingInterval = setInterval(() => {
+      updateLoading();
+      if (progress >= 100) clearInterval(loadingInterval);
+    }, 200);
+  </script>
+  
   <script src="js/engine.js"></script>
   <script src="js/main.js"></script>
 </body>
