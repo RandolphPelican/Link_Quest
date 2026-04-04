@@ -51,6 +51,7 @@ const Tiles = {
   // x, y: screen position (top-left corner)
   // scale: optional override (default TileScale)
   draw(sheet, col, row, x, y, scale) {
+    if (!ctx) return;
     const img = this.sheets[sheet];
     if (!img) return;
     const s = scale || TileScale;

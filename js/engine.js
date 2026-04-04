@@ -471,37 +471,8 @@ const SoundSystem = {
   currentMusic: null,
   
   init() {
-    // Check if audio is supported
-    this.enabled = typeof Audio !== 'undefined';
-    if (!this.enabled) return;
-    
-    // Preload sounds
-    this.sounds = {
-      attack: new Audio('assets/sounds/attack.wav'),
-      hit: new Audio('assets/sounds/hit.wav'),
-      heal: new Audio('assets/sounds/heal.wav'),
-      collect: new Audio('assets/sounds/collect.wav'),
-      door: new Audio('assets/sounds/door.wav'),
-      explosion: new Audio('assets/sounds/explosion.wav'),
-      spell: new Audio('assets/sounds/spell.wav')
-    };
-    
-    // Set volume
-    Object.values(this.sounds).forEach(sound => {
-      sound.volume = 0.3;
-    });
-    
-    // Background music
-    this.backgroundMusic = {
-      level1: new Audio('assets/sounds/music_level1.mp3'),
-      level2: new Audio('assets/sounds/music_level2.mp3'),
-      level3: new Audio('assets/sounds/music_level3.mp3')
-    };
-    
-    Object.values(this.backgroundMusic).forEach(music => {
-      music.volume = 0.2;
-      music.loop = true;
-    });
+    this.enabled = false;
+    console.log('SoundSystem: disabled (no audio files present)');
   },
   
   play(name) {
@@ -556,6 +527,7 @@ function engineStart(updateFn, renderFn) {
 
 function _loop(now) {
   requestAnimationFrame(_loop);
+  if (!ctx) return;
 
   const dt = Math.min((now - _lastTime) / 1000, 0.05);
   _lastTime = now;

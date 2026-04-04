@@ -180,22 +180,13 @@ const Sprites = {
 
   // ── DRAW ENEMY SPRITE ──────────────────────────────────────
   drawEnemy(enemyType, x, y, facing, animFrame, scale, isHit) {
-    console.log('Attempting to draw enemy sprite for type:', enemyType);
-    
     const def = this.ENEMIES[enemyType];
     if (!def) {
-      console.warn('Sprite not found for enemy type:', enemyType, 'Available types:', Object.keys(this.ENEMIES));
+      console.warn('Sprite not found for enemy type:', enemyType);
       return false;
     }
-    
-    console.log('Found sprite definition for', enemyType, ':', def);
-    
-    if (!this.sheets.monsters) {
-      console.warn('Monsters sprite sheet not loaded. Available sheets:', Object.keys(this.sheets));
-      return false;
-    }
-    
-    console.log('Monsters sprite sheet loaded, drawing enemy...');
+
+    if (!this.sheets.monsters) return false;
 
     const s = scale || 2.5;
     const drawW = 32 * s;
@@ -224,7 +215,6 @@ const Sprites = {
     );
 
     ctx.restore();
-    console.log('Successfully drew enemy sprite for type:', enemyType);
     return true;
   },
 

@@ -9,11 +9,25 @@ const LevelCache = {};
 
 async function loadLevel(num) {
   if (LevelCache[num]) return LevelCache[num];
-  try {
-    const res = await fetch('levels/level' + num + '.json');
-    LevelCache[num] = await res.json();
-    return LevelCache[num];
-  } catch(e) { console.error('Level load failed:', e); return null; }
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch('levels/level' + num + '.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data || !data.rooms) throw new Error('Invalid level data');
+      LevelCache[num] = data;
+      return data;
+    } catch(e) {
+      console.warn('Level ' + num + ' load attempt ' + (attempt+1) + ' failed:', e);
+      if (attempt < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  console.error('Level ' + num + ' failed after ' + maxRetries + ' attempts');
+  showToast('Failed to load Level ' + num + '. Refresh the page.', 8000);
+  return null;
 }
 
 function showToast(msg, duration) {
@@ -828,65 +842,39 @@ document.getElementById('retry-btn').addEventListener('click', () => {
 function startGame() {
   console.log('Main: startGame() called');
   engineInit();
-  
-  // Reset engine pause state
   enginePause(false);
 
-  // Load tile and sprite assets, then levels, then start
-  let assetsReady = 0;
-  const checkReady = () => {
-    assetsReady++;
-    if (assetsReady >= 2) {
-      console.log('Main: All assets loaded, loading levels...');
-      Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]).then(() => {
-        console.log('Main: Levels loaded, loading initial room');
-        loadRoom();
-        
-        // Start background music
-        if (typeof SoundSystem !== 'undefined') {
-          SoundSystem.playMusic('level1');
-        }
-        
-        engineStart(gameUpdate, gameRender);
-      }).catch(err => {
-        console.error('Main: Level loading failed', err);
-        showToast('Error loading game levels');
-      });
-    }
-  };
+  const loadAssets = new Promise((resolve) => {
+    let tilesReady = Tiles.loaded;
+    let spritesReady = Sprites.loaded;
 
-  // If already loaded (e.g. playtest), skip loading or call immediately
-  if (Tiles.loaded && Sprites.loaded) {
-    console.log('Main: Assets already loaded, skipping to level load');
-    assetsReady = 1; // Fake one so checkReady triggers
-    checkReady();
-  } else {
-    console.log('Main: Starting asset loading...');
-    const startTime = Date.now();
-    
-    // Add timeout for asset loading
-    const loadingTimeout = setTimeout(() => {
-      console.warn('Main: Asset loading timeout after 10 seconds');
-      showToast('Asset loading taking longer than expected...', 5000);
-    }, 10000);
-    
-    const onAssetsLoaded = () => {
-      clearTimeout(loadingTimeout);
-      const loadTime = Date.now() - startTime;
-      console.log(`Main: Assets loaded in ${loadTime}ms`);
-      checkReady();
+    const check = () => {
+      if (tilesReady && spritesReady) resolve();
     };
-    
-    Tiles.load(() => {
-      console.log('Main: Tiles loaded');
-      if (Sprites.loaded) onAssetsLoaded();
-    });
-    
-    Sprites.load(() => {
-      console.log('Main: Sprites loaded');
-      if (Tiles.loaded) onAssetsLoaded();
-    });
-  }
+
+    if (!tilesReady) {
+      Tiles.load(() => { tilesReady = true; check(); });
+    }
+    if (!spritesReady) {
+      Sprites.load(() => { spritesReady = true; check(); });
+    }
+    check();
+  });
+
+  loadAssets.then(() => {
+    console.log('Main: All assets loaded, loading levels...');
+    return Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]);
+  }).then(() => {
+    console.log('Main: Levels loaded, starting game');
+    loadRoom();
+    if (typeof SoundSystem !== 'undefined') {
+      SoundSystem.playMusic('level1');
+    }
+    engineStart(gameUpdate, gameRender);
+  }).catch(err => {
+    console.error('Main: Startup failed', err);
+    showToast('Error loading game. Please refresh.', 8000);
+  });
 }
 
 // ── DEBUG FUNCTIONS ──────────────────────────────────────────
