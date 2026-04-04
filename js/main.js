@@ -11,17 +11,25 @@ async function loadLevel(num) {
   if (LevelCache[num]) return LevelCache[num];
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     try {
-      const res = await fetch('levels/level' + num + '.json');
+      const res = await fetch('levels/level' + num + '.json', {
+        cache: 'no-cache',
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if (!data || !data.rooms) throw new Error('Invalid level data');
       LevelCache[num] = data;
       return data;
     } catch(e) {
-      console.warn('Level ' + num + ' load attempt ' + (attempt+1) + ' failed:', e);
+      clearTimeout(timeout);
+      console.warn('Level ' + num + ' load attempt ' + (attempt+1) + ' failed:', e.message);
       if (attempt < maxRetries - 1) {
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        showToast('Waking up server... retrying (' + (attempt+2) + '/3)', 3000);
+        await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
       }
     }
   }
@@ -863,6 +871,7 @@ function startGame() {
 
   loadAssets.then(() => {
     console.log('Main: All assets loaded, loading levels...');
+    showToast('Loading levels...', 10000);
     return Promise.all([loadLevel(1), loadLevel(2), loadLevel(3)]);
   }).then(() => {
     console.log('Main: Levels loaded, starting game');

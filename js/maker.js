@@ -499,8 +499,8 @@ const Maker = {
   },
 
   _draw() {
-    const ctx = this.ctx;
-    if (!ctx) return;
+    if (!this.ctx) return;
+    ctx = this.ctx;
     const bg = this.room.background || "#182030";
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 800, 600);
