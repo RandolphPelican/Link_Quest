@@ -24,7 +24,8 @@ const Network = {
     }
     
     console.log('Network: Loading Socket.io from CDN...');
-    
+    showToast('Connecting to multiplayer...', 8000);
+
     // Load Socket.io from CDN
     const script = document.createElement('script');
     script.src = 'https://cdn.socket.io/4.7.4/socket.io.min.js';

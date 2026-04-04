@@ -111,13 +111,7 @@ class RoomManager {
     this._renderSigns();
   }
 
-  _renderGrid(bgColor) {
-    // Clean subtle grid
-    for (let x = 0; x <= 800; x += 32)
-      drawLine(x, 0, x, 600, 0xffffff, 0.04);
-    for (let y = 0; y <= 600; y += 32)
-      drawLine(0, y, 800, y, 0xffffff, 0.04);
-  }
+  _renderGrid(bgColor) {}
 
   _renderFloor() {
     // Subtle floor tile variation — stone pattern
