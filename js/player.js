@@ -267,6 +267,15 @@ class Player extends PhysicsObject {
     else if (this.vy < -0.1) this.facing = 'up';
     else if (this.vy > 0.1) this.facing = 'down';
 
+    // Debug: Log player state periodically
+    if (Math.random() < 0.01) { // 1% chance per frame
+      console.log(`Player: pos(${Math.round(this.x)},${Math.round(this.y)}), ` +
+                  `hp(${this.hp}/${this.maxHp}), ` +
+                  `mp(${this.mp}/${this.maxMp}), ` +
+                  `facing(${this.facing}), ` +
+                  `moving(${this.moving})`);
+    }
+    
     super.update(dt);
     if (roomMgr) roomMgr.resolveCollisions(this);
 

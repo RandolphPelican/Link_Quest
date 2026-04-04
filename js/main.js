@@ -318,14 +318,27 @@ let transitioning = false;
 let roomCleared  = false;
 
 function loadRoom() {
+  console.log(`Main: Loading room ${GameState.currentRoom} in level ${GameState.currentLevel}`);
+  const startTime = Date.now();
+  
   transitioning = false;
   roomCleared   = false;
 
   levelData = LevelCache[GameState.currentLevel];
-  if (!levelData) { console.error('No level data for level', GameState.currentLevel); return; }
+  if (!levelData) {
+    console.error('Main: No level data for level', GameState.currentLevel);
+    showToast(`Error: Level ${GameState.currentLevel} data missing!`, 5000);
+    return;
+  }
 
   roomData = levelData.rooms.find(r => r.id === GameState.currentRoom);
-  if (!roomData) { console.error('Room not found:', GameState.currentRoom); return; }
+  if (!roomData) {
+    console.error('Main: Room not found:', GameState.currentRoom, 'in level', GameState.currentLevel);
+    showToast(`Error: Room ${GameState.currentRoom} not found!`, 5000);
+    return;
+  }
+  
+  console.log(`Main: Room data loaded in ${Date.now() - startTime}ms`, roomData);
 
   // Init room manager
   roomMgr = new RoomManager(roomData);
@@ -839,10 +852,65 @@ function startGame() {
     assetsReady = 1; // Fake one so checkReady triggers
     checkReady();
   } else {
-    Tiles.load(checkReady);
-    Sprites.load(checkReady);
+    console.log('Main: Starting asset loading...');
+    const startTime = Date.now();
+    
+    // Add timeout for asset loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Main: Asset loading timeout after 10 seconds');
+      showToast('Asset loading taking longer than expected...', 5000);
+    }, 10000);
+    
+    const onAssetsLoaded = () => {
+      clearTimeout(loadingTimeout);
+      const loadTime = Date.now() - startTime;
+      console.log(`Main: Assets loaded in ${loadTime}ms`);
+      checkReady();
+    };
+    
+    Tiles.load(() => {
+      console.log('Main: Tiles loaded');
+      if (Sprites.loaded) onAssetsLoaded();
+    });
+    
+    Sprites.load(() => {
+      console.log('Main: Sprites loaded');
+      if (Tiles.loaded) onAssetsLoaded();
+    });
   }
 }
+
+// ── DEBUG FUNCTIONS ──────────────────────────────────────────
+// Global debug toggle
+window.toggleDebugMode = function() {
+  const newDebugState = !window._debugEnabled;
+  window._debugEnabled = newDebugState;
+  
+  if (typeof CollisionSystem !== 'undefined') {
+    CollisionSystem.setDebugEnabled(newDebugState);
+  }
+  
+  console.log(`Debug mode ${newDebugState ? 'ENABLED' : 'DISABLED'}`);
+  if (typeof showToast !== 'undefined') {
+    showToast(`Debug mode: ${newDebugState ? 'ON' : 'OFF'}`, 2000);
+  }
+};
+
+// Initialize debug state
+window._debugEnabled = false;
+
+// Expose key game objects for console debugging
+window.getGameState = function() {
+  return {
+    GameState: window.GameState,
+    player: window.player,
+    enemies: window.enemies,
+    boss: window.boss,
+    items: window.items,
+    roomMgr: window.roomMgr,
+    debugEnabled: window._debugEnabled
+  };
+};
 
 // ── BOOT ──────────────────────────────────────────────────────
 window.onerror = function(msg, url, line, col, error) {
