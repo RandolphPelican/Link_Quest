@@ -292,8 +292,12 @@ class Player extends PhysicsObject {
     this.animator.update(dt);
 
     // Interaction update
-    if (typeof roomMgr !== 'undefined' && roomMgr.room) {
-      const interactables = [...roomMgr.room.tiles.filter(t => t.type === 'sign' || t.type === 'chest'), ...items];
+    if (typeof roomMgr !== 'undefined' && roomMgr) {
+      const interactables = [
+        ...roomMgr.signs.map(s => ({ ...s, type: 'sign' })),
+        ...roomMgr.chests.map(c => ({ ...c, type: 'chest' })),
+        ...(typeof items !== 'undefined' ? items : [])
+      ];
       this.interactionController.update(dt, interactables);
     }
 

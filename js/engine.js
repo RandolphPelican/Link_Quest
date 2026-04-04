@@ -242,12 +242,12 @@ class Camera {
     const tx = this.target.x - GAME_W / 2;
     const ty = this.target.y - GAME_H / 2;
 
-    // Smooth follow
     this.x += (tx - this.x) * this.lerp;
     this.y += (ty - this.y) * this.lerp;
 
-    // Room boundaries (optional, can be expanded)
-    // this.x = Math.max(0, Math.min(this.x, WORLD_W - GAME_W));
+    // Rooms are viewport-sized — never scroll outside them
+    this.x = Math.max(0, Math.min(this.x, 0));
+    this.y = Math.max(0, Math.min(this.y, 0));
   }
 
   apply(ctx) {
@@ -538,10 +538,10 @@ function _loop(now) {
   ScreenShake.update(dt);
   ParticleSystem.update(dt);
 
+  clearScreen(0x0a0a0f);
   ctx.save();
   ctx.translate(ScreenShake.offsetX, ScreenShake.offsetY);
   CameraSystem.apply(ctx);
-  clearScreen(0x0a0a0f);
   if (_gameRender) _gameRender();
   ParticleSystem.render();
   ctx.restore();
