@@ -292,8 +292,11 @@ let player;
 let player;
 let enemies = [];
 let items = [];
+let chests = [];
+let doors = [];
 let currentLevel = 1;
 let currentRoom = 1;
+let keys = 0;
 
 // Game initialization
 function startGame() {
@@ -307,21 +310,140 @@ function loadLevel(level, room) {
   currentLevel = level;
   currentRoom = room;
   console.log(`Loading Level ${level}, Room ${room}`);
-  // TODO: Load actual level data
+  
+  // Clear previous entities
+  enemies = [];
+  items = [];
+  chests = [];
+  doors = [];
+  
+  // Spawn new entities
   spawnEnemies();
   spawnItems();
+  spawnChests();
+  spawnDoors();
+}
+
+// Enemy class
+class Enemy {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.type = type;
+    this.w = 25;
+    this.h = 25;
+    this.hp = 30;
+    this.maxHp = 30;
+    this.speed = 50;
+    this.damage = 5;
+    this.color = '#ff0000';
+  }
+  
+  update(dt) {
+    // Simple AI: move toward player
+    const dx = player.x - this.x;
+    const dy = player.y - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > 0) {
+      this.x += (dx / dist) * this.speed * dt;
+      this.y += (dy / dist) * this.speed * dt;
+    }
+  }
+  
+  render() {
+    drawRect(this.x, this.y, this.w, this.h, this.color);
+    // HP bar
+    const hpWidth = (this.hp / this.maxHp) * this.w;
+    drawRect(this.x - this.w/2, this.y - this.h/2 - 5, hpWidth, 3, '#00ff00');
+  }
+}
+
+// Item class
+class Item {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.type = type;
+    this.w = 20;
+    this.h = 20;
+    this.color = '#ffff00';
+  }
+  
+  render() {
+    drawRect(this.x, this.y, this.w, this.h, this.color);
+  }
+}
+
+// Chest class
+class Chest {
+  constructor(x, y, locked = false) {
+    this.x = x;
+    this.y = y;
+    this.w = 30;
+    this.h = 20;
+    this.locked = locked;
+    this.opened = false;
+    this.color = locked ? '#8b4513' : '#d2b48c';
+  }
+  
+  render() {
+    drawRect(this.x, this.y, this.w, this.h, this.color);
+    if (this.locked) {
+      drawCircle(this.x, this.y, 5, '#ff0000'); // Lock indicator
+    }
+  }
+}
+
+// Door class
+class Door {
+  constructor(x, y, leadsToRoom, locked = false) {
+    this.x = x;
+    this.y = y;
+    this.w = 40;
+    this.h = 10;
+    this.leadsToRoom = leadsToRoom;
+    this.locked = locked;
+    this.color = locked ? '#8b0000' : '#008b00';
+  }
+  
+  render() {
+    drawRect(this.x, this.y, this.w, this.h, this.color);
+  }
 }
 
 // Spawn enemies
 function spawnEnemies() {
   enemies = [];
-  // TODO: Spawn enemies based on level and room
+  // Spawn enemies based on level and room
+  if (currentLevel === 1) {
+    // Level 1 enemies
+    enemies.push(new Enemy(200, 200, 'goblin'));
+    enemies.push(new Enemy(600, 400, 'goblin'));
+  } else if (currentLevel === 2) {
+    // Level 2 enemies
+    enemies.push(new Enemy(150, 300, 'skeleton'));
+    enemies.push(new Enemy(400, 200, 'skeleton'));
+    enemies.push(new Enemy(650, 300, 'skeleton'));
+  } else if (currentLevel === 3) {
+    // Level 3 enemies
+    enemies.push(new Enemy(200, 200, 'demon'));
+    enemies.push(new Enemy(400, 300, 'demon'));
+    enemies.push(new Enemy(600, 200, 'demon'));
+    enemies.push(new Enemy(400, 400, 'demon'));
+  }
 }
 
 // Spawn items
 function spawnItems() {
   items = [];
-  // TODO: Spawn items based on level and room
+  // Spawn items based on level and room
+  if (currentLevel === 1 && currentRoom === 1) {
+    items.push(new Item(300, 300, 'health'));
+    items.push(new Item(500, 400, 'key'));
+  } else if (currentLevel === 1 && currentRoom === 2) {
+    items.push(new Item(200, 400, 'health'));
+  }
 }
 
 // Game update loop
@@ -339,6 +461,30 @@ function gameUpdate(dt) {
   });
 }
 
+// Spawn chests
+function spawnChests() {
+  chests = [];
+  // Spawn chests based on level and room
+  if (currentLevel === 1 && currentRoom === 1) {
+    chests.push(new Chest(100, 100, false));
+    chests.push(new Chest(700, 500, true));
+  } else if (currentLevel === 1 && currentRoom === 2) {
+    chests.push(new Chest(400, 300, false));
+  }
+}
+
+// Spawn doors
+function spawnDoors() {
+  doors = [];
+  // Spawn doors based on level and room
+  if (currentLevel === 1 && currentRoom === 1) {
+    doors.push(new Door(400, 50, 2, false)); // Door to room 2
+  } else if (currentLevel === 1 && currentRoom === 2) {
+    doors.push(new Door(400, 50, 1, false)); // Door back to room 1
+    doors.push(new Door(400, 550, 3, true)); // Locked door to room 3
+  }
+}
+
 // Game render loop
 function gameRender() {
   clearScreen();
@@ -348,6 +494,16 @@ function gameRender() {
     item.render();
   });
   
+  // Render chests
+  chests.forEach(chest => {
+    chest.render();
+  });
+  
+  // Render doors
+  doors.forEach(door => {
+    door.render();
+  });
+  
   // Render enemies
   enemies.forEach(enemy => {
     enemy.render();
@@ -355,6 +511,29 @@ function gameRender() {
   
   // Render player
   player.render();
+  
+  // Render UI
+  renderUI();
+}
+
+// Render UI
+function renderUI() {
+  // Draw HP bar
+  const hpWidth = (player.hp / player.maxHp) * 100;
+  drawRect(50, 30, 100, 10, '#333');
+  drawRect(50 - 50, 30, hpWidth, 10, '#f00');
+  
+  // Draw key count
+  drawRect(750, 30, 20, 20, '#ff0');
+  drawText(780, 30, `x${keys}`, '#fff');
+}
+
+// Draw text function
+function drawText(x, y, text, color = '#fff') {
+  ctx.fillStyle = color;
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, x, y);
 }
 
 // Start the game when the page loads
