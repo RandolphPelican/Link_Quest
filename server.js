@@ -1,3 +1,5 @@
 // Unified build entry point
 console.log("Initializing Link Quest server...");
-require('./dist/server/index.js');
+const path = require('path');
+require(path.join(__dirname, 'dist/server/index.js'));
+
