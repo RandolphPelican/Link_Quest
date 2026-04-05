@@ -1,10 +1,13 @@
 services:
   - type: web
     name: link-quest
-    runtime: node
+    env: node
     plan: free
+    rootDirectory: .
+
     buildCommand: npm install && npm run build
-    startCommand: npm run start
+    startCommand: node server.js
+
     envVars:
       - key: NODE_ENV
         value: production
