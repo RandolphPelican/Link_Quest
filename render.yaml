@@ -3,7 +3,7 @@ services:
     name: link-quest
     env: node
     plan: free
-    rootDirectory: .
+    
 
     buildCommand: npm install && npm run build
     startCommand: node server.js
