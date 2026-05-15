@@ -3,3 +3,12 @@ dist
 .DS_Store
 *.log
 .env
+
+# Local notes and TB workspace (not committed)
+.claude/
+node_modules/
+package-lock.json
+/git_log_full.txt
+/LMJ QUEST*.txt
+/codebook*.txt
+/repo check*.txt
