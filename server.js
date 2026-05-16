@@ -3,8 +3,7 @@ console.log("Initializing Link Quest server...");
 const path = require("path");
 const fs = require("fs");
 
-// Correct path: go UP one directory, then into dist/server
-const serverEntry = path.resolve(__dirname, "..", "dist", "server", "index.js");
+const serverEntry = path.resolve(__dirname, "dist", "server", "index.js");
 
 console.log("Resolved server entry:", serverEntry);
 console.log("Exists?", fs.existsSync(serverEntry));

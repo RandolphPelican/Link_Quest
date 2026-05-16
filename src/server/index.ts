@@ -1,24 +1,31 @@
-import { Server } from "colyseus";
-import { createServer } from "http";
 import express from "express";
+import { createServer } from "http";
 import path from "path";
+import { Server } from "colyseus";
+import { WebSocketTransport } from "@colyseus/ws-transport";
 import { GameRoom } from "./rooms/GameRoom";
 
-const port = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT) || 3000;
+const CLIENT_DIR = path.resolve(__dirname, "../client");
+
 const app = express();
+const httpServer = createServer(app);
 
-app.use(express.json());
+app.use(express.static(CLIENT_DIR));
 
-// Serve static files from the client build directory
-const clientPath = path.join(__dirname, "../../client/dist");
-app.use(express.static(clientPath));
-
-const gameServer = new Server({
-  server: createServer(app),
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", service: "link-quest" });
 });
 
-// Register your room handlers
-gameServer.define("game", GameRoom);
+const gameServer = new Server({
+  transport: new WebSocketTransport({ server: httpServer }),
+});
+gameServer.define("game_room", GameRoom);
 
-gameServer.listen(port);
-console.log(`Listening on ws://localhost:${port}`);
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(CLIENT_DIR, "index.html"));
+});
+
+httpServer.listen(PORT, () => {
+  console.log(`Link Quest server listening on :${PORT}`);
+});

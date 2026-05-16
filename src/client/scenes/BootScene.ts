@@ -1,30 +1,27 @@
 import Phaser from "phaser";
 
 export class BootScene extends Phaser.Scene {
-    constructor() {
-        super("BootScene");
-    }
+  constructor() {
+    super("BootScene");
+  }
 
-    preload() {
-        // Load some basic assets or placeholders
-        this.load.image("logo", "https://labs.phaser.io/assets/sprites/phaser3-logo.png");
-        
-        // Creating placeholders for procedural animator if needed
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0xffffff, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture("white_square", 32, 32);
-        graphics.clear();
+  create() {
+    const { width, height } = this.scale;
 
-        graphics.fillStyle(0x00ff00, 1);
-        graphics.fillCircle(16, 16, 16);
-        graphics.generateTexture("green_circle", 32, 32);
-        graphics.clear();
-        
-        graphics.destroy();
-    }
+    this.add
+      .text(width / 2, height / 2 - 20, "LINK QUEST", {
+        fontFamily: "monospace",
+        fontSize: "48px",
+        color: "#e0e0e0",
+      })
+      .setOrigin(0.5);
 
-    create() {
-        this.scene.start("MenuScene");
-    }
+    this.add
+      .text(width / 2, height / 2 + 30, "skeleton loaded", {
+        fontFamily: "monospace",
+        fontSize: "16px",
+        color: "#888888",
+      })
+      .setOrigin(0.5);
+  }
 }

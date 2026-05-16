@@ -1,19 +1,19 @@
 {
   "name": "link-quest",
-  "version": "2.1.0",
-  "description": "Multiplayer RPG foundation",
+  "version": "3.0.0",
+  "description": "Multiplayer top-down dungeon crawler",
   "main": "server.js",
   "scripts": {
     "build": "npm run build:server && npm run build:client",
-
-    "build:client": "tsc -p src/client && vite build src/client",
     "build:server": "tsc -p src/server",
+    "build:client": "vite build",
     "start": "node server.js",
     "dev:server": "ts-node-dev --respawn src/server/index.ts",
     "dev:client": "vite"
   },
   "dependencies": {
     "@colyseus/schema": "^2.0.0",
+    "@colyseus/ws-transport": "^0.15.0",
     "colyseus": "^0.15.0",
     "colyseus.js": "^0.15.0",
     "express": "^4.18.2",
