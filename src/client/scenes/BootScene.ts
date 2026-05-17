@@ -1,14 +1,22 @@
 import Phaser from "phaser";
 
+const HERO_FRAMES: Record<string, number> = {
+  Niall: 84,      // purple wizard with staff (TENTATIVE)
+  Bear: 108,      // bear-headed character (TENTATIVE)
+  Noah: 96,       // bearded warrior, grey hair (TENTATIVE)
+  Journey: 100,   // long-haired female (TENTATIVE)
+  Lincoln: 97,    // bearded knight (TENTATIVE)
+};
+
+const HERO_ORDER = ["Niall", "Bear", "Noah", "Journey", "Lincoln"];
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("BootScene");
   }
 
   preload() {
-    // Load as single image for the whole-sheet preview
     this.load.image("tilesheet", "kenney/Tilemap/tilemap_packed.png");
-    // Load as spritesheet for future frame-by-frame access (Move 5+)
     this.load.spritesheet("tiles", "kenney/Tilemap/tilemap_packed.png", {
       frameWidth: 16,
       frameHeight: 16,
@@ -16,37 +24,47 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = this.scale;
+    const { width } = this.scale;
 
     this.add
-      .text(width / 2, 30, "LINK QUEST", {
+      .text(width / 2, 25, "LINK QUEST", {
         fontFamily: "monospace",
-        fontSize: "36px",
+        fontSize: "28px",
         color: "#e0e0e0",
       })
       .setOrigin(0.5);
 
+    // Hero lineup — 5 sprites at 4x scale, names below each
+    const startX = 200;
+    const spacing = 100;
+    HERO_ORDER.forEach((name, i) => {
+      const x = startX + i * spacing;
+      this.add
+        .sprite(x, 100, "tiles", HERO_FRAMES[name])
+        .setOrigin(0.5)
+        .setScale(4);
+      this.add
+        .text(x, 145, name, {
+          fontFamily: "monospace",
+          fontSize: "16px",
+          color: "#e0e0e0",
+        })
+        .setOrigin(0.5);
+    });
+
+    // Divider
     this.add
-      .text(width / 2, 70, "skeleton loaded", {
+      .text(width / 2, 175, "— sprite library reference —", {
         fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#888888",
+        fontSize: "11px",
+        color: "#666666",
       })
       .setOrigin(0.5);
 
+    // Full tilesheet at 2x scale below for ongoing reference
     this.add
-      .text(width / 2, 100, "Kenney Tiny Dungeon — 132 sprites loaded", {
-        fontFamily: "monospace",
-        fontSize: "14px",
-        color: "#4caf50",
-      })
-      .setOrigin(0.5);
-
-    // Render the full tilesheet at 2.5x scale, top-center anchored just below the text.
-    // Native 192x176 -> 480x440 onscreen.
-    this.add
-      .image(width / 2, 120, "tilesheet")
+      .image(width / 2, 195, "tilesheet")
       .setOrigin(0.5, 0)
-      .setScale(2.5);
+      .setScale(2);
   }
 }
