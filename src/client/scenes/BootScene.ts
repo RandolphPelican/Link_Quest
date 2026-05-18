@@ -1,11 +1,12 @@
 import Phaser from "phaser";
 
+// Hero/enemy data preserved for upcoming moves (spawning into rooms)
 const HERO_FRAMES: Record<string, number> = {
-  Niall: 84,      // row 8 col 1 — purple wizard
-  Bear: 88,       // row 8 col 5
-  Noah: 100,      // row 9 col 5 — grey-haired elder
-  Journey: 99,    // row 9 col 4 — long-haired female
-  Lincoln: 87,    // row 8 col 4 — bearded knight
+  Niall: 84,
+  Bear: 88,
+  Noah: 100,
+  Journey: 99,
+  Lincoln: 87,
 };
 
 interface HeroKit {
@@ -40,6 +41,9 @@ const ENEMIES: Record<string, EnemyDef> = {
 
 const ENEMY_ORDER = ["Grey Rat", "Red Bat", "Green Blob"];
 
+// Suppress unused-variable warnings — these are referenced by future moves
+void HERO_FRAMES; void HERO_KITS; void HERO_ORDER; void ENEMIES; void ENEMY_ORDER;
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super("BootScene");
@@ -51,128 +55,19 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.tilemapTiledJSON("room1", "maps/room1.tmj");
   }
 
   create() {
-    const { width } = this.scale;
+    const map = this.make.tilemap({ key: "room1" });
+    const tileset = map.addTilesetImage("kenney_tiny_dungeon", "tilesheet");
 
-    this.add
-      .text(width / 2, 25, "LINK QUEST", {
-        fontFamily: "monospace",
-        fontSize: "28px",
-        color: "#e0e0e0",
-      })
-      .setOrigin(0.5);
+    if (tileset) {
+      map.createLayer("Tile Layer 1", tileset, 0, 0);
+    }
 
-    // HEROES section
-    this.add
-      .text(width / 2, 55, "— HEROES —", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#888888",
-      })
-      .setOrigin(0.5);
-
-    const heroStartX = 140;
-    const heroSpacing = 130;
-    HERO_ORDER.forEach((name, i) => {
-      const x = heroStartX + i * heroSpacing;
-      const kit = HERO_KITS[name];
-
-      this.add
-        .sprite(x, 100, "tiles", HERO_FRAMES[name])
-        .setOrigin(0.5)
-        .setScale(4);
-
-      this.add
-        .text(x, 147, name, {
-          fontFamily: "monospace",
-          fontSize: "16px",
-          color: "#e0e0e0",
-        })
-        .setOrigin(0.5);
-
-      this.add
-        .text(x, 163, `HP ${kit.hp}  SP ${kit.speed}`, {
-          fontFamily: "monospace",
-          fontSize: "10px",
-          color: "#aaaaaa",
-        })
-        .setOrigin(0.5);
-
-      this.add
-        .text(x, 175, `${kit.primary.type} ${kit.primary.name} ${kit.primary.damage}`, {
-          fontFamily: "monospace",
-          fontSize: "10px",
-          color: "#aaaaaa",
-        })
-        .setOrigin(0.5);
-
-      this.add
-        .text(x, 187, kit.mana, {
-          fontFamily: "monospace",
-          fontSize: "10px",
-          color: "#aaaaaa",
-          fontStyle: "italic",
-        })
-        .setOrigin(0.5);
-    });
-
-    // ENEMIES section
-    this.add
-      .text(width / 2, 210, "— ENEMIES (Level 1) —", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#888888",
-      })
-      .setOrigin(0.5);
-
-    const enemyStartX = 200;
-    const enemySpacing = 200;
-    ENEMY_ORDER.forEach((name, i) => {
-      const x = enemyStartX + i * enemySpacing;
-      const enemy = ENEMIES[name];
-      this.add
-        .sprite(x, 247, "tiles", enemy.frame)
-        .setOrigin(0.5)
-        .setScale(4);
-      this.add
-        .text(x, 292, name, {
-          fontFamily: "monospace",
-          fontSize: "14px",
-          color: "#e0e0e0",
-        })
-        .setOrigin(0.5);
-      this.add
-        .text(x, 310, `HP ${enemy.hp}  DMG ${enemy.damage}`, {
-          fontFamily: "monospace",
-          fontSize: "10px",
-          color: "#aaaaaa",
-        })
-        .setOrigin(0.5);
-      this.add
-        .text(x, 324, enemy.pattern, {
-          fontFamily: "monospace",
-          fontSize: "10px",
-          color: "#aaaaaa",
-          fontStyle: "italic",
-        })
-        .setOrigin(0.5);
-    });
-
-    // Library divider
-    this.add
-      .text(width / 2, 347, "— sprite library reference —", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#666666",
-      })
-      .setOrigin(0.5);
-
-    // Library reference at 1.2x scale (shrunk to make room for hero kits)
-    this.add
-      .image(width / 2, 362, "tilesheet")
-      .setOrigin(0.5, 0)
-      .setScale(1.2);
+    // 2x camera zoom: 400x288 native map fills 800x576 onscreen
+    this.cameras.main.setZoom(2);
+    this.cameras.main.centerOn(map.widthInPixels / 2, map.heightInPixels / 2);
   }
 }
