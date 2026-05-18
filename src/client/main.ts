@@ -9,6 +9,13 @@ const config: Phaser.Types.Core.GameConfig = {
   backgroundColor: "#0a0a0a",
   pixelArt: true,
   scene: [BootScene],
+  physics: {
+    default: "arcade",
+    arcade: {
+      gravity: { y: 0 },
+      debug: false,
+    },
+  },
 };
 
 new Phaser.Game(config);

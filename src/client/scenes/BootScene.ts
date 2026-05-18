@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-// Hero/enemy data preserved for upcoming moves (spawning into rooms)
+// Hero/enemy data preserved for upcoming moves
 const HERO_FRAMES: Record<string, number> = {
   Niall: 84,
   Bear: 88,
@@ -41,10 +41,21 @@ const ENEMIES: Record<string, EnemyDef> = {
 
 const ENEMY_ORDER = ["Grey Rat", "Red Bat", "Green Blob"];
 
-// Suppress unused-variable warnings — these are referenced by future moves
-void HERO_FRAMES; void HERO_KITS; void HERO_ORDER; void ENEMIES; void ENEMY_ORDER;
+// Suppress unused-variable warnings — referenced by future moves
+void HERO_ORDER; void ENEMIES; void ENEMY_ORDER;
+
+// Speed scaling: pixels-per-second = SP × 15
+const SPEED_PER_SP = 15;
 
 export class BootScene extends Phaser.Scene {
+  private player!: Phaser.Physics.Arcade.Sprite;
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wKey?: Phaser.Input.Keyboard.Key;
+  private aKey?: Phaser.Input.Keyboard.Key;
+  private sKey?: Phaser.Input.Keyboard.Key;
+  private dKey?: Phaser.Input.Keyboard.Key;
+  private playerSpeed = HERO_KITS.Lincoln.speed * SPEED_PER_SP;
+
   constructor() {
     super("BootScene");
   }
@@ -59,15 +70,66 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Load Tiled map and its tile layer
     const map = this.make.tilemap({ key: "room1" });
     const tileset = map.addTilesetImage("kenney_tiny_dungeon", "tilesheet");
 
+    let layer: Phaser.Tilemaps.TilemapLayer | null = null;
     if (tileset) {
-      map.createLayer("Tile Layer 1", tileset, 0, 0);
+      layer = map.createLayer("Tile Layer 1", tileset, 0, 0);
+      if (layer) {
+        // Tile 15 = stone wall perimeter. Blocks movement.
+        layer.setCollision(15);
+      }
     }
 
-    // 2x camera zoom: 400x288 native map fills 800x576 onscreen
+    // Spawn Lincoln at tile (3, 9) — clear floor on the left side
+    const startX = 3 * 16 + 8;
+    const startY = 9 * 16 + 8;
+    this.player = this.physics.add.sprite(startX, startY, "tiles", HERO_FRAMES.Lincoln);
+    this.player.setCollideWorldBounds(true);
+
+    // Wall collision
+    if (layer) {
+      this.physics.add.collider(this.player, layer);
+    }
+
+    // Keyboard input — arrow keys + WASD
+    if (this.input.keyboard) {
+      this.cursors = this.input.keyboard.createCursorKeys();
+      this.wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+      this.aKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+      this.sKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+      this.dKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    }
+
+    // Camera: 2x zoom, static at map center (room fits entirely in view)
     this.cameras.main.setZoom(2);
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.centerOn(map.widthInPixels / 2, map.heightInPixels / 2);
+  }
+
+  update() {
+    if (!this.player) return;
+
+    const left  = this.cursors?.left.isDown  || this.aKey?.isDown;
+    const right = this.cursors?.right.isDown || this.dKey?.isDown;
+    const up    = this.cursors?.up.isDown    || this.wKey?.isDown;
+    const down  = this.cursors?.down.isDown  || this.sKey?.isDown;
+
+    let vx = 0;
+    let vy = 0;
+    if (left) vx = -this.playerSpeed;
+    else if (right) vx = this.playerSpeed;
+    if (up) vy = -this.playerSpeed;
+    else if (down) vy = this.playerSpeed;
+
+    // Normalize diagonal so it's not faster than orthogonal
+    if (vx !== 0 && vy !== 0) {
+      vx *= Math.SQRT1_2;
+      vy *= Math.SQRT1_2;
+    }
+
+    this.player.setVelocity(vx, vy);
   }
 }
