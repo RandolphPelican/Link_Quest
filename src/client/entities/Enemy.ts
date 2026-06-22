@@ -25,6 +25,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setScale(this.def.scale);
+    if (this.def.tint !== undefined) this.setTint(this.def.tint);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(12 * this.def.scale, 12 * this.def.scale);
     if (this.def.pattern === "bat") body.setBounce(1, 1);
@@ -53,7 +54,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const kb = this.def.pattern === "boss" ? 40 : 150;
     this.setVelocity(Math.cos(angle) * kb, Math.sin(angle) * kb);
     this.setTintFill(0xffffff);
-    this.scene.time.delayedCall(90, () => { if (this.active) this.clearTint(); });
+    this.scene.time.delayedCall(90, () => { if (this.active) this.restoreBaseTint(); });
     if (this.hp <= 0) { this.die(); return true; }
     this.drawHpBar();
     return false;
@@ -68,6 +69,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       targets: this, alpha: 0, scale: this.def.scale * 1.4, duration: 220,
       onComplete: () => this.destroy(),
     });
+  }
+
+  // Clear a flash tint without losing the enemy's base color (fire/ice wardens).
+  private restoreBaseTint() {
+    if (this.def.tint !== undefined) this.setTint(this.def.tint);
+    else this.clearTint();
   }
 
   updateAI(time: number, delta: number, player: Phaser.Physics.Arcade.Sprite) {
@@ -94,7 +101,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           this.shootTimer = 2000 + Math.random() * 500;
           this.setTintFill(0xffff00);
           this.scene.time.delayedCall(200, () => {
-            if (this.active) this.clearTint();
+            if (this.active) this.restoreBaseTint();
             if (this.active && this.onShoot) {
               const base = Math.atan2(dy, dx);
               for (const off of [-0.4, 0, 0.4]) {
@@ -111,26 +118,27 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       }
       case "rat": {
         this.shootTimer -= delta;
-        if (time < this.retreatUntil) {
-          this.setVelocity(-nx * this.def.speed, -ny * this.def.speed);
-          // Fire backward burst while retreating (ranged wardens only; minions have no onShoot)
-          if (this.shootTimer <= 0 && this.onShoot) {
-            this.shootTimer = 1500;
-            this.setTintFill(0xffff00);
-            this.scene.time.delayedCall(200, () => {
-              if (this.active) this.clearTint();
-              if (this.active && this.onShoot) {
-                const base = Math.atan2(-dy, -dx);  // backward
-                for (const off of [-0.25, 0, 0.25]) {
-                  this.onShoot(this.x, this.y, Math.cos(base + off), Math.sin(base + off));
-                }
+        const retreating = time < this.retreatUntil;
+        if (retreating) this.setVelocity(-nx * this.def.speed, -ny * this.def.speed);
+        else if (dist < 140) this.setVelocity(nx * this.def.speed, ny * this.def.speed);
+        else this.setVelocity(0, 0);
+        // Ranged wardens (have onShoot): telegraphed burst — backward while retreating,
+        // forward (toward the player) while advancing. Minions have no onShoot, so they stay melee.
+        if (this.onShoot && this.shootTimer <= 0 && (retreating || dist < 280)) {
+          this.shootTimer = this.def.shootCooldownMs ?? 1500;
+          const sx = retreating ? -dx : dx;
+          const sy = retreating ? -dy : dy;
+          this.setTintFill(0xffff00);
+          this.scene.time.delayedCall(200, () => {
+            if (!this.active) return;
+            this.restoreBaseTint();
+            if (this.onShoot) {
+              const base = Math.atan2(sy, sx);
+              for (const off of [-0.25, 0, 0.25]) {
+                this.onShoot(this.x, this.y, Math.cos(base + off), Math.sin(base + off));
               }
-            });
-          }
-        } else if (dist < 140) {
-          this.setVelocity(nx * this.def.speed, ny * this.def.speed);
-        } else {
-          this.setVelocity(0, 0);
+            }
+          });
         }
         break;
       }
@@ -143,7 +151,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           this.lungeUntil = time + 450;
           this.setTintFill(0xffff00);
           this.scene.time.delayedCall(200, () => {
-            if (this.active) this.clearTint();
+            if (this.active) this.restoreBaseTint();
             if (this.active) this.setVelocity(nx * this.def.speed * 4.5, ny * this.def.speed * 4.5);
             // After lunge lands, fire shockwave
             if (this.onShoot && this.active) {
@@ -162,7 +170,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           this.aiTimer = 3000;
           this.setTintFill(0xffff00);  // yellow flash
           this.scene.time.delayedCall(300, () => {
-            if (this.active) this.clearTint();
+            if (this.active) this.restoreBaseTint();
             if (this.active) this.setVelocity(nx * this.def.speed * 1.2, ny * this.def.speed * 1.2);
           });
         } else {

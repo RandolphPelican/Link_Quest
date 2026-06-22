@@ -16,7 +16,7 @@ export const ROOM_NAMES: Record<string, string> = {
   boss: "The Hallucinator's Lair",
 };
 
-interface SceneData { room: string; spawn: string; heroKey: string; hp?: number; keys?: number; hasBomb?: boolean; }
+interface SceneData { room: string; spawn: string; heroKey: string; hp?: number; keys?: number; bombCount?: number; }
 interface SignZone { zone: Phaser.GameObjects.Zone; signId: string; hint: Phaser.GameObjects.Text; }
 interface Door {
   rect: Phaser.Geom.Rectangle; target: string; spawn: string;
@@ -53,7 +53,8 @@ export class GameScene extends Phaser.Scene {
   private chests: Chest[] = [];
   private keyCount = 0;
   private potionDropped = false;
-  private hasBomb = false;
+  private bombCount = 0;
+  private slowedUntil = 0;
   private transitioning = false;
   private dialogOpen = false;
   private signCooldownUntil = 0;
@@ -84,7 +85,8 @@ export class GameScene extends Phaser.Scene {
     this.chests = [];
     this.keyCount = data.keys ?? 0;
     this.potionDropped = false;        // guaranteed first-minion potion, per room entry
-    this.hasBomb = data.hasBomb ?? false;  // carries through doors; lost on death (no data passed)
+    this.bombCount = data.bombCount ?? 0;   // carries through doors; lost on death (no data passed)
+    this.slowedUntil = 0;
     this.transitioning = false;
     this.finalSignSpawned = false;
     this.roomCleared = false;
@@ -146,9 +148,14 @@ export class GameScene extends Phaser.Scene {
     });
     this.physics.add.overlap(this.enemyShots, this.player, (a, b) => {
       // overlap order is (enemyShot, player); destroy the shot, never the player
-      const shot = (a === this.player ? b : a) as Phaser.GameObjects.GameObject;
+      const shot = (a === this.player ? b : a) as Phaser.Physics.Arcade.Sprite;
+      const isIce = shot.getData("ice") === true;
       shot.destroy();
       this.damagePlayer(ENEMY_DEFS.boss.damage - 1);
+      if (isIce) {                               // ice warden: chill the player
+        this.slowedUntil = this.time.now + 1500;
+        this.cameras.main.flash(150, 60, 130, 220);
+      }
     });
     this.physics.add.overlap(this.player, this.enemies, (_p, enemyObj) => {
       const enemy = enemyObj as Enemy;
@@ -173,12 +180,14 @@ export class GameScene extends Phaser.Scene {
       this.emitHp();
     });
     this.physics.add.overlap(this.player, this.bombs, (_p, bomb) => {
-      if (this.hasBomb) return;                  // never carry more than one
+      if (this.bombCount >= 2) return;           // hold at most two
       (bomb as Phaser.GameObjects.GameObject).destroy();
-      this.hasBomb = true;
-      this.game.events.emit("ui:bomb", true);
+      this.bombCount += 1;
+      this.game.events.emit("ui:bomb", this.bombCount);
     });
-    if (this.roomKey === "room1") this.spawnBombPickup(11, 2);  // mid-room reward (chamber 2)
+    const bombSpot: Record<string, [number, number]> = { room1: [11, 2], room3: [12, 15] };
+    const spot = bombSpot[this.roomKey];
+    if (spot) this.spawnBombPickup(spot[0], spot[1]);  // mid-room reward / boss-prep refill
 
     this.doorsLockedUntil = this.time.now + 600;
     this.roomCleared = this.enemies.countActive() === 0;
@@ -195,7 +204,7 @@ export class GameScene extends Phaser.Scene {
 
     this.emitHp();
     this.game.events.emit("ui:keys", this.keyCount);
-    this.game.events.emit("ui:bomb", this.hasBomb);
+    this.game.events.emit("ui:bomb", this.bombCount);
     this.game.events.emit("ui:room", ROOM_NAMES[this.roomKey] ?? this.roomKey);
     this.game.events.emit("ui:enemies", this.enemies.countActive());
     if (this.roomKey === "boss") this.game.events.emit("ui:bossname", BOSS_NAME);
@@ -249,6 +258,10 @@ export class GameScene extends Phaser.Scene {
     }
     if (kind === "warden_blob" || kind === "warden_bat" || kind === "warden_rat") {
       e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy);
+    } else if (kind === "warden_rat_fire") {
+      e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy, 180, "shot_flame", false);
+    } else if (kind === "warden_rat_ice") {
+      e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy, 95, "shot_ice", true);
     }
     return e;
   }
@@ -258,8 +271,18 @@ export class GameScene extends Phaser.Scene {
     const died = enemy.takeHit(dmg, fromX, fromY);
     if (died) {
       if (enemy.kind === "boss") this.onBossDefeated(enemy.x, enemy.y);
-      else if (enemy.kind.startsWith("warden")) this.spawnChest(enemy.x, enemy.y);
-      else if (this.roomKey === "room1" && !this.potionDropped) {
+      else if (enemy.kind.startsWith("warden")) {
+        // With multiple wardens in a room, the key drops only when the LAST one falls.
+        const anotherWardenAlive = this.enemies.getChildren().some((c) => {
+          const e = c as Enemy;
+          return e !== enemy && e.active && !e.dying && e.kind.startsWith("warden");
+        });
+        if (!anotherWardenAlive) this.spawnChest(enemy.x, enemy.y);
+      } else if (enemy.kind === "green_blob") {
+        // The blob is a guaranteed health source.
+        const p = this.potions.create(enemy.x, enemy.y, "potion") as Phaser.Physics.Arcade.Sprite;
+        p.setDepth(4);
+      } else if (this.roomKey === "room1" && !this.potionDropped) {
         // first minion killed in Room 1 always drops a health potion
         this.potionDropped = true;
         const p = this.potions.create(enemy.x, enemy.y, "potion") as Phaser.Physics.Arcade.Sprite;
@@ -317,7 +340,7 @@ export class GameScene extends Phaser.Scene {
   private transitionTo(d: Door) {
     if (this.transitioning) return;
     this.transitioning = true;
-    this.scene.restart({ room: d.target, spawn: d.spawn, heroKey: this.heroKey, hp: this.hp, keys: this.keyCount, hasBomb: this.hasBomb });
+    this.scene.restart({ room: d.target, spawn: d.spawn, heroKey: this.heroKey, hp: this.hp, keys: this.keyCount, bombCount: this.bombCount });
   }
 
   private onBossDefeated(x: number, y: number) {
@@ -336,10 +359,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   // -------- combat --------
-  private fireEnemyShot(x: number, y: number, dx: number, dy: number) {
-    const s = this.enemyShots.create(x, y, "shot_dark") as Phaser.Physics.Arcade.Sprite;
+  private fireEnemyShot(x: number, y: number, dx: number, dy: number, speed = 130, texKey = "shot_dark", ice = false) {
+    const s = this.enemyShots.create(x, y, texKey) as Phaser.Physics.Arcade.Sprite;
     s.setDepth(8);
-    s.setVelocity(dx * 130, dy * 130);
+    if (ice) s.setData("ice", true);
+    s.setVelocity(dx * speed, dy * speed);
     this.time.delayedCall(2500, () => { if (s.active) s.destroy(); });
   }
 
@@ -389,8 +413,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private detonateBomb() {
-    this.hasBomb = false;
-    this.game.events.emit("ui:bomb", false);
+    this.bombCount -= 1;
+    this.game.events.emit("ui:bomb", this.bombCount);
     const px = this.player.x, py = this.player.y, radius = 80;
     // expanding shockwave ring + white flash
     const ring = this.add.circle(px, py, radius, 0xffd24a, 0).setStrokeStyle(3, 0xffd24a, 0.9).setDepth(12).setScale(0.12);
@@ -481,7 +505,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.dialogOpen) return;
 
-    const speed = this.hero.speed * SPEED_PER_SP;
+    const speed = this.hero.speed * SPEED_PER_SP * (time < this.slowedUntil ? 0.5 : 1);
     const left = this.cursors.left.isDown || this.keys.A.isDown;
     const right = this.cursors.right.isDown || this.keys.D.isDown;
     const up = this.cursors.up.isDown || this.keys.W.isDown;
@@ -496,7 +520,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setAlpha(time < this.invulnUntil ? (Math.floor(time / 80) % 2 ? 0.4 : 1) : 1);
 
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || Phaser.Input.Keyboard.JustDown(this.keys.J)) this.attack();
-    if (Phaser.Input.Keyboard.JustDown(this.keys.Q) && this.hasBomb) this.detonateBomb();
+    if (Phaser.Input.Keyboard.JustDown(this.keys.Q) && this.bombCount > 0) this.detonateBomb();
 
     const ePressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
     let eHandled = false;

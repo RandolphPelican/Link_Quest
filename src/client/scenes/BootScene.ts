@@ -33,6 +33,20 @@ export class BootScene extends Phaser.Scene {
     dark.generateTexture("shot_dark", 8, 8);
     dark.destroy();
 
+    // fire-warden shot: hot orange core, red rim
+    const flame = this.add.graphics();
+    flame.fillStyle(0x802010, 1).fillCircle(4, 4, 4);
+    flame.fillStyle(0xff7028, 1).fillCircle(4, 4, 2.5);
+    flame.generateTexture("shot_flame", 8, 8);
+    flame.destroy();
+
+    // ice-warden shot: cold blue with a cyan core
+    const ice = this.add.graphics();
+    ice.fillStyle(0x2048a0, 1).fillCircle(4, 4, 4);
+    ice.fillStyle(0x90d8ff, 1).fillCircle(4, 4, 2.5);
+    ice.generateTexture("shot_ice", 8, 8);
+    ice.destroy();
+
     this.makeProps();
 
     this.scene.start("TitleScene");

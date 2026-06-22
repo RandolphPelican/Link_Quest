@@ -95,7 +95,12 @@ export class UIScene extends Phaser.Scene {
   private onBoss(name: string) { this.bossText.setText(name); }
   private onEnemies(n: number) { this.enemyText.setText(n > 0 ? `Enemies left: ${n}` : ""); }
   private onKeys(n: number) { this.keysText.setText(`Keys: ${n}`); this.keyIcon.setVisible(n > 0); }
-  private onBomb(has: boolean) { this.bombIcon.setVisible(has); this.bombText.setVisible(has); }
+  private onBomb(n: number) {
+    const has = n > 0;
+    this.bombText.setText(`BOMBS [Q]: ${n}`);
+    this.bombIcon.setVisible(has);
+    this.bombText.setVisible(has);
+  }
 
   private flashToast(msg: string, color = "#ffd24a") {
     this.toast.setText(msg).setColor(color).setVisible(true).setAlpha(1);
