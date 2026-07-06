@@ -13,6 +13,8 @@ export class UIScene extends Phaser.Scene {
   private keyIcon!: Phaser.GameObjects.Image;
   private bombIcon!: Phaser.GameObjects.Image;
   private bombText!: Phaser.GameObjects.Text;
+  private boltIcon!: Phaser.GameObjects.Image;
+  private boltText!: Phaser.GameObjects.Text;
   private toast!: Phaser.GameObjects.Text;
   private pauseGroup: Phaser.GameObjects.GameObject[] = [];
   private debugText!: Phaser.GameObjects.Text;
@@ -43,10 +45,12 @@ export class UIScene extends Phaser.Scene {
     this.keysText = this.add.text(34, 38, "Keys: 0", { fontFamily: "monospace", fontSize: "12px", color: "#ffe07a" });
     this.bombIcon = this.add.image(24, 60, "bomb").setDepth(5).setVisible(false);
     this.bombText = this.add.text(34, 54, "BOMB [Q]", { fontFamily: "monospace", fontSize: "12px", color: "#ffd24a" }).setVisible(false);
+    this.boltIcon = this.add.image(24, 76, "potion_storm").setDepth(5).setVisible(false);
+    this.boltText = this.add.text(34, 70, "BOLTS [Q]", { fontFamily: "monospace", fontSize: "12px", color: "#9fd0ff" }).setVisible(false);
     this.add.text(W / 2, this.scale.height - 14,
       "WASD/Arrows move  ·  SPACE attack  ·  Q bomb  ·  E interact  ·  P pause  ·  F3 debug",
       { fontFamily: "monospace", fontSize: "11px", color: "#888888" }).setOrigin(0.5, 1);
-    this.debugText = this.add.text(16, 62, "", {
+    this.debugText = this.add.text(16, 88, "", {
       fontFamily: "monospace", fontSize: "11px", color: "#7fff7f", backgroundColor: "#000000aa", padding: { x: 4, y: 2 },
     }).setVisible(false);
 
@@ -57,6 +61,7 @@ export class UIScene extends Phaser.Scene {
     g.on("ui:enemies", this.onEnemies, this);
     g.on("ui:keys", this.onKeys, this);
     g.on("ui:bomb", this.onBomb, this);
+    g.on("ui:bolt", this.onBolt, this);
     g.on("ui:locked", this.onLocked, this);
     g.on("ui:nokey", this.onNoKey, this);
     g.on("ui:doorprompt", this.onDoorPrompt, this);
@@ -76,6 +81,7 @@ export class UIScene extends Phaser.Scene {
       g.off("ui:hp", this.onHp, this); g.off("ui:room", this.onRoom, this);
       g.off("ui:bossname", this.onBoss, this); g.off("ui:enemies", this.onEnemies, this);
       g.off("ui:keys", this.onKeys, this); g.off("ui:bomb", this.onBomb, this);
+      g.off("ui:bolt", this.onBolt, this);
       g.off("ui:locked", this.onLocked, this); g.off("ui:nokey", this.onNoKey, this);
       g.off("ui:doorprompt", this.onDoorPrompt, this); g.off("ui:unlocked", this.onUnlocked, this);
       g.off("ui:cleared", this.onCleared, this);
@@ -100,6 +106,13 @@ export class UIScene extends Phaser.Scene {
     this.bombText.setText(`BOMBS [Q]: ${n}`);
     this.bombIcon.setVisible(has);
     this.bombText.setVisible(has);
+  }
+
+  private onBolt(n: number) {
+    const has = n > 0;
+    this.boltText.setText(`BOLTS [Q]: ${n}`);
+    this.boltIcon.setVisible(has);
+    this.boltText.setVisible(has);
   }
 
   private flashToast(msg: string, color = "#ffd24a") {

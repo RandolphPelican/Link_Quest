@@ -16,7 +16,7 @@ export const ROOM_NAMES: Record<string, string> = {
   boss: "The Hallucinator's Lair",
 };
 
-interface SceneData { room: string; spawn: string; heroKey: string; hp?: number; keys?: number; bombCount?: number; }
+interface SceneData { room: string; spawn: string; heroKey: string; hp?: number; keys?: number; bombCount?: number; boltCharges?: number; }
 interface SignZone { zone: Phaser.GameObjects.Zone; signId: string; hint: Phaser.GameObjects.Text; }
 interface Door {
   rect: Phaser.Geom.Rectangle; target: string; spawn: string;
@@ -54,6 +54,8 @@ export class GameScene extends Phaser.Scene {
   private keyCount = 0;
   private potionDropped = false;
   private bombCount = 0;
+  private boltCharges = 0;
+  private stormPotions!: Phaser.Physics.Arcade.Group;
   private slowedUntil = 0;
   private transitioning = false;
   private dialogOpen = false;
@@ -86,6 +88,7 @@ export class GameScene extends Phaser.Scene {
     this.keyCount = data.keys ?? 0;
     this.potionDropped = false;        // guaranteed first-minion potion, per room entry
     this.bombCount = data.bombCount ?? 0;   // carries through doors; lost on death (no data passed)
+    this.boltCharges = data.boltCharges ?? 0; // same rules as bombs
     this.slowedUntil = 0;
     this.transitioning = false;
     this.finalSignSpawned = false;
@@ -105,6 +108,7 @@ export class GameScene extends Phaser.Scene {
     this.hearts = this.physics.add.group();
     this.potions = this.physics.add.group();
     this.bombs = this.physics.add.group();
+    this.stormPotions = this.physics.add.group();
 
     const objLayer = map.getObjectLayer("Objects");
     let spawnX = 64, spawnY = 64;
@@ -143,7 +147,15 @@ export class GameScene extends Phaser.Scene {
       const s = (a instanceof Enemy ? b : a) as Phaser.Physics.Arcade.Sprite;
       if (!(enemy instanceof Enemy) || enemy.dying) return;
       const dmg = s.getData("damage") as number;
-      s.destroy();
+      if (s.getData("pierce")) {
+        // lightning skewers through — but each enemy only pays the toll once per bolt
+        const hitSet = (s.getData("hitSet") as Set<Enemy>) ?? new Set<Enemy>();
+        if (hitSet.has(enemy)) return;
+        hitSet.add(enemy);
+        s.setData("hitSet", hitSet);
+      } else {
+        s.destroy();
+      }
       this.damageEnemy(enemy, dmg, s.x, s.y);
     });
     this.physics.add.overlap(this.enemyShots, this.player, (a, b) => {
@@ -189,6 +201,19 @@ export class GameScene extends Phaser.Scene {
     const spot = bombSpot[this.roomKey];
     if (spot) this.spawnBombPickup(spot[0], spot[1]);  // mid-room reward / boss-prep refill
 
+    this.physics.add.overlap(this.player, this.stormPotions, (_p, potion) => {
+      (potion as Phaser.GameObjects.GameObject).destroy();
+      this.boltCharges = 3;
+      this.game.events.emit("ui:bolt", this.boltCharges);
+      this.cameras.main.flash(180, 140, 120, 255);
+    });
+    // hidden floor switch → reveals a storm potion (temporary ranged Q attack)
+    const switchSpot: Record<string, { sw: [number, number]; potion: [number, number] }> = {
+      room2: { sw: [5, 15], potion: [5, 13] },
+    };
+    const swCfg = switchSpot[this.roomKey];
+    if (swCfg) this.spawnFloorSwitch(swCfg.sw, swCfg.potion);
+
     this.doorsLockedUntil = this.time.now + 600;
     this.roomCleared = this.enemies.countActive() === 0;
     this.markLockedDoors();
@@ -205,6 +230,7 @@ export class GameScene extends Phaser.Scene {
     this.emitHp();
     this.game.events.emit("ui:keys", this.keyCount);
     this.game.events.emit("ui:bomb", this.bombCount);
+    this.game.events.emit("ui:bolt", this.boltCharges);
     this.game.events.emit("ui:room", ROOM_NAMES[this.roomKey] ?? this.roomKey);
     this.game.events.emit("ui:enemies", this.enemies.countActive());
     if (this.roomKey === "boss") this.game.events.emit("ui:bossname", BOSS_NAME);
@@ -340,7 +366,7 @@ export class GameScene extends Phaser.Scene {
   private transitionTo(d: Door) {
     if (this.transitioning) return;
     this.transitioning = true;
-    this.scene.restart({ room: d.target, spawn: d.spawn, heroKey: this.heroKey, hp: this.hp, keys: this.keyCount, bombCount: this.bombCount });
+    this.scene.restart({ room: d.target, spawn: d.spawn, heroKey: this.heroKey, hp: this.hp, keys: this.keyCount, bombCount: this.bombCount, boltCharges: this.boltCharges });
   }
 
   private onBossDefeated(x: number, y: number) {
@@ -410,6 +436,46 @@ export class GameScene extends Phaser.Scene {
     b.setDepth(6);
     (b.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
     this.tweens.add({ targets: b, y: b.y - 3, duration: 650, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+  }
+
+  // -------- floor switch & storm bolts --------
+  private spawnFloorSwitch(swTile: [number, number], potionTile: [number, number]) {
+    const sx = swTile[0] * 16 + 8, sy = swTile[1] * 16 + 8;
+    const plate = this.add.image(sx, sy, "floor_switch").setDepth(2);
+    this.tweens.add({ targets: plate, alpha: { from: 1, to: 0.75 }, duration: 900, yoyo: true, repeat: -1 }); // subtle "look at me"
+    const zone = this.add.zone(sx, sy, 14, 14);
+    this.physics.add.existing(zone, false);
+    (zone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+    let pressed = false;
+    this.physics.add.overlap(this.player, zone, () => {
+      if (pressed) return;
+      pressed = true;
+      this.tweens.killTweensOf(plate);
+      plate.setTexture("floor_switch_down").setAlpha(1);
+      this.cameras.main.shake(100, 0.003);
+      // the potion materializes with a rising sparkle
+      const px = potionTile[0] * 16 + 8, py = potionTile[1] * 16 + 8;
+      const p = this.stormPotions.create(px, py, "potion_storm") as Phaser.Physics.Arcade.Sprite;
+      p.setDepth(6).setScale(0.2).setAlpha(0);
+      (p.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+      this.tweens.add({ targets: p, scale: 1, alpha: 1, duration: 320, ease: "Back.out" });
+      this.tweens.add({ targets: p, y: p.y - 3, duration: 650, yoyo: true, repeat: -1, ease: "Sine.inOut", delay: 320 });
+    });
+  }
+
+  private fireBolt() {
+    this.boltCharges -= 1;
+    this.game.events.emit("ui:bolt", this.boltCharges);
+    const fx = this.facing.x, fy = this.facing.y;
+    const s = this.playerShots.create(this.player.x, this.player.y, "shot_bolt") as Phaser.Physics.Arcade.Sprite;
+    s.setDepth(9);
+    s.setData("damage", 10);
+    s.setData("pierce", true);
+    s.setRotation(Math.atan2(fy, fx));
+    s.setVelocity(fx * 260, fy * 260);
+    // crackle: quick alpha flicker while it flies
+    this.tweens.add({ targets: s, alpha: { from: 1, to: 0.6 }, duration: 60, yoyo: true, repeat: -1 });
+    this.time.delayedCall(1200, () => { if (s.active) s.destroy(); });
   }
 
   private detonateBomb() {
@@ -520,7 +586,10 @@ export class GameScene extends Phaser.Scene {
     this.player.setAlpha(time < this.invulnUntil ? (Math.floor(time / 80) % 2 ? 0.4 : 1) : 1);
 
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || Phaser.Input.Keyboard.JustDown(this.keys.J)) this.attack();
-    if (Phaser.Input.Keyboard.JustDown(this.keys.Q) && this.bombCount > 0) this.detonateBomb();
+    if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
+      if (this.boltCharges > 0) this.fireBolt();          // perishable goods fire first
+      else if (this.bombCount > 0) this.detonateBomb();
+    }
 
     const ePressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
     let eHandled = false;

@@ -106,6 +106,41 @@ export class BootScene extends Phaser.Scene {
     p.generateTexture("potion", 16, 16);
     p.destroy();
 
+    // floor switch — raised stone pressure plate
+    const sw = this.add.graphics();
+    sw.fillStyle(0x55565e, 1).fillRect(2, 2, 12, 12);
+    sw.fillStyle(0x74767f, 1).fillRect(4, 4, 8, 8);
+    sw.fillStyle(0x8fd8ff, 1).fillRect(7, 7, 2, 2);        // faint arcane glint
+    sw.lineStyle(1, 0x232428, 1).strokeRect(2, 2, 12, 12);
+    sw.generateTexture("floor_switch", 16, 16);
+    sw.destroy();
+
+    // floor switch, pressed — sunken and dim
+    const swd = this.add.graphics();
+    swd.fillStyle(0x44454c, 1).fillRect(2, 2, 12, 12);
+    swd.fillStyle(0x5a5c66, 1).fillRect(5, 5, 6, 6);
+    swd.lineStyle(1, 0x232428, 1).strokeRect(2, 2, 12, 12);
+    swd.generateTexture("floor_switch_down", 16, 16);
+    swd.destroy();
+
+    // storm potion — violet flask with a lightning glint
+    const sp = this.add.graphics();
+    sp.fillStyle(0x9a9a9a, 1).fillRect(7, 1, 2, 2);         // cork
+    sp.fillStyle(0xbfe8ff, 0.9).fillRect(6, 3, 4, 3);       // glass neck
+    sp.fillStyle(0x6040e0, 1).fillRect(4, 6, 8, 8);         // violet liquid
+    sp.fillStyle(0x9fd0ff, 1).fillRect(5, 7, 2, 3);         // highlight
+    sp.fillStyle(0xffffff, 1).fillRect(8, 8, 1, 4);         // crackle
+    sp.lineStyle(1, 0x181030, 1).strokeRect(4, 6, 8, 8);
+    sp.generateTexture("potion_storm", 16, 16);
+    sp.destroy();
+
+    // lightning bolt projectile — white-hot core, pale blue trail
+    const lb = this.add.graphics();
+    lb.fillStyle(0x9fd0ff, 1).fillRect(0, 2, 12, 4);
+    lb.fillStyle(0xffffff, 1).fillRect(2, 3, 8, 2);
+    lb.generateTexture("shot_bolt", 12, 8);
+    lb.destroy();
+
     // attack bomb — dark sphere with a lit fuse
     const b = this.add.graphics();
     b.fillStyle(0x1e1e28, 1).fillCircle(8, 10, 6);          // body
