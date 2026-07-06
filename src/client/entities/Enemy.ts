@@ -6,6 +6,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   def: EnemyDef;
   hp: number;
   dying = false;                       // <-- freeze fix: set the moment it dies
+  netUntil = 0;                        // while netted: no move, no shoot, extra hurt
   private hpBar: Phaser.GameObjects.Graphics;
   private aiTimer = 0;
   private stunUntil = 0;
@@ -18,7 +19,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   onHitPlayer?: () => void;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind) {
-    super(scene, x, y, "tiles", ENEMY_DEFS[kind].frame);
+    super(scene, x, y, ENEMY_DEFS[kind].texture ?? "tiles",
+      ENEMY_DEFS[kind].texture ? undefined : ENEMY_DEFS[kind].frame);
     this.kind = kind;
     this.def = ENEMY_DEFS[kind];
     this.hp = this.def.hp;
@@ -29,6 +31,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(12 * this.def.scale, 12 * this.def.scale);
     if (this.def.pattern === "bat") body.setBounce(1, 1);
+    if (this.def.pattern === "turret") body.setImmovable(true);
     this.hpBar = scene.add.graphics();
     this.hpBar.setDepth(50);
     this.drawHpBar();
@@ -51,7 +54,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.hp -= damage;
     this.stunUntil = this.scene.time.now + 220;
     const angle = Math.atan2(this.y - fromY, this.x - fromX);
-    const kb = this.def.pattern === "boss" ? 40 : 150;
+    const netted = this.scene.time.now < this.netUntil;
+    const kb = this.def.pattern === "turret" || netted ? 0 : this.def.pattern === "boss" ? 40 : 150;
     this.setVelocity(Math.cos(angle) * kb, Math.sin(angle) * kb);
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => { if (this.active) this.restoreBaseTint(); });
@@ -80,6 +84,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   updateAI(time: number, delta: number, player: Phaser.Physics.Arcade.Sprite) {
     if (this.dying || !this.active || !this.body) return;
     this.drawHpBar();
+    if (time < this.netUntil) { this.setVelocity(0, 0); return; }
     if (time < this.stunUntil) return;
 
     const dx = player.x - this.x;
@@ -161,6 +166,25 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           });
         } else if (dist < 200) this.setVelocity(nx * this.def.speed, ny * this.def.speed);
         else this.setVelocity(0, 0);
+        break;
+      }
+      case "turret": {
+        this.setVelocity(0, 0);
+        this.shootTimer -= delta;
+        if (this.shootTimer <= 0 && this.onShoot && dist < 340) {
+          this.shootTimer = this.def.shootCooldownMs ?? 2200;
+          this.setTintFill(0xffff00);
+          this.scene.time.delayedCall(250, () => {
+            if (!this.active) return;
+            this.restoreBaseTint();
+            if (this.onShoot) {
+              const base = Math.atan2(player.y - this.y, player.x - this.x);
+              for (const off of [-0.3, 0, 0.3]) {
+                this.onShoot(this.x, this.y, Math.cos(base + off), Math.sin(base + off));
+              }
+            }
+          });
+        }
         break;
       }
       case "boss": {
