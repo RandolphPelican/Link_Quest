@@ -30,6 +30,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: "game",
   backgroundColor: "#0a0a0a",
   pixelArt: true,
+  roundPixels: true,   // camera shake must land on whole pixels — kills tile-seam lines
   scene: [BootScene, TitleScene, GameScene, UIScene],
   physics: { default: "arcade", arcade: { gravity: { x: 0, y: 0 }, debug: false } },
 };

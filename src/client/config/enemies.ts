@@ -3,7 +3,8 @@
 export type EnemyKind =
   | "red_bat" | "grey_rat" | "green_blob" | "boss"
   | "warden_blob" | "warden_bat" | "warden_rat"
-  | "warden_rat_fire" | "warden_rat_ice";
+  | "warden_rat_fire" | "warden_rat_ice"
+  | "dragon_fire" | "dragon_ice";
 
 export interface EnemyDef {
   frame: number;
@@ -11,10 +12,11 @@ export interface EnemyDef {
   damage: number;
   speed: number;
   scale: number;
-  pattern: "bat" | "rat" | "blob" | "boss";
+  pattern: "bat" | "rat" | "blob" | "boss" | "turret";
   hpBarWidth: number;
   tint?: number;            // base color multiply (kept through hit/telegraph flashes)
   shootCooldownMs?: number; // ranged wardens: time between telegraphed bursts
+  texture?: string;         // procedural texture key (overrides the spritesheet frame)
 }
 
 export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
@@ -28,6 +30,11 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
   // Room 3 dual wardens — fire (fast, aggressive) and ice (slower shots that chill you).
   warden_rat_fire: { frame: 124, hp: 30, damage: 7, speed: 54, scale: 1.6, pattern: "rat", hpBarWidth: 26, tint: 0xff6040, shootCooldownMs: 1000 },
   warden_rat_ice:  { frame: 124, hp: 34, damage: 6, speed: 42, scale: 1.6, pattern: "rat", hpBarWidth: 26, tint: 0x78b4ff, shootCooldownMs: 1700 },
+  // Phase-2 boss: the Twin Maw. Two immobile heads walled into the den — fire lobs fast
+  // volleys, ice lobs slow chilling ones. Reachable only by bombs and storm bolts.
+  dragon_fire: { frame: 111, texture: "dragon_fire", hp: 45, damage: 7, speed: 0, scale: 2.2, pattern: "turret", hpBarWidth: 32, shootCooldownMs: 1600 },
+  dragon_ice:  { frame: 111, texture: "dragon_ice",  hp: 45, damage: 6, speed: 0, scale: 2.2, pattern: "turret", hpBarWidth: 32, shootCooldownMs: 2500 },
 };
 
 export const BOSS_NAME = "The Hallucinator";
+export const DRAGON_NAME = "The Twin Maw";

@@ -62,6 +62,7 @@ export class UIScene extends Phaser.Scene {
     g.on("ui:keys", this.onKeys, this);
     g.on("ui:bomb", this.onBomb, this);
     g.on("ui:bolt", this.onBolt, this);
+    g.on("ui:toast", this.onToast, this);
     g.on("ui:locked", this.onLocked, this);
     g.on("ui:nokey", this.onNoKey, this);
     g.on("ui:doorprompt", this.onDoorPrompt, this);
@@ -82,6 +83,7 @@ export class UIScene extends Phaser.Scene {
       g.off("ui:bossname", this.onBoss, this); g.off("ui:enemies", this.onEnemies, this);
       g.off("ui:keys", this.onKeys, this); g.off("ui:bomb", this.onBomb, this);
       g.off("ui:bolt", this.onBolt, this);
+      g.off("ui:toast", this.onToast, this);
       g.off("ui:locked", this.onLocked, this); g.off("ui:nokey", this.onNoKey, this);
       g.off("ui:doorprompt", this.onDoorPrompt, this); g.off("ui:unlocked", this.onUnlocked, this);
       g.off("ui:cleared", this.onCleared, this);
@@ -114,6 +116,8 @@ export class UIScene extends Phaser.Scene {
     this.boltIcon.setVisible(has);
     this.boltText.setVisible(has);
   }
+
+  private onToast(msg: string) { this.flashToast(msg, "#9fd0ff"); }
 
   private flashToast(msg: string, color = "#ffd24a") {
     this.toast.setText(msg).setColor(color).setVisible(true).setAlpha(1);

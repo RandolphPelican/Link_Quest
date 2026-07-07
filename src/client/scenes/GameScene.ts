@@ -202,11 +202,7 @@ export class GameScene extends Phaser.Scene {
       if (!enemy.active || enemy.dying) return;
       if (this.damagePlayer(enemy.def.damage)) {
         if (enemy.def.pattern === "rat") enemy.startRetreat(this.time.now + 1100);
-        // HIT-STOP: freeze physics for 80ms on hit
-        if (enemy.def.pattern === "boss") {
-          this.physics.world.timeScale = 0.2;
-          this.time.delayedCall(80, () => { this.physics.world.timeScale = 1; });
-        }
+        // (hit-stop removed — the physics slowdown read as player paralysis, not impact)
       }
     });
     this.physics.add.overlap(this.player, this.hearts, (_p, h) => {
@@ -251,6 +247,7 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.keys = this.input.keyboard!.addKeys("W,A,S,D,E,J,Q,SPACE,R,P,ESC,F3") as Record<string, Phaser.Input.Keyboard.Key>;
 
+    this.cameras.main.setRoundPixels(true);
     this.cameras.main.setZoom(2.5);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
