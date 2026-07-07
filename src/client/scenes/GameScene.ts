@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { HEROES, HeroDef, SPEED_PER_SP } from "../config/heroes";
-import { ENEMY_DEFS, EnemyKind, BOSS_NAME } from "../config/enemies";
+import { ENEMY_DEFS, EnemyKind, BOSS_NAME, DRAGON_NAME } from "../config/enemies";
 import { SIGNS } from "../config/signs";
 import { Enemy } from "../entities/Enemy";
 import { Chest } from "../entities/Chest";
@@ -56,7 +56,15 @@ export class GameScene extends Phaser.Scene {
   private bombCount = 0;
   private boltCharges = 0;
   private stormPotions!: Phaser.Physics.Arcade.Group;
+  private playerBolts!: Phaser.Physics.Arcade.Group;
+  private dragonShots!: Phaser.Physics.Arcade.Group;
   private slowedUntil = 0;
+  private phase2 = false;
+  private minionWaveTimer?: Phaser.Time.TimerEvent;
+  private netPlates: { img: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text; zone: Phaser.GameObjects.Zone; idx: number }[] = [];
+  private netSeqIndex = 0;
+  private netCooldownUntil = 0;
+  private plateLockUntil = 0;
   private transitioning = false;
   private dialogOpen = false;
   private signCooldownUntil = 0;
@@ -94,6 +102,11 @@ export class GameScene extends Phaser.Scene {
     this.finalSignSpawned = false;
     this.roomCleared = false;
     this.lastEnemyCount = -1;
+    this.phase2 = false;
+    this.netPlates = [];
+    this.netSeqIndex = 0;
+    this.netCooldownUntil = 0;
+    this.plateLockUntil = 0;
   }
 
   create() {
@@ -109,6 +122,8 @@ export class GameScene extends Phaser.Scene {
     this.potions = this.physics.add.group();
     this.bombs = this.physics.add.group();
     this.stormPotions = this.physics.add.group();
+    this.playerBolts = this.physics.add.group();     // arcs over walls — no layer collider
+    this.dragonShots = this.physics.add.group();     // lobbed over the den wall — same deal
 
     const objLayer = map.getObjectLayer("Objects");
     let spawnX = 64, spawnY = 64;
@@ -141,7 +156,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.playerShots, this.layer, (shot) => shot.destroy());
     this.physics.add.collider(this.enemyShots, this.layer, (shot) => shot.destroy());
 
-    this.physics.add.overlap(this.playerShots, this.enemies, (a, b) => {
+    const shotHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (a, b) => {
       // order-independent: whichever overlapping object is the Enemy takes the hit
       const enemy = (a instanceof Enemy ? a : b) as Enemy;
       const s = (a instanceof Enemy ? b : a) as Phaser.Physics.Arcade.Sprite;
@@ -157,7 +172,9 @@ export class GameScene extends Phaser.Scene {
         s.destroy();
       }
       this.damageEnemy(enemy, dmg, s.x, s.y);
-    });
+    };
+    this.physics.add.overlap(this.playerShots, this.enemies, shotHit);
+    this.physics.add.overlap(this.playerBolts, this.enemies, shotHit);
     this.physics.add.overlap(this.enemyShots, this.player, (a, b) => {
       // overlap order is (enemyShot, player); destroy the shot, never the player
       const shot = (a === this.player ? b : a) as Phaser.Physics.Arcade.Sprite;
@@ -165,6 +182,17 @@ export class GameScene extends Phaser.Scene {
       shot.destroy();
       this.damagePlayer(ENEMY_DEFS.boss.damage - 1);
       if (isIce) {                               // ice warden: chill the player
+        this.slowedUntil = this.time.now + 1500;
+        this.cameras.main.flash(150, 60, 130, 220);
+      }
+    });
+    this.physics.add.overlap(this.dragonShots, this.player, (a, b) => {
+      const shot = (a === this.player ? b : a) as Phaser.Physics.Arcade.Sprite;
+      const isIce = shot.getData("ice") === true;
+      const dmg = shot.getData("damage") as number;
+      shot.destroy();
+      this.damagePlayer(dmg);
+      if (isIce) {
         this.slowedUntil = this.time.now + 1500;
         this.cameras.main.flash(150, 60, 130, 220);
       }
@@ -213,6 +241,7 @@ export class GameScene extends Phaser.Scene {
     };
     const swCfg = switchSpot[this.roomKey];
     if (swCfg) this.spawnFloorSwitch(swCfg.sw, swCfg.potion);
+    if (this.roomKey === "boss") this.spawnNetPlates();
 
     this.doorsLockedUntil = this.time.now + 600;
     this.roomCleared = this.enemies.countActive() === 0;
@@ -288,15 +317,45 @@ export class GameScene extends Phaser.Scene {
       e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy, 180, "shot_flame", false);
     } else if (kind === "warden_rat_ice") {
       e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy, 95, "shot_ice", true);
+    } else if (kind === "dragon_fire") {
+      e.onShoot = (sx, sy, dx, dy) => this.fireDragonShot(sx, sy, dx, dy, 175, "shot_flame", false, ENEMY_DEFS.dragon_fire.damage);
+    } else if (kind === "dragon_ice") {
+      e.onShoot = (sx, sy, dx, dy) => this.fireDragonShot(sx, sy, dx, dy, 90, "shot_ice", true, ENEMY_DEFS.dragon_ice.damage);
     }
     return e;
   }
 
+  private fireDragonShot(x: number, y: number, dx: number, dy: number, speed: number, texKey: string, ice: boolean, damage: number) {
+    const s = this.dragonShots.create(x, y, texKey) as Phaser.Physics.Arcade.Sprite;
+    s.setDepth(8);
+    s.setData("ice", ice);
+    s.setData("damage", damage);
+    s.setVelocity(dx * speed, dy * speed);
+    this.time.delayedCall(3200, () => { if (s.active) s.destroy(); });
+  }
+
   private damageEnemy(enemy: Enemy, dmg: number, fromX: number, fromY: number) {
     if (!enemy.active || enemy.dying) return;
+    // a netted boss takes half again as much — the trap is the opening
+    if (this.time.now < enemy.netUntil) dmg = Math.ceil(dmg * 1.5);
     const died = enemy.takeHit(dmg, fromX, fromY);
     if (died) {
       if (enemy.kind === "boss") this.onBossDefeated(enemy.x, enemy.y);
+      else if (enemy.kind === "dragon_fire" || enemy.kind === "dragon_ice") this.onDragonHeadDefeated(enemy.x, enemy.y);
+      else if (this.phase2) {
+        // Twin Maw minions are the supply line: hearts, bombs, or storm bolts
+        const r = Math.random();
+        if (r < 0.4) {
+          const h = this.hearts.create(enemy.x, enemy.y, "tiles", HEART_FRAME) as Phaser.Physics.Arcade.Sprite;
+          h.setDepth(4);
+        } else if (r < 0.7) {
+          const b = this.bombs.create(enemy.x, enemy.y, "bomb") as Phaser.Physics.Arcade.Sprite;
+          b.setDepth(6);
+        } else {
+          const p = this.stormPotions.create(enemy.x, enemy.y, "potion_storm") as Phaser.Physics.Arcade.Sprite;
+          p.setDepth(6);
+        }
+      }
       else if (enemy.kind.startsWith("warden")) {
         // With multiple wardens in a room, the key drops only when the LAST one falls.
         const anotherWardenAlive = this.enemies.getChildren().some((c) => {
@@ -370,17 +429,133 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onBossDefeated(x: number, y: number) {
+    if (this.phase2) return;
+    this.phase2 = true;
+    // clear the field for act two
+    this.enemies.getChildren().forEach((c) => { const e = c as Enemy; if (e.active && !e.dying && e.kind !== "boss") e.takeHit(999, x, y); });
+    this.enemyShots.clear(true, true);
+    this.cameras.main.flash(350, 255, 255, 255);
+    this.cameras.main.shake(400, 0.008);
+    this.game.events.emit("ui:toast", "The veil tears... something older wakes.");
+    this.game.events.emit("ui:bossname", DRAGON_NAME);
+    // rune plates go dormant — the Maw doesn't move, no point netting it
+    for (const pl of this.netPlates) { pl.img.setAlpha(0.25); pl.label.setAlpha(0.25); }
+    // the Twin Maw rises behind the den wall
+    const heads: [number, number, EnemyKind][] = [[9, 2, "dragon_fire"], [15, 2, "dragon_ice"]];
+    for (const [tx, ty, kind] of heads) {
+      const e = this.spawnEnemy(tx * 16 + 8, ty * 16 + 8, kind);
+      e.setAlpha(0);
+      this.tweens.add({ targets: e, alpha: 1, duration: 900, ease: "Sine.out" });
+    }
+    // minion supply line: waves trickle in from the arena flanks
+    this.minionWaveTimer?.remove();
+    this.minionWaveTimer = this.time.addEvent({ delay: 4500, startAt: 2500, loop: true, callback: () => {
+      if (!this.phase2 || this.dead) return;
+      const minions = this.enemies.getChildren().filter((c) => {
+        const e = c as Enemy;
+        return e.active && !e.dying && !e.kind.startsWith("dragon");
+      }).length;
+      if (minions >= 4) return;
+      const spots: [number, number][] = [[3, 5], [21, 5]];
+      for (const [tx, ty] of spots) {
+        const kind: EnemyKind = Math.random() < 0.5 ? "red_bat" : "grey_rat";
+        const e = this.spawnEnemy(tx * 16 + 8, ty * 16 + 8, kind);
+        e.setAlpha(0);
+        this.tweens.add({ targets: e, alpha: 1, duration: 400 });
+      }
+    }});
+  }
+
+  private onDragonHeadDefeated(x: number, y: number) {
+    const otherHeadAlive = this.enemies.getChildren().some((c) => {
+      const e = c as Enemy;
+      return e.active && !e.dying && e.kind.startsWith("dragon");
+    });
+    if (otherHeadAlive) { this.game.events.emit("ui:toast", "One maw silenced..."); return; }
     if (this.finalSignSpawned) return;
     this.finalSignSpawned = true;
+    this.minionWaveTimer?.remove();
     this.game.events.emit("ui:bossname", "");
     this.enemies.getChildren().forEach((c) => { const e = c as Enemy; if (e.active && !e.dying) e.takeHit(999, x, y); });
     this.enemyShots.clear(true, true);
+    this.dragonShots.clear(true, true);
     this.cameras.main.flash(400, 255, 255, 255);
     this.time.delayedCall(500, () => {
       const tx = Phaser.Math.Clamp(Math.round(x / 16), 3, 21);
-      const ty = Phaser.Math.Clamp(Math.round(y / 16), 3, 14);
+      const ty = Phaser.Math.Clamp(Math.round(y / 16), 5, 14);
       this.addSign(tx * 16 + 8, ty * 16 + 8, "sign_final");
       this.tweens.add({ targets: this.signZones[this.signZones.length - 1].hint, alpha: { from: 0, to: 1 }, duration: 300 });
+    });
+  }
+
+  // -------- net plates: step 1 → 2 → 3 to drop the net on the Hallucinator --------
+  private spawnNetPlates() {
+    const spots: [number, number][] = [[2, 9], [12, 12], [22, 9]];
+    spots.forEach(([tx, ty], idx) => {
+      const px = tx * 16 + 8, py = ty * 16 + 8;
+      const img = this.add.image(px, py, "floor_switch").setDepth(2);
+      this.tweens.add({ targets: img, alpha: { from: 1, to: 0.75 }, duration: 900, yoyo: true, repeat: -1 });
+      const label = this.add.text(px, py, String(idx + 1), {
+        fontFamily: "monospace", fontSize: "8px", color: "#8fd8ff",
+      }).setOrigin(0.5).setDepth(3);
+      const zone = this.add.zone(px, py, 14, 14);
+      this.physics.add.existing(zone, false);
+      (zone.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+      this.netPlates.push({ img, label, zone, idx });
+      this.physics.add.overlap(this.player, zone, () => this.pressNetPlate(idx));
+    });
+  }
+
+  private pressNetPlate(idx: number) {
+    const now = this.time.now;
+    if (this.phase2 || now < this.netCooldownUntil || now < this.plateLockUntil) return;
+    if (idx < this.netSeqIndex) return;                 // already lit — standing on it is fine
+    const plate = this.netPlates[idx];
+    if (idx === this.netSeqIndex) {
+      this.netSeqIndex += 1;
+      plate.img.setTexture("floor_switch_down").setAlpha(1).setTint(0x60ff90);
+      this.tweens.killTweensOf(plate.img);
+      this.cameras.main.shake(70, 0.002);
+      if (this.netSeqIndex === this.netPlates.length) this.deployNet();
+    } else {
+      // wrong order — the runes fizzle and the sequence resets
+      this.plateLockUntil = now + 800;
+      this.netSeqIndex = 0;
+      this.game.events.emit("ui:toast", "The runes fizzle. Start over: 1 → 2 → 3.");
+      this.cameras.main.flash(140, 200, 40, 40);
+      this.resetNetPlates();
+    }
+  }
+
+  private resetNetPlates() {
+    for (const pl of this.netPlates) {
+      pl.img.setTexture("floor_switch").clearTint().setAlpha(1);
+      this.tweens.killTweensOf(pl.img);
+      this.tweens.add({ targets: pl.img, alpha: { from: 1, to: 0.75 }, duration: 900, yoyo: true, repeat: -1 });
+    }
+  }
+
+  private deployNet() {
+    const boss = this.enemies.getChildren().find((c) => {
+      const e = c as Enemy;
+      return e.active && !e.dying && e.kind === "boss";
+    }) as Enemy | undefined;
+    this.netSeqIndex = 0;
+    if (!boss) { this.resetNetPlates(); return; }
+    const NET_MS = 4000, REARM_MS = 6000;
+    boss.netUntil = this.time.now + NET_MS;
+    this.netCooldownUntil = this.time.now + NET_MS + REARM_MS;
+    this.game.events.emit("ui:toast", "THE NET FALLS — STRIKE NOW!");
+    this.cameras.main.flash(200, 255, 230, 120);
+    const net = this.add.image(boss.x, boss.y, "net").setDepth(30).setScale(0.3).setAlpha(0);
+    this.tweens.add({ targets: net, scale: 1.8, alpha: 0.95, duration: 220, ease: "Back.out" });
+    const follow = this.time.addEvent({ delay: 30, loop: true, callback: () => {
+      if (boss.active && !boss.dying) net.setPosition(boss.x, boss.y);
+    }});
+    this.time.delayedCall(NET_MS, () => {
+      follow.remove();
+      this.tweens.add({ targets: net, alpha: 0, duration: 400, onComplete: () => net.destroy() });
+      this.time.delayedCall(REARM_MS, () => { if (!this.phase2) this.resetNetPlates(); });
     });
   }
 
@@ -467,7 +642,7 @@ export class GameScene extends Phaser.Scene {
     this.boltCharges -= 1;
     this.game.events.emit("ui:bolt", this.boltCharges);
     const fx = this.facing.x, fy = this.facing.y;
-    const s = this.playerShots.create(this.player.x, this.player.y, "shot_bolt") as Phaser.Physics.Arcade.Sprite;
+    const s = this.playerBolts.create(this.player.x, this.player.y, "shot_bolt") as Phaser.Physics.Arcade.Sprite;
     s.setDepth(9);
     s.setData("damage", 10);
     s.setData("pierce", true);
