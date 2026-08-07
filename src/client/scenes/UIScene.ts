@@ -73,6 +73,7 @@ export class UIScene extends Phaser.Scene {
     g.on("ui:debug", this.onDebug, this);
     g.on("ui:dialog", this.openDialog, this);
     g.on("ui:victory", this.showVictory, this);
+    g.on("ui:victory2", this.showVictory2, this);
 
     this.input.keyboard!.on("keydown-E", () => this.advanceDialog());
     this.input.keyboard!.on("keydown-SPACE", () => this.advanceDialog());
@@ -194,7 +195,20 @@ export class UIScene extends Phaser.Scene {
     this.game.events.emit("ui:dialogClosed", this.dialogSignId);
   }
 
-  // -------- victory --------
+  // -------- victory: quest complete (end of Level 2) --------
+  private showVictory2() {
+    const W = this.scale.width, H = this.scale.height;
+    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78);
+    this.add.text(W / 2, H / 2 - 100, "THE THREEFOLD BEAST IS DEFEATED", { fontFamily: "monospace", fontSize: "24px", color: "#ffe97f", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.text(W / 2, H / 2 - 52, "LEVEL 2 COMPLETE — QUEST FINISHED", { fontFamily: "monospace", fontSize: "18px", color: "#ffffff" }).setOrigin(0.5);
+    const names = HERO_ORDER.map((k) => HEROES[k].name).join("  ·  ");
+    this.add.text(W / 2, H / 2 + 4, `Heroes of the Quest:\n${names}`, { fontFamily: "monospace", fontSize: "14px", color: "#a8d8a8", align: "center", lineSpacing: 8 }).setOrigin(0.5);
+    const again = this.add.text(W / 2, H / 2 + 84, "Press R to return to the title", { fontFamily: "monospace", fontSize: "13px", color: "#888888" }).setOrigin(0.5);
+    this.tweens.add({ targets: again, alpha: 0.3, yoyo: true, repeat: -1, duration: 700 });
+    this.input.keyboard!.once("keydown-R", () => { this.scene.stop("GameScene"); this.scene.start("TitleScene"); this.scene.stop(); });
+  }
+
+  // -------- victory (legacy Level 1 overlay, now unused mid-run) --------
   private showVictory() {
     const W = this.scale.width, H = this.scale.height;
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75);

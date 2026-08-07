@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { HEROES, HeroDef, SPEED_PER_SP } from "../config/heroes";
-import { ENEMY_DEFS, EnemyKind, BOSS_NAME, DRAGON_NAME } from "../config/enemies";
+import { ENEMY_DEFS, EnemyKind, BOSS_NAME, DRAGON_NAME, CHIMERA_NAME, APEX_NAMES, KEY_DROPPERS } from "../config/enemies";
 import { SIGNS } from "../config/signs";
 import { Enemy } from "../entities/Enemy";
 import { Chest } from "../entities/Chest";
@@ -14,7 +14,15 @@ export const ROOM_NAMES: Record<string, string> = {
   room2: "The Long Hall",
   room3: "The Gatehouse",
   boss: "The Hallucinator's Lair",
+  l2room1: "The Bear Den",
+  l2room2: "The Howling Maze",
+  l2room3: "The Sunken Pit",
+  l2boss: "The Threefold Den",
 };
+
+// Full dungeon order across both levels — forward doors are key-locked.
+const ROOM_ORDER = ["room1", "room2", "room3", "boss", "l2room1", "l2room2", "l2room3", "l2boss"];
+const WATER_GID = 51;
 
 interface SceneData { room: string; spawn: string; heroKey: string; hp?: number; keys?: number; bombCount?: number; boltCharges?: number; }
 interface SignZone { zone: Phaser.GameObjects.Zone; signId: string; hint: Phaser.GameObjects.Text; }
@@ -30,6 +38,7 @@ export class GameScene extends Phaser.Scene {
   private hero!: HeroDef;
 
   private player!: Phaser.Physics.Arcade.Sprite;
+  private playerShadow!: Phaser.GameObjects.Ellipse;
   private hp = 0;
   private maxHp = 0;
   private invulnUntil = 0;
@@ -73,6 +82,7 @@ export class GameScene extends Phaser.Scene {
   private roomCleared = false;
   private lockHintAt = 0;
   private lastEnemyCount = -1;
+  private hiddenBombs: { x: number; y: number; found: boolean }[] = [];
 
   private paused = false;
   private debugOn = false;
@@ -102,6 +112,7 @@ export class GameScene extends Phaser.Scene {
     this.finalSignSpawned = false;
     this.roomCleared = false;
     this.lastEnemyCount = -1;
+    this.hiddenBombs = [];
     this.phase2 = false;
     this.netPlates = [];
     this.netSeqIndex = 0;
@@ -114,6 +125,11 @@ export class GameScene extends Phaser.Scene {
     const tileset = map.addTilesetImage("kenney_tiny_dungeon", "tilesheet")!;
     this.layer = map.createLayer("Tile Layer 1", tileset, 0, 0)!;
     this.layer.setCollision(COLLIDING_GIDS);
+
+    // The Sunken Pit: water tiles shimmer cold blue (visual only — you can wade).
+    if (this.roomKey === "l2room3") {
+      this.layer.forEachTile((t) => { if (t.index === WATER_GID) t.tint = 0x4f7fd0; });
+    }
 
     this.enemies = this.add.group({ runChildUpdate: false });
     this.playerShots = this.physics.add.group();
@@ -146,6 +162,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    this.playerShadow = this.add.ellipse(spawnX, spawnY + 9, 16, 6, 0x000000, 0.3).setDepth(3);
     this.player = this.physics.add.sprite(spawnX, spawnY, "tiles", this.hero.frame);
     this.player.setCollideWorldBounds(true);
     this.player.setScale(1.5);
@@ -221,7 +238,10 @@ export class GameScene extends Phaser.Scene {
       this.bombCount += 1;
       this.game.events.emit("ui:bomb", this.bombCount);
     });
-    const bombSpot: Record<string, [number, number]> = { room1: [11, 2], room3: [12, 15] };
+    const bombSpot: Record<string, [number, number]> = {
+      room1: [11, 2], room3: [12, 15],
+      l2room1: [12, 2], l2room3: [2, 15], l2boss: [12, 12],
+    };
     const spot = bombSpot[this.roomKey];
     if (spot) this.spawnBombPickup(spot[0], spot[1]);  // mid-room reward / boss-prep refill
 
@@ -234,10 +254,54 @@ export class GameScene extends Phaser.Scene {
     // hidden floor switch → reveals a storm potion (temporary ranged Q attack)
     const switchSpot: Record<string, { sw: [number, number]; potion: [number, number] }> = {
       room2: { sw: [5, 15], potion: [5, 13] },
+      l2room1: { sw: [20, 3], potion: [20, 5] },        // behind the NE boulders
+      l2room2: { sw: [2, 2], potion: [2, 4] },          // top-left maze pocket
+      l2room3: { sw: [22, 2], potion: [22, 4] },        // far shore
     };
     const swCfg = switchSpot[this.roomKey];
     if (swCfg) this.spawnFloorSwitch(swCfg.sw, swCfg.potion);
     if (this.roomKey === "boss") this.spawnNetPlates();
+
+    // Hidden bomb caches — invisible until you walk close, then they shimmer in.
+    const hiddenSpots: Record<string, [number, number][]> = {
+      l2room1: [[6, 13]],                                // tucked behind the SW boulders
+      l2room2: [[19, 2], [4, 14]],                       // maze dead ends pay out
+      l2room3: [[19, 13]],                               // deep in the far pool
+      l2boss:  [[5, 5], [19, 5]],
+    };
+    for (const [tx, ty] of hiddenSpots[this.roomKey] ?? []) {
+      this.hiddenBombs.push({ x: tx * 16 + 8, y: ty * 16 + 8, found: false });
+    }
+
+    // The Hallucinator's Lair is winnable now: stocked shelves on entry.
+    if (this.roomKey === "boss" && !this.phase2) {
+      for (const [tx, ty] of [[4, 15], [20, 15]] as [number, number][]) {
+        const p = this.potions.create(tx * 16 + 8, ty * 16 + 8, "potion") as Phaser.Physics.Arcade.Sprite;
+        p.setDepth(4);
+      }
+      const sp = this.stormPotions.create(12 * 16 + 8, 14 * 16 + 8, "potion_storm") as Phaser.Physics.Arcade.Sprite;
+      sp.setDepth(6);
+    }
+
+    // The Threefold Den: same courtesy before the last fight.
+    if (this.roomKey === "l2boss") {
+      for (const [tx, ty] of [[7, 15], [17, 15]] as [number, number][]) {
+        const p = this.potions.create(tx * 16 + 8, ty * 16 + 8, "potion") as Phaser.Physics.Arcade.Sprite;
+        p.setDepth(4);
+      }
+      const sp = this.stormPotions.create(12 * 16 + 8, 13 * 16 + 8, "potion_storm") as Phaser.Physics.Arcade.Sprite;
+      sp.setDepth(6);
+      this.startBeastWaves();
+    }
+
+    // Birthday wall — painted straight onto the stone of the Bear Den.
+    if (this.roomKey === "l2room1") {
+      const wallMsg = this.add.text(12.5 * 16, 8, "Happy birthday Lincoln", {
+        fontFamily: "monospace", fontSize: "9px", color: "#ffe97f", fontStyle: "bold",
+        stroke: "#5a3a10", strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(6);
+      this.tweens.add({ targets: wallMsg, alpha: { from: 0.75, to: 1 }, duration: 1200, yoyo: true, repeat: -1 });
+    }
 
     this.doorsLockedUntil = this.time.now + 600;
     this.roomCleared = this.enemies.countActive() === 0;
@@ -260,6 +324,8 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit("ui:room", ROOM_NAMES[this.roomKey] ?? this.roomKey);
     this.game.events.emit("ui:enemies", this.enemies.countActive());
     if (this.roomKey === "boss") this.game.events.emit("ui:bossname", BOSS_NAME);
+    const apexHere = this.enemies.getChildren().find((c) => APEX_NAMES[(c as Enemy).kind]) as Enemy | undefined;
+    if (apexHere) this.game.events.emit("ui:bossname", APEX_NAMES[apexHere.kind]);
 
     this.game.events.off("ui:dialogClosed", this.onDialogClosed, this);
     this.game.events.on("ui:dialogClosed", this.onDialogClosed, this);
@@ -297,7 +363,21 @@ export class GameScene extends Phaser.Scene {
     this.dialogOpen = false;
     this.signCooldownUntil = this.time.now + 300;
     if (!this.paused) this.physics.world.resume();
-    if (signId === "sign_final") this.game.events.emit("ui:victory");
+    if (signId === "sign_final") this.openLevel2Portal();
+  }
+
+  // The dungeon isn't done with you: a passage tears open onward to Level 2.
+  private openLevel2Portal() {
+    const px = 12 * 16 + 8, py = 1 * 16 + 8;
+    const portal = this.add.image(px, py, "portal").setDepth(6).setScale(0.2).setAlpha(0);
+    this.tweens.add({ targets: portal, scale: 1.4, alpha: 1, duration: 700, ease: "Back.out" });
+    this.tweens.add({ targets: portal, angle: 360, duration: 4000, repeat: -1 });
+    this.cameras.main.flash(300, 160, 120, 255);
+    this.game.events.emit("ui:toast", "The wall splits open — wild breath pours through. LEVEL 2 awaits.");
+    this.doors.push({
+      rect: new Phaser.Geom.Rectangle(px - 8, py - 8, 16, 16),
+      target: "l2room1", spawn: "spawn_from_l1", locked: false, opened: true,
+    });
   }
 
   // -------- enemies --------
@@ -318,6 +398,18 @@ export class GameScene extends Phaser.Scene {
       e.onShoot = (sx, sy, dx, dy) => this.fireDragonShot(sx, sy, dx, dy, 175, "shot_flame", false, ENEMY_DEFS.dragon_fire.damage);
     } else if (kind === "dragon_ice") {
       e.onShoot = (sx, sy, dx, dy) => this.fireDragonShot(sx, sy, dx, dy, 90, "shot_ice", true, ENEMY_DEFS.dragon_ice.damage);
+    } else if (kind === "wolf") {
+      // the Pale Howler calls pups — capped so the pack can't snowball
+      e.onSummon = (sx, sy) => { if (this.enemies.countActive() < 7) this.spawnEnemy(sx, sy, "wolf_pup"); };
+    } else if (kind === "chimera") {
+      e.onShoot = (sx, sy, dx, dy) => this.fireEnemyShot(sx, sy, dx, dy, 150, "shot_dark", false);
+      e.onSummon = (sx, sy) => { if (this.enemies.countActive() < 6) this.spawnEnemy(sx, sy, "wolf_pup"); };
+      e.onPhaseChange = (phase) => {
+        const lines = ["", "The bear head slumps — the wolf takes over, circling...", "The wolf falls slack — the gator surges forward!"];
+        if (lines[phase]) this.game.events.emit("ui:toast", lines[phase]);
+        this.cameras.main.flash(250, 255, 255, 255);
+        this.cameras.main.shake(250, 0.006);
+      };
     }
     return e;
   }
@@ -339,7 +431,8 @@ export class GameScene extends Phaser.Scene {
     if (died) {
       if (enemy.kind === "boss") this.onBossDefeated(enemy.x, enemy.y);
       else if (enemy.kind === "dragon_fire" || enemy.kind === "dragon_ice") this.onDragonHeadDefeated(enemy.x, enemy.y);
-      else if (this.phase2) {
+      else if (enemy.kind === "chimera") this.onChimeraDefeated(enemy.x, enemy.y);
+      else if (this.phase2 || this.roomKey === "l2boss") {
         // Twin Maw minions are the supply line: hearts, bombs, or storm bolts
         const r = Math.random();
         if (r < 0.4) {
@@ -353,13 +446,21 @@ export class GameScene extends Phaser.Scene {
           p.setDepth(6);
         }
       }
-      else if (enemy.kind.startsWith("warden")) {
-        // With multiple wardens in a room, the key drops only when the LAST one falls.
-        const anotherWardenAlive = this.enemies.getChildren().some((c) => {
+      else if (KEY_DROPPERS.has(enemy.kind)) {
+        // With multiple key-holders in a room, the key drops only when the LAST one falls.
+        const anotherKeeperAlive = this.enemies.getChildren().some((c) => {
           const e = c as Enemy;
-          return e !== enemy && e.active && !e.dying && e.kind.startsWith("warden");
+          return e !== enemy && e.active && !e.dying && KEY_DROPPERS.has(e.kind);
         });
-        if (!anotherWardenAlive) this.spawnChest(enemy.x, enemy.y);
+        if (!anotherKeeperAlive) this.spawnChest(enemy.x, enemy.y);
+        if (APEX_NAMES[enemy.kind]) {
+          // an apex beast goes down: clear the banner, scatter hearts as a breather
+          this.game.events.emit("ui:bossname", "");
+          for (const off of [-14, 14]) {
+            const h = this.hearts.create(enemy.x + off, enemy.y + 10, "tiles", HEART_FRAME) as Phaser.Physics.Arcade.Sprite;
+            h.setDepth(4);
+          }
+        }
       } else if (enemy.kind === "green_blob") {
         // The blob is a guaranteed health source.
         const p = this.potions.create(enemy.x, enemy.y, "potion") as Phaser.Physics.Arcade.Sprite;
@@ -369,9 +470,14 @@ export class GameScene extends Phaser.Scene {
         this.potionDropped = true;
         const p = this.potions.create(enemy.x, enemy.y, "potion") as Phaser.Physics.Arcade.Sprite;
         p.setDepth(4);
-      } else if (Math.random() < 0.25) {
-        const h = this.hearts.create(enemy.x, enemy.y, "tiles", HEART_FRAME) as Phaser.Physics.Arcade.Sprite;
-        h.setDepth(4);
+      } else {
+        // heart odds: Hallucinator phase 1 is the fight that needed feeding — 50%.
+        // Level 2 rooms run generous at 35%; the old halls stay at 25%.
+        const rate = this.roomKey === "boss" ? 0.5 : this.roomKey.startsWith("l2") ? 0.35 : 0.25;
+        if (Math.random() < rate) {
+          const h = this.hearts.create(enemy.x, enemy.y, "tiles", HEART_FRAME) as Phaser.Physics.Arcade.Sprite;
+          h.setDepth(4);
+        }
       }
     }
   }
@@ -405,7 +511,7 @@ export class GameScene extends Phaser.Scene {
 
   // Forward doors (leading deeper into the dungeon) are key-locked; backtrack doors stay free.
   private markLockedDoors() {
-    const order = ["room1", "room2", "room3", "boss"];
+    const order = ROOM_ORDER;
     const here = order.indexOf(this.roomKey);
     for (const d of this.doors) {
       d.locked = here >= 0 && order.indexOf(d.target) > here;
@@ -483,6 +589,45 @@ export class GameScene extends Phaser.Scene {
       this.addSign(tx * 16 + 8, ty * 16 + 8, "sign_final");
       this.tweens.add({ targets: this.signZones[this.signZones.length - 1].hint, alpha: { from: 0, to: 1 }, duration: 300 });
     });
+  }
+
+  // -------- Level 2 boss: waves & victory --------
+  private startBeastWaves() {
+    this.game.events.emit("ui:bossname", CHIMERA_NAME);
+    this.minionWaveTimer?.remove();
+    this.minionWaveTimer = this.time.addEvent({ delay: 5200, startAt: 3000, loop: true, callback: () => {
+      if (this.dead || this.finalSignSpawned) return;
+      const chimeraAlive = this.enemies.getChildren().some((c) => {
+        const e = c as Enemy;
+        return e.active && !e.dying && e.kind === "chimera";
+      });
+      if (!chimeraAlive) return;
+      const minions = this.enemies.getChildren().filter((c) => {
+        const e = c as Enemy;
+        return e.active && !e.dying && e.kind !== "chimera";
+      }).length;
+      if (minions >= 3) return;
+      const pool: EnemyKind[] = ["bear_cub", "wolf_pup", "gator_hatchling"];
+      const spots: [number, number][] = [[3, 15], [21, 15]];
+      for (const [tx, ty] of spots) {
+        const kind = pool[Math.floor(Math.random() * pool.length)];
+        const e = this.spawnEnemy(tx * 16 + 8, ty * 16 + 8, kind);
+        e.setAlpha(0);
+        this.tweens.add({ targets: e, alpha: 1, duration: 400 });
+      }
+    }});
+  }
+
+  private onChimeraDefeated(x: number, y: number) {
+    if (this.finalSignSpawned) return;
+    this.finalSignSpawned = true;
+    this.minionWaveTimer?.remove();
+    this.game.events.emit("ui:bossname", "");
+    this.enemies.getChildren().forEach((c) => { const e = c as Enemy; if (e.active && !e.dying) e.takeHit(999, x, y); });
+    this.enemyShots.clear(true, true);
+    this.cameras.main.flash(450, 255, 255, 255);
+    this.cameras.main.shake(500, 0.01);
+    this.time.delayedCall(900, () => this.game.events.emit("ui:victory2"));
   }
 
   // -------- net plates: step 1 → 2 → 3 to drop the net on the Hallucinator --------
@@ -755,12 +900,27 @@ export class GameScene extends Phaser.Scene {
     this.player.setVelocity(vx, vy);
     if (vx !== 0 || vy !== 0) this.facing.set(vx, vy).normalize();
     this.player.setFlipX(this.facing.x < 0);
+    this.playerShadow.setPosition(this.player.x, this.player.y + 9);
     this.player.setAlpha(time < this.invulnUntil ? (Math.floor(time / 80) % 2 ? 0.4 : 1) : 1);
 
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || Phaser.Input.Keyboard.JustDown(this.keys.J)) this.attack();
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
       if (this.boltCharges > 0) this.fireBolt();          // perishable goods fire first
       else if (this.bombCount > 0) this.detonateBomb();
+    }
+
+    // hidden bomb caches shimmer into view when you get close
+    for (const hb of this.hiddenBombs) {
+      if (hb.found) continue;
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, hb.x, hb.y) < 30) {
+        hb.found = true;
+        const b = this.bombs.create(hb.x, hb.y, "bomb") as Phaser.Physics.Arcade.Sprite;
+        b.setDepth(6).setScale(0.2).setAlpha(0);
+        (b.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
+        this.tweens.add({ targets: b, scale: 1, alpha: 1, duration: 300, ease: "Back.out" });
+        this.cameras.main.flash(120, 255, 210, 120);
+        this.game.events.emit("ui:toast", "A hidden bomb cache!");
+      }
     }
 
     const ePressed = Phaser.Input.Keyboard.JustDown(this.keys.E);

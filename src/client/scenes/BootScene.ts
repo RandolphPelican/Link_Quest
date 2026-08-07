@@ -13,7 +13,7 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
-    for (const room of ["room1", "room2", "room3", "boss"]) {
+    for (const room of ["room1", "room2", "room3", "boss", "l2room1", "l2room2", "l2room3", "l2boss"]) {
       this.load.tilemapTiledJSON(room, `maps/${room}.tmj`);
     }
   }
@@ -175,6 +175,73 @@ export class BootScene extends Phaser.Scene {
     di.fillStyle(0x102850, 1).fillTriangle(12, 1, 14, 1, 13, 2);
     di.generateTexture("dragon_ice", 16, 16);
     di.destroy();
+
+    // portal — violet swirl ring, the tear between levels
+    const po = this.add.graphics();
+    po.lineStyle(2.5, 0x9060ff, 1).strokeCircle(10, 10, 8);
+    po.lineStyle(2, 0xc0a0ff, 0.9).strokeCircle(10, 10, 5.5);
+    po.fillStyle(0xffffff, 0.9).fillCircle(10, 10, 2);
+    po.fillStyle(0x9060ff, 0.8).fillCircle(15, 6, 1.2).fillCircle(5, 14, 1.2);
+    po.generateTexture("portal", 20, 20);
+    po.destroy();
+
+    // bear — brown bulk, round ears, small mean eyes
+    const be = this.add.graphics();
+    be.fillStyle(0x5a3a1a, 1).fillCircle(4, 3, 2.5).fillCircle(12, 3, 2.5);   // ears
+    be.fillStyle(0x7a4e24, 1).fillRoundedRect(1, 3, 14, 11, 4);               // body
+    be.fillStyle(0x9a6a38, 1).fillRoundedRect(3, 5, 10, 8, 3);                // chest
+    be.fillStyle(0x5a3a1a, 1).fillRect(5, 10, 6, 4);                          // muzzle
+    be.fillStyle(0x201008, 1).fillRect(7, 12, 2, 2);                          // nose
+    be.fillStyle(0xffe070, 1).fillRect(4, 7, 2, 2).fillRect(10, 7, 2, 2);     // eyes
+    be.generateTexture("beast_bear", 16, 16);
+    be.destroy();
+
+    // wolf — grey, pointed ears, cold blue eyes
+    const wo = this.add.graphics();
+    wo.fillStyle(0x606878, 1).fillTriangle(2, 5, 5, 0, 6, 5);                 // ear L
+    wo.fillStyle(0x606878, 1).fillTriangle(10, 5, 11, 0, 14, 5);              // ear R
+    wo.fillStyle(0x8890a0, 1).fillRoundedRect(2, 4, 12, 10, 3);               // head
+    wo.fillStyle(0xa8b0c0, 1).fillRoundedRect(4, 6, 8, 7, 2);
+    wo.fillStyle(0x606878, 1).fillRect(6, 11, 4, 4);                          // snout
+    wo.fillStyle(0x201820, 1).fillRect(7, 13, 2, 2);                          // nose
+    wo.fillStyle(0x80d8ff, 1).fillRect(4, 7, 2, 2).fillRect(10, 7, 2, 2);     // eyes
+    wo.generateTexture("beast_wolf", 16, 16);
+    wo.destroy();
+
+    // gator — long green snout, armored ridges, slit eyes
+    const ga = this.add.graphics();
+    ga.fillStyle(0x2e5a28, 1).fillRoundedRect(2, 1, 12, 8, 3);                // skull
+    ga.fillStyle(0x407838, 1).fillRoundedRect(3, 2, 10, 6, 2);
+    ga.fillStyle(0x386830, 1).fillRect(5, 8, 6, 7);                           // long snout
+    ga.fillStyle(0xd8e8b0, 1).fillRect(5, 13, 6, 1);                          // teeth line
+    ga.fillStyle(0x2e5a28, 1).fillRect(4, 1, 2, 1).fillRect(8, 0, 2, 2).fillRect(12, 1, 1, 1); // ridges
+    ga.fillStyle(0xffe070, 1).fillRect(4, 3, 2, 3);                           // slit eyes
+    ga.fillStyle(0xffe070, 1).fillRect(10, 3, 2, 3);
+    ga.fillStyle(0x102008, 1).fillRect(5, 4, 1, 1).fillRect(11, 4, 1, 1);
+    ga.generateTexture("beast_gator", 16, 16);
+    ga.destroy();
+
+    // chimera — three heads stitched onto one mass: bear / wolf / gator
+    const ch = this.add.graphics();
+    ch.fillStyle(0x3a2818, 1).fillRoundedRect(1, 6, 14, 9, 3);                // dark body mass
+    // bear head (left)
+    ch.fillStyle(0x7a4e24, 1).fillCircle(4, 5, 3);
+    ch.fillStyle(0x5a3a1a, 1).fillCircle(2, 3, 1.2).fillCircle(6, 3, 1.2);
+    ch.fillStyle(0xffe070, 1).fillRect(3, 4, 1, 1).fillRect(5, 4, 1, 1);
+    // wolf head (center, raised)
+    ch.fillStyle(0x8890a0, 1).fillCircle(8, 3, 3);
+    ch.fillStyle(0x606878, 1).fillTriangle(6, 1, 7, -1 + 1, 8, 1);
+    ch.fillStyle(0x80d8ff, 1).fillRect(7, 2, 1, 1).fillRect(9, 2, 1, 1);
+    // gator head (right)
+    ch.fillStyle(0x407838, 1).fillCircle(12, 5, 3);
+    ch.fillStyle(0x386830, 1).fillRect(12, 5, 4, 2);                          // jutting snout
+    ch.fillStyle(0xffe070, 1).fillRect(11, 4, 1, 1).fillRect(13, 4, 1, 1);
+    // stitching
+    ch.lineStyle(1, 0xc04040, 0.9);
+    ch.lineBetween(6, 6, 6, 9);
+    ch.lineBetween(10, 6, 10, 9);
+    ch.generateTexture("beast_chimera", 16, 16);
+    ch.destroy();
 
     // attack bomb — dark sphere with a lit fuse
     const b = this.add.graphics();

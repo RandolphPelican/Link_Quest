@@ -14,9 +14,19 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private lungeUntil = 0;
   private shootTimer = 0;
   private summonTimer = 0;
+  // Level-2 beast state
+  private chargeUntil = 0;      // charger: locked-direction charge window
+  private tiredUntil = 0;       // charger: post-charge punish window
+  private chargeDir = { x: 0, y: 0 };
+  private orbitDir = Math.random() < 0.5 ? 1 : -1;   // pack: clockwise or counter
+  private howlTimer = 3000;     // pack alpha: reinforcement howl
+  private ambushState: "hidden" | "telegraph" | "lunge" | "roll" | "cooldown" = "hidden";
+  private ambushTimer = 0;
+  private chimeraPhase = 0;     // 0=bear 1=wolf 2=gator (by remaining HP)
   onShoot?: (x: number, y: number, dirX: number, dirY: number) => void;
   onSummon?: (x: number, y: number) => void;
   onHitPlayer?: () => void;
+  onPhaseChange?: (phase: number) => void;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind) {
     super(scene, x, y, ENEMY_DEFS[kind].texture ?? "tiles",
@@ -32,6 +42,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     body.setSize(12 * this.def.scale, 12 * this.def.scale);
     if (this.def.pattern === "bat") body.setBounce(1, 1);
     if (this.def.pattern === "turret") body.setImmovable(true);
+    if (this.def.pattern === "ambush") this.setAlpha(0.35);   // lurking below the surface
     this.hpBar = scene.add.graphics();
     this.hpBar.setDepth(50);
     this.drawHpBar();
@@ -184,6 +195,192 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
               }
             }
           });
+        }
+        break;
+      }
+      case "charger": {
+        // BEAR: lumber, telegraph red, then a locked charge; tired afterwards.
+        this.aiTimer -= delta;
+        if (time < this.chargeUntil) {
+          this.setVelocity(this.chargeDir.x * this.def.speed * 4.2, this.chargeDir.y * this.def.speed * 4.2);
+          break;
+        }
+        if (time < this.tiredUntil) { this.setVelocity(0, 0); break; }   // punish window
+        if (this.aiTimer <= 0 && dist < 220) {
+          this.aiTimer = 2600 + Math.random() * 900;
+          this.setTintFill(0xff7050);                      // TELL: seeing red
+          this.chargeDir = { x: nx, y: ny };               // direction locks at the tell
+          this.setVelocity(0, 0);
+          this.scene.time.delayedCall(380, () => {
+            if (!this.active || this.dying) return;
+            this.restoreBaseTint();
+            this.chargeUntil = this.scene.time.now + 620;
+            this.tiredUntil = this.chargeUntil + 850;
+          });
+        } else {
+          this.setVelocity(nx * this.def.speed * 0.8, ny * this.def.speed * 0.8);
+        }
+        break;
+      }
+      case "pack": {
+        // WOLF: orbit at claw's length, take turns lunging; the alpha howls in pups.
+        this.aiTimer -= delta;
+        this.howlTimer -= delta;
+        if (time < this.lungeUntil) break;                 // keep lunge velocity
+        const ring = 78;
+        const px = -ny * this.orbitDir, py = nx * this.orbitDir;         // perpendicular
+        const inward = (dist - ring) / ring;                             // spring toward the ring
+        if (dist < 320) {
+          this.setVelocity(
+            (px + nx * inward) * this.def.speed,
+            (py + ny * inward) * this.def.speed,
+          );
+        } else this.setVelocity(0, 0);
+        if (this.aiTimer <= 0 && dist < 200) {
+          this.aiTimer = 2200 + Math.random() * 1100;
+          if (Math.random() < 0.3) this.orbitDir *= -1;    // switch flanks unpredictably
+          this.setTintFill(0xffffff);
+          this.scene.time.delayedCall(220, () => {
+            if (!this.active || this.dying) return;
+            this.restoreBaseTint();
+            this.lungeUntil = this.scene.time.now + 420;
+            this.setVelocity(nx * this.def.speed * 2.4, ny * this.def.speed * 2.4);
+          });
+        }
+        // Alpha's howl: only wolves with onSummon (the pack leader / chimera) call pups.
+        if (this.onSummon && this.howlTimer <= 0) {
+          this.howlTimer = 7000;
+          this.setTintFill(0xd8e8ff);
+          this.scene.time.delayedCall(300, () => {
+            if (!this.active || this.dying) return;
+            this.restoreBaseTint();
+            if (this.onSummon) { this.onSummon(this.x - 20, this.y); this.onSummon(this.x + 20, this.y); }
+          });
+        }
+        break;
+      }
+      case "ambush": {
+        // GATOR: lurk near-invisible → telegraph → lunge → death roll → re-submerge.
+        this.ambushTimer -= delta;
+        switch (this.ambushState) {
+          case "hidden":
+            this.setVelocity(0, 0);
+            this.setAngle(0);
+            if (dist < 135) {
+              this.ambushState = "telegraph";
+              this.ambushTimer = 340;
+              this.setAlpha(1);
+              this.setTintFill(0xffe060);
+              this.chargeDir = { x: nx, y: ny };
+            }
+            break;
+          case "telegraph":
+            this.setVelocity(0, 0);
+            if (this.ambushTimer <= 0) {
+              this.restoreBaseTint();
+              this.ambushState = "lunge";
+              this.ambushTimer = 480;
+              this.setVelocity(this.chargeDir.x * this.def.speed * 3.4, this.chargeDir.y * this.def.speed * 3.4);
+            }
+            break;
+          case "lunge":
+            if (this.ambushTimer <= 0) { this.ambushState = "roll"; this.ambushTimer = 800; }
+            break;
+          case "roll": {
+            // death roll — spinning menace, drifting toward the player
+            this.setAngle(this.angle + delta * 0.9);
+            this.setVelocity(nx * this.def.speed * 0.9, ny * this.def.speed * 0.9);
+            if (this.ambushTimer <= 0) { this.ambushState = "cooldown"; this.ambushTimer = 1400; this.setAngle(0); this.setAlpha(0.35); }
+            break;
+          }
+          case "cooldown":
+            this.setVelocity(0, 0);
+            if (this.ambushTimer <= 0) this.ambushState = "hidden";
+            break;
+        }
+        break;
+      }
+      case "chimera": {
+        // THE THREEFOLD BEAST — bear head leads, then wolf, then gator, as it bleeds.
+        const frac = this.hp / this.def.hp;
+        const phase = frac > 2 / 3 ? 0 : frac > 1 / 3 ? 1 : 2;
+        if (phase !== this.chimeraPhase) {
+          this.chimeraPhase = phase;
+          this.onPhaseChange?.(phase);
+          this.aiTimer = 600;               // brief stagger between forms
+          this.setVelocity(0, 0);
+        }
+        // tri-burst fire in every phase; gator phase fires faster
+        this.shootTimer -= delta;
+        const cd = (this.def.shootCooldownMs ?? 2600) * (phase === 2 ? 0.6 : 1);
+        if (this.shootTimer <= 0 && this.onShoot && dist < 320) {
+          this.shootTimer = cd;
+          const base = Math.atan2(dy, dx);
+          for (const off of [-0.35, 0, 0.35]) this.onShoot(this.x, this.y, Math.cos(base + off), Math.sin(base + off));
+        }
+        if (phase === 0) {
+          // bear form: charges
+          this.aiTimer -= delta;
+          if (time < this.chargeUntil) { this.setVelocity(this.chargeDir.x * this.def.speed * 3.8, this.chargeDir.y * this.def.speed * 3.8); break; }
+          if (time < this.tiredUntil) { this.setVelocity(0, 0); break; }
+          if (this.aiTimer <= 0 && dist < 240) {
+            this.aiTimer = 2800 + Math.random() * 800;
+            this.setTintFill(0xff7050);
+            this.chargeDir = { x: nx, y: ny };
+            this.setVelocity(0, 0);
+            this.scene.time.delayedCall(400, () => {
+              if (!this.active || this.dying) return;
+              this.restoreBaseTint();
+              this.chargeUntil = this.scene.time.now + 650;
+              this.tiredUntil = this.chargeUntil + 900;
+            });
+          } else this.setVelocity(nx * this.def.speed * 0.7, ny * this.def.speed * 0.7);
+        } else if (phase === 1) {
+          // wolf form: orbits, lunges, howls in pups
+          this.aiTimer -= delta;
+          this.howlTimer -= delta;
+          if (time < this.lungeUntil) break;
+          const ringC = 95;
+          const pxC = -ny * this.orbitDir, pyC = nx * this.orbitDir;
+          const inw = (dist - ringC) / ringC;
+          this.setVelocity((pxC + nx * inw) * this.def.speed * 1.3, (pyC + ny * inw) * this.def.speed * 1.3);
+          if (this.aiTimer <= 0) {
+            this.aiTimer = 2600 + Math.random() * 900;
+            this.setTintFill(0xffffff);
+            this.scene.time.delayedCall(220, () => {
+              if (!this.active || this.dying) return;
+              this.restoreBaseTint();
+              this.lungeUntil = this.scene.time.now + 430;
+              this.setVelocity(nx * this.def.speed * 2.6, ny * this.def.speed * 2.6);
+            });
+          }
+          if (this.onSummon && this.howlTimer <= 0) {
+            this.howlTimer = 6500;
+            this.onSummon(this.x - 24, this.y);
+            this.onSummon(this.x + 24, this.y);
+          }
+        } else {
+          // gator form: relentless ambush lunges with death rolls
+          this.ambushTimer -= delta;
+          if (this.ambushState === "roll") {
+            this.setAngle(this.angle + delta * 1.0);
+            this.setVelocity(nx * this.def.speed * 1.1, ny * this.def.speed * 1.1);
+            if (this.ambushTimer <= 0) { this.ambushState = "cooldown"; this.ambushTimer = 900; this.setAngle(0); }
+          } else if (this.ambushState === "lunge") {
+            if (this.ambushTimer <= 0) { this.ambushState = "roll"; this.ambushTimer = 700; }
+          } else if (this.ambushTimer <= 0) {
+            this.ambushState = "telegraph";
+            this.setTintFill(0xffe060);
+            this.chargeDir = { x: nx, y: ny };
+            this.setVelocity(0, 0);
+            this.scene.time.delayedCall(300, () => {
+              if (!this.active || this.dying) return;
+              this.restoreBaseTint();
+              this.ambushState = "lunge";
+              this.ambushTimer = 460;
+              this.setVelocity(this.chargeDir.x * this.def.speed * 3.2, this.chargeDir.y * this.def.speed * 3.2);
+            });
+          } else this.setVelocity(nx * this.def.speed * 0.5, ny * this.def.speed * 0.5);
         }
         break;
       }
