@@ -82,6 +82,7 @@ export class GameScene extends Phaser.Scene {
   private roomCleared = false;
   private lockHintAt = 0;
   private lastEnemyCount = -1;
+  private boltUnlimited = false;    // storm mastery: granted when the Hallucinator falls
   private hiddenBombs: { x: number; y: number; found: boolean }[] = [];
 
   private paused = false;
@@ -112,6 +113,7 @@ export class GameScene extends Phaser.Scene {
     this.finalSignSpawned = false;
     this.roomCleared = false;
     this.lastEnemyCount = -1;
+    this.boltUnlimited = false;
     this.hiddenBombs = [];
     this.phase2 = false;
     this.netPlates = [];
@@ -217,7 +219,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.enemies, (_p, enemyObj) => {
       const enemy = enemyObj as Enemy;
       if (!enemy.active || enemy.dying) return;
-      if (this.damagePlayer(enemy.def.damage)) {
+      if (this.damagePlayer(enemy.def.contactDamage ?? enemy.def.damage)) {
         if (enemy.def.pattern === "rat") enemy.startRetreat(this.time.now + 1100);
         // (hit-stop removed — the physics slowdown read as player paralysis, not impact)
       }
@@ -247,8 +249,8 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.add.overlap(this.player, this.stormPotions, (_p, potion) => {
       (potion as Phaser.GameObjects.GameObject).destroy();
-      this.boltCharges = 3;
-      this.game.events.emit("ui:bolt", this.boltCharges);
+      this.boltCharges = Math.max(this.boltCharges, 3);
+      this.game.events.emit("ui:bolt", this.boltUnlimited ? -1 : this.boltCharges);
       this.cameras.main.flash(180, 140, 120, 255);
     });
     // hidden floor switch → reveals a storm potion (temporary ranged Q attack)
@@ -540,6 +542,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(350, 255, 255, 255);
     this.cameras.main.shake(400, 0.008);
     this.game.events.emit("ui:toast", "The veil tears... something older wakes.");
+    // STORM MASTERY: the Hallucinator's power passes to the victor — unlimited bolts
+    // for the Twin Maw fight, since the heads hide behind a wall melee can't cross.
+    this.boltUnlimited = true;
+    this.boltCharges = Math.max(this.boltCharges, 3);
+    this.game.events.emit("ui:bolt", -1);
+    this.game.events.emit("ui:toast", "Storm mastery! Unlimited bolts [Q] — strike the Maw from afar.");
     this.game.events.emit("ui:bossname", DRAGON_NAME);
     // rune plates go dormant — the Maw doesn't move, no point netting it
     for (const pl of this.netPlates) { pl.img.setAlpha(0.25); pl.label.setAlpha(0.25); }
@@ -781,8 +789,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private fireBolt() {
-    this.boltCharges -= 1;
-    this.game.events.emit("ui:bolt", this.boltCharges);
+    if (!this.boltUnlimited) {
+      this.boltCharges -= 1;
+      this.game.events.emit("ui:bolt", this.boltCharges);
+    }
     const fx = this.facing.x, fy = this.facing.y;
     const s = this.playerBolts.create(this.player.x, this.player.y, "shot_bolt") as Phaser.Physics.Arcade.Sprite;
     s.setDepth(9);
@@ -905,7 +915,7 @@ export class GameScene extends Phaser.Scene {
 
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || Phaser.Input.Keyboard.JustDown(this.keys.J)) this.attack();
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) {
-      if (this.boltCharges > 0) this.fireBolt();          // perishable goods fire first
+      if (this.boltUnlimited || this.boltCharges > 0) this.fireBolt();   // perishable goods fire first
       else if (this.bombCount > 0) this.detonateBomb();
     }
 

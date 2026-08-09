@@ -112,8 +112,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private onBolt(n: number) {
-    const has = n > 0;
-    this.boltText.setText(`BOLTS [Q]: ${n}`);
+    const has = n > 0 || n === -1;               // -1 = storm mastery (unlimited)
+    this.boltText.setText(n === -1 ? "BOLTS [Q]: \u221E" : `BOLTS [Q]: ${n}`);
     this.boltIcon.setVisible(has);
     this.boltText.setVisible(has);
   }

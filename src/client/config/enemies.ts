@@ -20,6 +20,7 @@ export interface EnemyDef {
   pattern: "bat" | "rat" | "blob" | "boss" | "turret" | "charger" | "pack" | "ambush" | "chimera";
   hpBarWidth: number;
   tint?: number;            // base color multiply (kept through hit/telegraph flashes)
+  contactDamage?: number;   // body-touch damage when it differs from `damage` (shots/lunges)
   shootCooldownMs?: number; // ranged wardens: time between telegraphed bursts
   texture?: string;         // procedural texture key (overrides the spritesheet frame)
 }
@@ -28,7 +29,8 @@ export const ENEMY_DEFS: Record<EnemyKind, EnemyDef> = {
   red_bat:    { frame: 120, hp: 5,  damage: 3, speed: 52, scale: 1, pattern: "bat",  hpBarWidth: 14 },
   grey_rat:   { frame: 124, hp: 10, damage: 5, speed: 46, scale: 1, pattern: "rat",  hpBarWidth: 14 },
   green_blob: { frame: 108, hp: 20, damage: 7, speed: 20, scale: 1, pattern: "blob", hpBarWidth: 14 },
-  boss:       { frame: 111, hp: 80, damage: 8, speed: 34, scale: 2, pattern: "boss", hpBarWidth: 34 },
+  // Body touch is a graze (2) so sword range is a fair trade — his shots and swarm stay the real threat.
+  boss:       { frame: 111, hp: 80, damage: 8, speed: 34, scale: 2, pattern: "boss", hpBarWidth: 34, contactDamage: 2 },
   warden_blob: { frame: 110, hp: 38, damage: 8, speed: 28, scale: 1.7, pattern: "blob", hpBarWidth: 28 },
   warden_bat:  { frame: 120, hp: 28, damage: 6, speed: 65, scale: 1.5, pattern: "bat",  hpBarWidth: 24 },
   warden_rat:  { frame: 124, hp: 32, damage: 7, speed: 48, scale: 1.6, pattern: "rat", hpBarWidth: 26 },
