@@ -205,6 +205,19 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.flash(150, 60, 130, 220);
       }
     });
+    // Dragonfire is physical: it shatters on the arena pillars and perimeter — duck
+    // behind cover. It still exits the den wall (row 3), or the fire head would be caged.
+    // Ice is spectral and seeps through everything, but lobs slow. Pick your poison.
+    this.physics.add.collider(this.dragonShots, this.layer, (shotObj) => {
+      const shot = shotObj as Phaser.Physics.Arcade.Sprite;
+      const fx = this.add.circle(shot.x, shot.y, 4, 0xffa040, 0.8).setDepth(9);
+      this.tweens.add({ targets: fx, scale: 2, alpha: 0, duration: 180, onComplete: () => fx.destroy() });
+      shot.destroy();
+    }, (shotObj, tileObj) => {
+      const shot = shotObj as Phaser.Physics.Arcade.Sprite;
+      const tile = tileObj as Phaser.Tilemaps.Tile;
+      return this.roomKey === "boss" && shot.getData("ice") !== true && tile.y !== 3;
+    });
     this.physics.add.overlap(this.dragonShots, this.player, (a, b) => {
       const shot = (a === this.player ? b : a) as Phaser.Physics.Arcade.Sprite;
       const isIce = shot.getData("ice") === true;
@@ -366,6 +379,31 @@ export class GameScene extends Phaser.Scene {
     this.signCooldownUntil = this.time.now + 300;
     if (!this.paused) this.physics.world.resume();
     if (signId === "sign_final") this.openLevel2Portal();
+  }
+
+  // With both maws dead, nothing holds the den wall up — it crumbles tile by tile,
+  // opening the path to the old den (and the portal that appears there).
+  private breakDenWall() {
+    if (this.roomKey !== "boss") return;
+    const wallTiles: number[] = [];
+    for (let tx = 1; tx <= 23; tx++) {
+      const t = this.layer.getTileAt(tx, 3);
+      if (t && t.index === 56) wallTiles.push(tx);
+    }
+    this.cameras.main.shake(600, 0.01);
+    wallTiles.forEach((tx, i) => {
+      this.time.delayedCall(60 * i + 300, () => {
+        this.layer.putTileAt(49, tx, 3);
+        const px = tx * 16 + 8, py = 3 * 16 + 8;
+        for (const [ox, oy] of [[-3, -2], [3, 1], [0, -4]] as [number, number][]) {
+          const d = this.add.rectangle(px + ox, py + oy, 3, 3, 0x8a7a5a).setDepth(8);
+          this.tweens.add({ targets: d, y: d.y + 10 + Math.random() * 8, alpha: 0, duration: 400 + Math.random() * 200, onComplete: () => d.destroy() });
+        }
+      });
+    });
+    this.time.delayedCall(60 * wallTiles.length + 500, () => {
+      this.game.events.emit("ui:toast", "The den wall collapses — the way north is open.");
+    });
   }
 
   // The dungeon isn't done with you: a passage tears open onward to Level 2.
@@ -548,6 +586,9 @@ export class GameScene extends Phaser.Scene {
     this.boltCharges = Math.max(this.boltCharges, 3);
     this.game.events.emit("ui:bolt", -1);
     this.game.events.emit("ui:toast", "Storm mastery! Unlimited bolts [Q] — strike the Maw from afar.");
+    this.time.delayedCall(4000, () => {
+      if (this.phase2 && !this.finalSignSpawned) this.game.events.emit("ui:toast", "The pillars block dragonfire — frost seeps through everything.");
+    });
     this.game.events.emit("ui:bossname", DRAGON_NAME);
     // rune plates go dormant — the Maw doesn't move, no point netting it
     for (const pl of this.netPlates) { pl.img.setAlpha(0.25); pl.label.setAlpha(0.25); }
@@ -591,6 +632,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyShots.clear(true, true);
     this.dragonShots.clear(true, true);
     this.cameras.main.flash(400, 255, 255, 255);
+    this.breakDenWall();
     this.time.delayedCall(500, () => {
       const tx = Phaser.Math.Clamp(Math.round(x / 16), 3, 21);
       const ty = Phaser.Math.Clamp(Math.round(y / 16), 5, 14);
